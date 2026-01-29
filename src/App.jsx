@@ -1,34 +1,69 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="classification-page">
+
+    {/* Classification Page Header */}
+    <header>
+      <h1>Classification</h1>
+    </header>
+
+    {/* Gender Selection and Data Input */}
+    <main>
+      <p>Gender</p>
+
+      <div className="classification-gender-options">
+      <label>
+        <input type="radio" name="gender" /> Male
+      </label>
+
+      <label>
+        <input type="radio" name="gender" /> Female
+      </label>
+
+      <label>
+        <input type="radio" name="gender" /> Other
+      </label>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+
+
+      <div className="classification-data-grid">
+        <div className="classification-data">
+          <p>Squat</p>
+          <div className="input-unit">
+          <input type="number" placeholder="Enter weight" />
+          <span>lbs</span>
+          </div>
+        </div>
+
+        <div className="classification-data">
+          <p>Deadlift</p>
+          <div className="input-unit">
+          <input type="number" placeholder="Enter weight" />
+          <span>lbs</span>
+          </div>
+        </div>
+
+        <div className="classification-data">
+          <p>Bench Press</p>
+          <div className="input-unit">
+          <input type="number" placeholder="Enter weight" />
+          <span>lbs</span>
+          </div>
+        </div>
+
+        <div className="classification-data">
+          <p>Body Weight</p>
+          <div className="input-unit">
+          <input type="number" placeholder="Enter weight" />
+          <span>lbs</span>
+          </div>
+        </div>
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+
+    </main>
+    </div>
   )
 }
 

@@ -1,42 +1,80 @@
+body {
+  margin: 0;
+}
+
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  min-width: 100vw;
+}
+
+header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+h1 {
+  margin: 0;
+}
+
+main {
+  display: flex;
+  flex-direction: column; /*Vertical layout */
+  align-items: center; /* Center content horizontally */
+  padding: 16px;
+}
+
+
+/*Gender Classification Options */
+.classification-gender-options {
+  display: flex; /*Horizontal layout */
+  gap: 16px; /*Space between gender options */
+  margin-top: 8px; /*Space above gender */
+}
+
+.classification-gender-options label {
+  cursor: pointer;
+}
+
+.classification-gender-options input[type="radio"] {
+  margin-right: 8px;
+}
+
+
+/*Data Classification Options */
+.classification-data-options {
+  display: flex; /*Horizontal layout */
+  gap: 24px; /*Space between data options */
+  margin-top: 8px; /*Space above data options */
+  justify-content: center; /* Center options horizontally */
+}
+
+.classification-data {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 75px; /*Space above Gender Selection section*/
+}
+
+.classification-data p {
+  margin: 0 0 4px 0; /*Space above data text */
+}
+
+.classification-data input {
+  width: 90px;
   text-align: center;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid #000000;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.input-unit {
+  display: flex;          /* input and unit side by side */
+  align-items: center;    
+  gap: 4px;               /* space between input and unit */
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
+.input-unit span {
+  color: #000000;
+  font-weight: bold;
 }
