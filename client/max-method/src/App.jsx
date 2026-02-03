@@ -25,6 +25,7 @@ function Navigation() {
 
   return (
     <nav className="navigation">
+      <button id="backBtn" onClick={() => window.history.back()}>← Back</button>
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
       <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
