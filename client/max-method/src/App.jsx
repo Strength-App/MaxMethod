@@ -1,62 +1,66 @@
-import {useState} from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState } from 'react'
 import './App.css'
 import axios from 'axios'
 
+// import pages for navigation
+import Home from './pages/home'
+import Classification from './pages/classification'
+import ExerciseLibrary from './pages/exerciseLibrary'
+import History from './pages/history'
+import Settings from './pages/settings'
 
+// import components for navigation bar
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  useLocation,
+  Navigate
+} from 'react-router-dom'
+
+// Navigation Bar
+function Navigation() {
+  const location = useLocation();
+
+  return (
+    <nav className="navigation">
+      <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
+      <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
+      <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
+      <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
+      <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
+    </nav>
+  );
+}
 
 function App() {
-  const [count, setCount] = useState(0)
-    const [workout, setWorkout] = useState([])
+  const [workout, setWorkout] = useState([])
 
   const fetchApi = async () => {
     const response = await axios.get('http://localhost:3000/api')
-      setWorkout(response.data.workouts)
-      console.log(response.data.workouts)
+    setWorkout(response.data.workouts)
+    console.log(response.data.workouts)
   }
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+
+ return (
+  <Router>
+    <div className="App">
+      <Navigation />
+      
+      <div className="page-content">
+        <Routes>
+          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/home" element={<Home />} />
+          <Route path="/classification" element={<Classification />} />
+          <Route path="/history" element={<History />} />
+          <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-          <button onClick={() => fetchApi()}>SHOW WORKOUTS</button>
-          {
-              workout.map((workout, index)=>(
-                  <div key={index}>
-                      <p>{workout}</p>
-                  </div>
-              ))
-          }
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  </Router>
+);
 }
 
 export default App
-
-
-function ButtonLink({ onClick }) {
-    const[workout, viewWorkout] = useState(null)
-   return (
-       <div className="buttonLink">
-           <button onClick={() => viewWorkout(workout)}>Upper</button>
-       </div>
-   )
-}
