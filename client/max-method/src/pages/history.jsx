@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import Calendar from 'react-Calendar'
+import {useState} from 'react'
+import 'react-calendar/dist/Calendar.css'
 function History () {
      const [value, onChange] = useState(new Date());
       return (
@@ -15,8 +17,7 @@ function History () {
         </div>
     
       
-        </>
-        
+        </>  
       );
 }
 
