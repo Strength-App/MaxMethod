@@ -11,7 +11,7 @@ function App() {
 
     {/* Gender Selection and Data Input */}
     <main>
-      <p>Gender</p>
+      <p className="subheading">Gender</p>
 
       <div className="classification-gender-options">
       <label>
@@ -30,7 +30,7 @@ function App() {
 
       <div className="classification-data-grid">
         <div className="classification-data">
-          <p>Squat</p>
+          <p>Bench Press</p>
           <div className="input-unit">
           <input type="number" placeholder="Enter weight" />
           <span>lbs</span>
@@ -46,7 +46,7 @@ function App() {
         </div>
 
         <div className="classification-data">
-          <p>Bench Press</p>
+          <p>Squat</p>
           <div className="input-unit">
           <input type="number" placeholder="Enter weight" />
           <span>lbs</span>
@@ -60,6 +60,10 @@ function App() {
           <span>lbs</span>
           </div>
         </div>
+      </div>
+
+      <div className="classification-submit">
+        <button type="submit">Submit</button>
       </div>
 
     </main>

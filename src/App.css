@@ -1,9 +1,33 @@
-body {
+html, body {
+  height: 100%;
   margin: 0;
+  overflow: hidden; /* Doesn't allow screen scrolling */
+}
+
+body {
+  margin: 0px;
+  padding-top: 16px;
+  background-color: #616161;
+  color: #ffffff; /* white text*/
+  font-family: "Manrope", sans-serif;
 }
 
 #root {
-  min-width: 100vw;
+  width: 100%;
+}
+
+.subheading {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+/* Classification Page Border */
+.classification-page {
+  border: 2px solid #333;
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0px auto; /* centers border */
+  height: calc(100vh - 50px); /* full viewport height minus padding */
+  box-sizing: border-box; /* include padding and border in height */
 }
 
 header {
@@ -11,6 +35,7 @@ header {
   justify-content: center;
   align-items: center;
   padding: 16px;
+  font-family: "Permanent Marker", sans-serif;
 }
 
 h1 {
@@ -19,17 +44,18 @@ h1 {
 
 main {
   display: flex;
-  flex-direction: column; /*Vertical layout */
+  flex-direction: column; /* Vertical layout */
   align-items: center; /* Center content horizontally */
   padding: 16px;
 }
 
 
-/*Gender Classification Options */
+/* Gender Classification Options */
 .classification-gender-options {
-  display: flex; /*Horizontal layout */
-  gap: 16px; /*Space between gender options */
-  margin-top: 8px; /*Space above gender */
+  margin-top: 8px; /* Space above gender subheading*/
+  display: flex; /* Horizontal layout */
+  gap: 16px; /* Space between gender options */
+  font-family: "Space Grotesk", sans-serif;
 }
 
 .classification-gender-options label {
@@ -41,23 +67,24 @@ main {
 }
 
 
-/*Data Classification Options */
+/* Data Classification Options */
 .classification-data-options {
-  display: flex; /*Horizontal layout */
-  gap: 24px; /*Space between data options */
-  margin-top: 8px; /*Space above data options */
+  margin-top: 8px; /* Space above data options */
+  display: flex; /* Horizontal layout */
+  gap: 24px; /* Space between data options */
   justify-content: center; /* Center options horizontally */
 }
 
 .classification-data {
+  margin-top: 65px; /* Space above Gender Selection section*/
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-top: 75px; /*Space above Gender Selection section*/
+  font-family: "Space Grotesk", sans-serif;
 }
 
 .classification-data p {
-  margin: 0 0 4px 0; /*Space above data text */
+  margin: 0 0 4px 0; /* Space above data text */
 }
 
 .classification-data input {
@@ -68,6 +95,21 @@ main {
   border: 1px solid #000000;
 }
 
+.classification-submit {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.classification-submit button {
+  margin-top: 65px;
+  padding: 10px 24px;
+  font-size: 16px;
+  background-color: #eeeeee;
+  font-family: "Manrope", sans-serif;
+  cursor: pointer;
+}
+
 .input-unit {
   display: flex;          /* input and unit side by side */
   align-items: center;    
@@ -75,6 +117,6 @@ main {
 }
 
 .input-unit span {
-  color: #000000;
+  color: #ffffff;
   font-weight: bold;
 }
