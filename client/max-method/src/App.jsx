@@ -4,6 +4,7 @@ import axios from 'axios'
 
 // import pages for navigation
 import Home from './pages/home'
+import Day from './pages/day'
 import Classification from './pages/classification'
 import ExerciseLibrary from './pages/exerciseLibrary'
 import History from './pages/history'
@@ -53,6 +54,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<Home />} />
+          <Route path="/day/:weekNum/:dayNum" element={<Day />} />
           <Route path="/classification" element={<Classification />} />
           <Route path="/history" element={<History />} />
           <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
