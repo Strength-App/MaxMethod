@@ -8,6 +8,9 @@ import Classification from './pages/classification'
 import ExerciseLibrary from './pages/exerciseLibrary'
 import History from './pages/history'
 import Settings from './pages/settings'
+import Welcomepage from './pages/welcomepage'
+import CreateAcc from './pages/createAcc'
+
 
 // import components for navigation bar
 import {
@@ -51,7 +54,9 @@ function App() {
       
       <div className="page-content">
         <Routes>
-          <Route path="/" element={<Navigate to="/home" replace />} />
+          <Route path="/welcomepage" element={<Welcomepage />} />
+          <Route path="/create-account" element={<CreateAcc />} />
+          <Route path="/" element={<Navigate to="/welcomepage" replace />} />
           <Route path="/home" element={<Home />} />
           <Route path="/classification" element={<Classification />} />
           <Route path="/history" element={<History />} />
