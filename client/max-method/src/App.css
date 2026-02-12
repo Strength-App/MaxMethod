@@ -80,3 +80,120 @@
 .exercise{
   text-decoration-style: dotted;
 }
+
+/* Classification Page Border */
+.classification-page {
+  border: 2px solid #333;
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0px auto; /* centers border */
+  height: calc(100vh - 50px); /* full viewport height minus padding */
+  box-sizing: border-box; /* include padding and border in height */
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden; /* Doesn't allow screen scrolling */
+}
+
+body {
+  margin: 0px;
+  padding-top: 16px;
+  background-color: #616161;
+  color: #ffffff; /* white text*/
+  font-family: "Manrope", sans-serif;
+}
+
+header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  font-family: "Permanent Marker", sans-serif;
+}
+
+h1 {
+  margin: 0;
+}
+
+.subheading {
+  font-family: "Space Grotesk", sans-serif;
+}
+
+main {
+  display: flex;
+  flex-direction: column; /* Vertical layout */
+  align-items: center; /* Center content horizontally */
+  padding: 16px;
+}
+
+/* Gender Classification Options */
+.classification-gender-options {
+  margin-top: 8px; /* Space above gender subheading*/
+  display: flex; /* Horizontal layout */
+  gap: 16px; /* Space between gender options */
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.classification-gender-options label {
+  cursor: pointer;
+}
+
+.classification-gender-options input[type="radio"] {
+  margin-right: 8px;
+}
+
+/* Data Classification Options */
+.classification-data-options {
+  margin-top: 8px; /* Space above data options */
+  display: flex; /* Horizontal layout */
+  gap: 24px; /* Space between data options */
+  justify-content: center; /* Center options horizontally */
+}
+
+.classification-data {
+  margin-top: 65px; /* Space above Gender Selection section*/
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: "Space Grotesk", sans-serif;
+}
+
+.classification-data p {
+  margin: 0 0 4px 0; /* Space above data text */
+}
+
+.classification-data input {
+  width: 90px;
+  text-align: center;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid #000000;
+}
+
+.classification-submit {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.classification-submit button {
+  margin-top: 65px;
+  padding: 10px 24px;
+  font-size: 16px;
+  background-color: #eeeeee;
+  font-family: "Manrope", sans-serif;
+  cursor: pointer;
+}
+
+.input-unit {
+  display: flex;          /* input and unit side by side */
+  align-items: center;    
+  gap: 4px;               /* space between input and unit */
+}
+
+.input-unit span {
+  color: #ffffff;
+  font-weight: bold;
+}
