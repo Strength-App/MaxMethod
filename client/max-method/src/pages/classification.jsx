@@ -135,7 +135,8 @@ function Classification () {
 
             </main>
         </div>
-    )
+      )
+  }
 }
 
 export default Classification;
