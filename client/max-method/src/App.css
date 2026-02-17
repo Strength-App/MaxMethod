@@ -209,9 +209,68 @@ main {
 .input-unit span {
   color: #ffffff;
   font-weight: bold;
+}
+
 /* Schedule table (home) */
 .schedule-page {
   text-align: left;
+}
+
+/* Goals Page Border */
+.goals-page {
+  border: 2px solid #333;
+  padding: 24px;
+  max-width: 1000px;
+  margin: 0px auto; /* centers border */
+  height: calc(100vh - 50px); /* full viewport height minus padding */
+  box-sizing: border-box; /* include padding and border in height */
+}
+
+/* Goals Page Options */
+.goals-days-options {
+  margin-top: 8px; /* Space above goals subheading */
+  margin-bottom : 80px; /* Space below day options */
+  display: flex; /* Horizontal layout */
+  gap: 24px; /* Space between day options */
+  justify-content: center; /* Center options horizontally */
+}
+
+.goals-days-options label {
+  cursor: pointer;
+}
+
+.goals-days-options input[type="radio"] {
+  margin-right: 8px;
+}
+
+.goals-workout-options {
+  margin-top: 8px; /* Space above workout subheading */
+  display: flex; /* Horizontal layout */
+  gap: 24px; /* Space between workout options */
+  justify-content: center; /* Center options horizontally */
+}
+
+.goals-workout-options label {
+  cursor: pointer;
+}
+
+.goals-workout-options input[type="radio"] {
+  margin-right: 8px;
+}
+
+.goals-submit {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+.goals-submit button {
+  margin-top: 65px;
+  padding: 10px 24px;
+  font-size: 16px;
+  background-color: #eeeeee;
+  font-family: "Manrope", sans-serif;
+  cursor: pointer;
 }
 
 .schedule-page h1 {
