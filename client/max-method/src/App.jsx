@@ -12,6 +12,9 @@ import Goals from './pages/goals'
 import ExerciseLibrary from './pages/exerciseLibrary'
 import History from './pages/history'
 import Settings from './pages/settings'
+import CreateAcc from './pages/createAcc'
+import Welcomepage from './pages/welcomepage'
+
 
 // import components for navigation bar
 import {
@@ -54,7 +57,14 @@ function App() {
       
       <div className="page-content">
         <Routes>
-          <Route path="/" element={<Navigate to="/home" replace />} />
+          {/* AUTH PAGES */}
+          <Route path="/welcomepage" element={<Welcomepage />} />
+          <Route path="/create-account" element={<CreateAcc />} />
+
+          {/* DEFAULT */}
+          <Route path="/" element={<Navigate to="/welcomepage" replace />} />
+
+          {/* APP PAGES */}
           <Route path="/home" element={<Home />} />
           <Route path="/day/:weekNum/:dayNum" element={<Day />} />
           <Route path="/classification" element={<Classification />} />
