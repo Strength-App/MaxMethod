@@ -6,6 +6,7 @@ import axios from 'axios'
 import Home from './pages/home'
 import Day from './pages/day'
 import Classification from './pages/classification'
+import Goals from './pages/goals'
 import ExerciseLibrary from './pages/exerciseLibrary'
 import History from './pages/history'
 import Settings from './pages/settings'
@@ -29,6 +30,7 @@ function Navigation() {
       <button id="backBtn" onClick={() => window.history.back()}>← Back</button>
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
       <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
+      <Link to="/goals" className={location.pathname === '/goals' ? "selected" : "nav-link"}>Goals</Link>
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
       <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
       <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
@@ -56,6 +58,7 @@ function App() {
           <Route path="/home" element={<Home />} />
           <Route path="/day/:weekNum/:dayNum" element={<Day />} />
           <Route path="/classification" element={<Classification />} />
+          <Route path="/goals" element={<Goals />} />
           <Route path="/history" element={<History />} />
           <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
           <Route path="/settings" element={<Settings />} />
