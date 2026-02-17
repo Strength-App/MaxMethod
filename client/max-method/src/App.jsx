@@ -34,7 +34,6 @@ function Navigation() {
       <button id="backBtn" onClick={() => window.history.back()}>← Back</button>
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
       <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
-      <Link to="/goals" className={location.pathname === '/goals' ? "selected" : "nav-link"}>Goals</Link>
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
       <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
       <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
