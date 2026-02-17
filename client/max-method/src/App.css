@@ -76,20 +76,33 @@
   flex: 1;
 }
 
-.calender {
-  background-color: #CA00FF;
+
+/**** History Section ****/
+.calendar {
+  background-color: #616161;
   display: flex;
+  align-items: center;
   flex-direction: column;
-  gap: 1rem;
-  justify-content: left;
-  width: 25%;
+  gap: 3.5rem;
+  justify-content: center;
+  width: 75%;
+  padding: 5rem;
 }
 
-.calender-container{
+.calendar-container{
   display: flex;
   flex-direction: column;
+  margin-left: 15%;
   gap: 1rem;
 }
+
+.history-button {
+  background-color: #000000;
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
 .exercise{
   text-decoration-style: dotted;
 }
@@ -99,7 +112,7 @@
   border: 2px solid #333;
   padding: 24px;
   max-width: 1000px;
-  margin: 0px auto; /* centers border */
+  margin: 0 auto; /* centers border */
   height: calc(100vh - 50px); /* full viewport height minus padding */
   box-sizing: border-box; /* include padding and border in height */
 }
