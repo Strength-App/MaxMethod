@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import './App.css'
 import axios from 'axios'
+//import { Outlet } from "react-router-dom";
+//import Navbar from "./pages/components/Navbar";
 
 // import pages for navigation
 import Home from './pages/home'
@@ -13,7 +15,6 @@ import Settings from './pages/settings'
 
 // import components for navigation bar
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Link,
@@ -48,7 +49,6 @@ function App() {
   }
 
  return (
-  <Router>
     <div className="App">
       <Navigation />
       
@@ -63,9 +63,9 @@ function App() {
           <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
+        
       </div>
     </div>
-  </Router>
 );
 }
 
