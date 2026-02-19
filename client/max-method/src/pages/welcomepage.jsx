@@ -6,12 +6,37 @@ function Welcomepage() {
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
     // For now just log — later this goes to backend
-    console.log('Email:', email)
-    console.log('Password:', password)
+    //console.log('Email:', email)
+    //console.log('Password:', password)
+
+    try{
+    const res = await fetch("http://localhost:5050/users/login",{
+        method:"GET",
+        headers:{
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            email: email,
+            password: password
+        })
+
+    });
+    if(!res.ok){
+        throw new Error("Failed to log into account")
+    }
+
+    // After creating account navigate to home
+    navigate('/exerciseLibrary')
+  }
+
+  catch(err){
+      console.error(err);
+    }
+
   }
 
   return (
