@@ -7,15 +7,40 @@ function CreateAcc() {
     const [password, setPassword] = useState('')
     const navigate = useNavigate()
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
     e.preventDefault()
 
     // For now just log — later this goes to backend
-    console.log({ name, email, password })
+    //console.log({ name, email, password })
+    try{
+    const res = await fetch("http://localhost:5050/users/add",{
+        method:"POST",
+        headers:{
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            name: name,
+            email: email,
+            password: password
+        })
+
+    });
+    if(!res.ok){
+        throw new Error("Failed to create account")
+    }
+
+    const data = await res.json();
+    console.log("User created:", data)
 
     // After creating account navigate to home
     navigate('/home')
 
+    }
+    catch(err){
+      console.error(err);
+    }
+
+   
   }
 
     return(
