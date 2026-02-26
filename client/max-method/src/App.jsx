@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import './App.css'
 import axios from 'axios'
-//import { Outlet } from "react-router-dom";
-//import Navbar from "./pages/components/Navbar";
 
 // import pages for navigation
 import Home from './pages/home'
@@ -15,8 +13,9 @@ import Settings from './pages/settings'
 import CreateAcc from './pages/createAcc'
 import Welcomepage from './pages/welcomepage'
 
+// Workout context — wraps the whole app so state persists when navigating
+import { WorkoutProvider } from './context/WorkoutContext'
 
-// import components for navigation bar
 import {
   Routes,
   Route,
@@ -62,6 +61,7 @@ function App() {
 
   return (
     <div className="App">
+<<<<<<< HEAD
       {/* ONLY SHOW NAV ON NON-AUTH PAGES */}
       {!hideNavigation && <Navigation />}
 
@@ -70,10 +70,20 @@ function App() {
           {/* AUTH PAGES */}
           <Route path="/welcomepage" element={isAuthenticated ? <Navigate to="/home" replace /> : <Welcomepage setIsAuthenticated={setIsAuthenticated} />}/>
           <Route path="/create-account" element={isAuthenticated ? <Navigate to="/home" replace /> : <CreateAcc setIsAuthenticated={setIsAuthenticated} />}/>
+=======
+      {/* WorkoutProvider wraps everything so assignments & logs persist
+          while navigating between Home, Day pages, etc. */}
+      <WorkoutProvider>
+        <Navigation />
+>>>>>>> d8f19e59d82ebc1b9f366e5b8a48e30fd82281f3
 
-          {/* DEFAULT */}
-          <Route path="/" element={<Navigate to="/welcomepage" replace />} />
+        <div className="page-content">
+          <Routes>
+            {/* AUTH PAGES */}
+            <Route path="/welcomepage" element={<Welcomepage />} />
+            <Route path="/create-account" element={<CreateAcc />} />
 
+<<<<<<< HEAD
           {/* APP PAGES Protected*/}
           <Route path="/home" element={isAuthenticated ? <Home /> : <Navigate to="/welcomepage" replace />} />
           <Route path="/day/:weekNum/:dayNum" element={isAuthenticated ? <Day /> : <Navigate to="/welcomepage" replace />} />
@@ -86,6 +96,24 @@ function App() {
       </div>
     </div>
   )
+=======
+            {/* DEFAULT */}
+            <Route path="/" element={<Navigate to="/welcomepage" replace />} />
+
+            {/* APP PAGES */}
+            <Route path="/home" element={<Home />} />
+            <Route path="/day/:weekNum/:dayNum" element={<Day />} />
+            <Route path="/classification" element={<Classification />} />
+            <Route path="/goals" element={<Goals />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </div>
+      </WorkoutProvider>
+    </div>
+  );
+>>>>>>> d8f19e59d82ebc1b9f366e5b8a48e30fd82281f3
 }
 
 export default App

@@ -112,22 +112,22 @@
   border: 2px solid #333;
   padding: 24px;
   max-width: 1000px;
-  margin: 0 auto; /* centers border */
-  height: calc(100vh - 50px); /* full viewport height minus padding */
-  box-sizing: border-box; /* include padding and border in height */
+  margin: 0 auto;
+  height: calc(100vh - 50px);
+  box-sizing: border-box;
 }
 
 html, body {
   height: 100%;
   margin: 0;
-  overflow: hidden; /* Doesn't allow screen scrolling */
+  overflow: hidden;
 }
 
 body {
   margin: 0px;
   padding-top: 16px;
   background-color: #616161;
-  color: #ffffff; /* white text*/
+  color: #ffffff;
   font-family: "Manrope", sans-serif;
 }
 
@@ -149,16 +149,16 @@ h1 {
 
 main {
   display: flex;
-  flex-direction: column; /* Vertical layout */
-  align-items: center; /* Center content horizontally */
+  flex-direction: column;
+  align-items: center;
   padding: 16px;
 }
 
 /* Gender Classification Options */
 .classification-gender-options {
-  margin-top: 8px; /* Space above gender subheading*/
-  display: flex; /* Horizontal layout */
-  gap: 16px; /* Space between gender options */
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
   font-family: "Space Grotesk", sans-serif;
 }
 
@@ -172,14 +172,14 @@ main {
 
 /* Data Classification Options */
 .classification-data-options {
-  margin-top: 8px; /* Space above data options */
-  display: flex; /* Horizontal layout */
-  gap: 24px; /* Space between data options */
-  justify-content: center; /* Center options horizontally */
+  margin-top: 8px;
+  display: flex;
+  gap: 24px;
+  justify-content: center;
 }
 
 .classification-data {
-  margin-top: 65px; /* Space above Gender Selection section*/
+  margin-top: 65px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -187,7 +187,7 @@ main {
 }
 
 .classification-data p {
-  margin: 0 0 4px 0; /* Space above data text */
+  margin: 0 0 4px 0;
 }
 
 .classification-data input {
@@ -214,9 +214,9 @@ main {
 }
 
 .input-unit {
-  display: flex;          /* input and unit side by side */
-  align-items: center;    
-  gap: 4px;               /* space between input and unit */
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .input-unit span {
@@ -234,18 +234,18 @@ main {
   border: 2px solid #333;
   padding: 24px;
   max-width: 1000px;
-  margin: 0px auto; /* centers border */
-  height: calc(100vh - 50px); /* full viewport height minus padding */
-  box-sizing: border-box; /* include padding and border in height */
+  margin: 0px auto;
+  height: calc(100vh - 50px);
+  box-sizing: border-box;
 }
 
 /* Goals Page Options */
 .goals-days-options {
-  margin-top: 8px; /* Space above goals subheading */
-  margin-bottom : 80px; /* Space below day options */
-  display: flex; /* Horizontal layout */
-  gap: 24px; /* Space between day options */
-  justify-content: center; /* Center options horizontally */
+  margin-top: 8px;
+  margin-bottom: 80px;
+  display: flex;
+  gap: 24px;
+  justify-content: center;
 }
 
 .goals-days-options label {
@@ -257,10 +257,10 @@ main {
 }
 
 .goals-workout-options {
-  margin-top: 8px; /* Space above workout subheading */
-  display: flex; /* Horizontal layout */
-  gap: 24px; /* Space between workout options */
-  justify-content: center; /* Center options horizontally */
+  margin-top: 8px;
+  display: flex;
+  gap: 24px;
+  justify-content: center;
 }
 
 .goals-workout-options label {
@@ -330,4 +330,206 @@ main {
 
 .day-cell:active {
   background: #e0e0e0;
+}
+
+
+/* ── Day Page ─────────────────────────────────────────────────────────────── */
+
+.day-page {
+  padding: 24px 20px 60px;
+  max-width: 1000px;
+  margin: 0 auto;
+  text-align: left;
+  overflow-y: auto;
+}
+
+.day-header {
+  margin-bottom: 24px;
+}
+
+.day-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.week-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  background: rgba(200, 169, 110, 0.12);
+  color: #c8a96e;
+  padding: 4px 10px;
+  border: 1px solid rgba(200, 169, 110, 0.3);
+  border-radius: 2px;
+  white-space: nowrap;
+}
+
+.day-title {
+  margin: 0;
+  font-size: clamp(18px, 3vw, 26px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.progression-note {
+  margin: 0;
+  font-size: 12px;
+  color: #bbb;
+  letter-spacing: 0.04em;
+}
+
+/* ── Workout Table ─────────────────────────────────────────────────────────── */
+
+.workout-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+}
+
+.workout-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.workout-table thead th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #aaa;
+  background: #4a4a4a;
+  border-bottom: 1px solid #3a3a3a;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.col-exercise { width: 28%; }
+.col-sets     { width: 6%;  text-align: center; }
+.col-reps     { width: 9%;  text-align: center; }
+.col-weight   { width: 13%; text-align: center; }
+
+.workout-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #555;
+  vertical-align: middle;
+}
+
+.row-even { background: #5a5a5a; }
+.row-odd  { background: #525252; }
+
+.td-center { text-align: center; }
+.td-notes  { width: 100%; }
+
+/* ── Exercise Cell ─────────────────────────────────────────────────────────── */
+
+.td-exercise { min-width: 180px; }
+
+.exercise-fixed {
+  font-weight: 700;
+  color: #c8a96e;
+  letter-spacing: 0.04em;
+}
+
+.exercise-btn {
+  background: none;
+  border: none;
+  color: #ffffff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+}
+
+.exercise-btn:hover .exercise-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.exercise-btn:hover .exercise-edit-icon {
+  color: #c8a96e;
+}
+
+.exercise-edit-icon {
+  font-size: 11px;
+  color: #999;
+  transition: color 0.15s;
+}
+
+.exercise-select {
+  background: #4a4a4a;
+  border: 1px solid #c8a96e;
+  color: #ffffff;
+  padding: 4px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  width: 100%;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.pattern-tag {
+  font-size: 9px;
+  color: #999;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ── Inputs ────────────────────────────────────────────────────────────────── */
+
+.projected-badge {
+  display: inline-block;
+  background: rgba(200, 169, 110, 0.15);
+  color: #c8a96e;
+  padding: 2px 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  border: 1px solid rgba(200, 169, 110, 0.3);
+  border-radius: 2px;
+}
+
+.weight-input {
+  width: 70px;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  text-align: center;
+  background: #4a4a4a;
+  border: 1px solid #666;
+  color: #ffffff;
+  border-radius: 2px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.weight-input:focus {
+  border-color: #c8a96e;
+}
+
+.notes-input {
+  width: 100%;
+  padding: 5px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  background: #4a4a4a;
+  border: 1px solid #666;
+  color: #ffffff;
+  border-radius: 2px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.notes-input:focus {
+  border-color: #c8a96e;
 }
