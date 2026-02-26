@@ -1,42 +1,23 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-function Welcomepage() {
+function Welcomepage({ setIsAuthenticated }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
 
-    // For now just log — later this goes to backend
-    //console.log('Email:', email)
-    //console.log('Password:', password)
+    // TEMP: just log
+    console.log('Email:', email)
+    console.log('Password:', password)
 
-    try{
-    const res = await fetch("http://localhost:5050/users/login",{
-        method:"GET",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            email: email,
-            password: password
-        })
+    // Mark user as logged in
+    setIsAuthenticated(true)
 
-    });
-    if(!res.ok){
-        throw new Error("Failed to log into account")
-    }
-
-    // After creating account navigate to home
-    navigate('/exerciseLibrary')
-  }
-
-  catch(err){
-      console.error(err);
-    }
-
+    // Go to home
+    navigate('/home')
   }
 
   return (
@@ -52,7 +33,7 @@ function Welcomepage() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        
+
         <input
           type="password"
           placeholder="Password"
@@ -62,11 +43,13 @@ function Welcomepage() {
         />
 
         <button type="submit">Sign In</button>
-        
+
         <button
           type="button"
           onClick={() => navigate('/create-account')}
-        >Create Account</button>
+        >
+          Create Account
+        </button>
       </form>
     </div>
   )

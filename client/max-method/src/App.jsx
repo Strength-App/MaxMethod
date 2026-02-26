@@ -27,55 +27,56 @@ import {
 
 // Navigation Bar
 function Navigation() {
-  const location = useLocation();
+  const location = useLocation()
 
   return (
     <nav className="navigation">
+      {/* BACK BUTTON — only exists when Navigation exists */}
       <button id="backBtn" onClick={() => window.history.back()}>← Back</button>
+
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
       <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
       <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
       <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
     </nav>
-  );
+  )
 }
 
 function App() {
-  const [workout, setWorkout] = useState([])
+  const location = useLocation()
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
-  const fetchApi = async () => {
-    const response = await axios.get('http://localhost:3000/api')
-    setWorkout(response.data.workouts)
-    console.log(response.data.workouts)
-  }
+  const hideNavigation =
+    location.pathname === '/welcomepage' ||
+    location.pathname === '/create-account'
 
- return (
+  return (
     <div className="App">
-      <Navigation />
-      
+      {/* ONLY SHOW NAV ON NON-AUTH PAGES */}
+      {!hideNavigation && <Navigation />}
+
       <div className="page-content">
         <Routes>
           {/* AUTH PAGES */}
-          <Route path="/welcomepage" element={<Welcomepage />} />
-          <Route path="/create-account" element={<CreateAcc />} />
+          <Route path="/welcomepage" element={<Welcomepage setIsAuthenticated={setIsAuthenticated} />}/>
+          <Route path="/create-account" element={<CreateAcc setIsAuthenticated={setIsAuthenticated} />}/>
 
           {/* DEFAULT */}
           <Route path="/" element={<Navigate to="/welcomepage" replace />} />
 
-          {/* APP PAGES */}
-          <Route path="/home" element={<Home />} />
-          <Route path="/day/:weekNum/:dayNum" element={<Day />} />
-          <Route path="/classification" element={<Classification />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
-          <Route path="/settings" element={<Settings />} />
+          {/* APP PAGES Protected*/}
+          <Route path="/home" element={isAuthenticated ? <Home /> : <Navigate to="/welcomepage" replace />} />
+          <Route path="/day/:weekNum/:dayNum" element={isAuthenticated ? <Day /> : <Navigate to="/welcomepage" replace />} />
+          <Route path="/classification" element={isAuthenticated ? <Classification /> : <Navigate to="/welcomepage" replace />} />
+          <Route path="/goals" element={isAuthenticated ? <Goals /> : <Navigate to="/welcomepage" replace />} />
+          <Route path="/history" element={isAuthenticated ? <History /> : <Navigate to="/welcomepage" replace />} />
+          <Route path="/exerciseLibrary" element={isAuthenticated ? <ExerciseLibrary /> : <Navigate to="/welcomepage" replace />} />
+          <Route path="/settings" element={isAuthenticated ? <Settings /> : <Navigate to="/welcomepage" replace />} />
         </Routes>
-        
       </div>
     </div>
-);
+  )
 }
 
 export default App

@@ -1,80 +1,58 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-function CreateAcc() {
-    const [name, setName] = useState('')
-    const [email, setEmail] = useState('')
-    const [password, setPassword] = useState('')
-    const navigate = useNavigate()
+function CreateAcc({ setIsAuthenticated }) {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const navigate = useNavigate()
 
-    const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
 
-    // For now just log — later this goes to backend
-    //console.log({ name, email, password })
-    try{
-    const res = await fetch("http://localhost:5050/users/add",{
-        method:"POST",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            name: name,
-            email: email,
-            password: password
-        })
+    // TEMP: just log
+    console.log({ name, email, password })
 
-    });
-    if(!res.ok){
-        throw new Error("Failed to create account")
-    }
+    // Mark user as logged in
+    setIsAuthenticated(true)
 
-    const data = await res.json();
-    console.log("User created:", data)
-
-    // After creating account navigate to home
+    // Redirect to home
     navigate('/home')
-
-    }
-    catch(err){
-      console.error(err);
-    }
-
-   
   }
 
-    return(
-        <div className='create-account-page'>
-            <h1>Create Account</h1>
-            <form onSubmit={handleSubmit} className="create-account">
-                <input
-                type="name"
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                />
-                
-                <input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                />
+  return (
+    <div className="create-account-page">
+      <h1>Create Account</h1>
 
-                <input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                />
+      <form onSubmit={handleSubmit} className="create-account">
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+        />
 
-                <button type="submit">Create Account</button>
-            </form>
-        </div>
-    )
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+        />
+
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+
+        <button type="submit">Create Account</button>
+      </form>
+    </div>
+  )
 }
 
 export default CreateAcc
