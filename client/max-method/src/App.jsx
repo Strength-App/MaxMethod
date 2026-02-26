@@ -32,7 +32,16 @@ function Navigation() {
   return (
     <nav className="navigation">
       {/* BACK BUTTON — only exists when Navigation exists */}
-      <button id="backBtn" onClick={() => window.history.back()}>← Back</button>
+      
+
+      <button id="backBtn" onClick={() => {
+          // Prevent going back to auth pages
+          if (location.pathname === '/home') return
+          window.history.back()
+        }}
+      >
+        ← Back
+      </button>
 
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
       <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
@@ -59,8 +68,8 @@ function App() {
       <div className="page-content">
         <Routes>
           {/* AUTH PAGES */}
-          <Route path="/welcomepage" element={<Welcomepage setIsAuthenticated={setIsAuthenticated} />}/>
-          <Route path="/create-account" element={<CreateAcc setIsAuthenticated={setIsAuthenticated} />}/>
+          <Route path="/welcomepage" element={isAuthenticated ? <Navigate to="/home" replace /> : <Welcomepage setIsAuthenticated={setIsAuthenticated} />}/>
+          <Route path="/create-account" element={isAuthenticated ? <Navigate to="/home" replace /> : <CreateAcc setIsAuthenticated={setIsAuthenticated} />}/>
 
           {/* DEFAULT */}
           <Route path="/" element={<Navigate to="/welcomepage" replace />} />

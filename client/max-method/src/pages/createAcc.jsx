@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+
 function CreateAcc({ setIsAuthenticated }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -10,14 +11,13 @@ function CreateAcc({ setIsAuthenticated }) {
   const handleSubmit = (e) => {
     e.preventDefault()
 
-    // TEMP: just log
     console.log({ name, email, password })
 
-    // Mark user as logged in
+    //AUTHENTICATE USER
     setIsAuthenticated(true)
 
-    // Redirect to home
-    navigate('/home')
+    //GO TO HOME
+    navigate('/home', { replace: true })
   }
 
   return (
