@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import './App.css'
 import axios from 'axios'
-//import { Outlet } from "react-router-dom";
-//import Navbar from "./pages/components/Navbar";
 
 // import pages for navigation
 import Home from './pages/home'
@@ -15,8 +13,9 @@ import Settings from './pages/settings'
 import CreateAcc from './pages/createAcc'
 import Welcomepage from './pages/welcomepage'
 
+// Workout context — wraps the whole app so state persists when navigating
+import { WorkoutProvider } from './context/WorkoutContext'
 
-// import components for navigation bar
 import {
   Routes,
   Route,
@@ -50,32 +49,35 @@ function App() {
     console.log(response.data.workouts)
   }
 
- return (
+  return (
     <div className="App">
-      <Navigation />
-      
-      <div className="page-content">
-        <Routes>
-          {/* AUTH PAGES */}
-          <Route path="/welcomepage" element={<Welcomepage />} />
-          <Route path="/create-account" element={<CreateAcc />} />
+      {/* WorkoutProvider wraps everything so assignments & logs persist
+          while navigating between Home, Day pages, etc. */}
+      <WorkoutProvider>
+        <Navigation />
 
-          {/* DEFAULT */}
-          <Route path="/" element={<Navigate to="/welcomepage" replace />} />
+        <div className="page-content">
+          <Routes>
+            {/* AUTH PAGES */}
+            <Route path="/welcomepage" element={<Welcomepage />} />
+            <Route path="/create-account" element={<CreateAcc />} />
 
-          {/* APP PAGES */}
-          <Route path="/home" element={<Home />} />
-          <Route path="/day/:weekNum/:dayNum" element={<Day />} />
-          <Route path="/classification" element={<Classification />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-        
-      </div>
+            {/* DEFAULT */}
+            <Route path="/" element={<Navigate to="/welcomepage" replace />} />
+
+            {/* APP PAGES */}
+            <Route path="/home" element={<Home />} />
+            <Route path="/day/:weekNum/:dayNum" element={<Day />} />
+            <Route path="/classification" element={<Classification />} />
+            <Route path="/goals" element={<Goals />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </div>
+      </WorkoutProvider>
     </div>
-);
+  );
 }
 
 export default App
