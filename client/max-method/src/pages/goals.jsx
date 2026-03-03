@@ -1,4 +1,8 @@
+import { useLocation } from "react-router-dom";
+
 function Goals() {
+  const location = useLocation();
+  const classificationData = location.state; // Access classification data passed from Classification page
   return (
     <div className="goals-page">
 
@@ -6,6 +10,13 @@ function Goals() {
     <header>
       <h1>Goals</h1>
     </header>
+
+    {classificationData && (
+        <div className="classification-result">
+          <h2>Classification Level</h2>
+          <p>{classificationData.classification}</p>
+        </div>
+    )}
 
     {/* Workout Frequency Selection */}
     <main>
