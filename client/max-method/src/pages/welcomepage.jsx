@@ -1,23 +1,31 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useUser } from '../context/UserContext'
 
 
-function Welcomepage({ setIsAuthenticated }) {
+function Welcomepage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
+  const { setUser } = useUser()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault()
 
-    console.log('Email:', email)
-    console.log('Password:', password)
-
-    // ✅ AUTHENTICATE USER
-    setIsAuthenticated(true)
-
-    // ✅ GO TO HOME
-    navigate('/home', { replace: true })
+    const request = await fetch('http://localhost:5050/logintest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    
+    const response = await request.json()
+    console.log('Login response:', response)
+    if (response.success) {
+      setUser(response.user) // Store user info in context
+      navigate('/home', { replace: true }) // Redirect to home
+    } else {
+      alert('Login failed: ' + response.message)
+    }
   }
 
   return (
