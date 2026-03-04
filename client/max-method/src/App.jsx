@@ -45,9 +45,12 @@ function App() {
   const [workout, setWorkout] = useState([])
 
   const fetchApi = async () => {
-    const response = await axios.get('http://localhost:3000/api')
-    setWorkout(response.data.workouts)
-    console.log(response.data.workouts)
+    const response = await axios.get('http://localhost:5050/api')
+      app.get('/api/workouts', (req, res) => {
+          setWorkout(res.data.workouts)
+          console.log(res.data.workouts)
+      })
+
   }
 
  return (
