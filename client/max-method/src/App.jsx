@@ -1,8 +1,5 @@
-import { useState } from 'react'
 import './App.css'
-import axios from 'axios'
-//import { Outlet } from "react-router-dom";
-//import Navbar from "./pages/components/Navbar";
+import { useUser } from './context/UserContext';
 
 // import pages for navigation
 import Home from './pages/home'
@@ -15,8 +12,9 @@ import Settings from './pages/settings'
 import CreateAcc from './pages/createAcc'
 import Welcomepage from './pages/welcomepage'
 
+// Workout context — wraps the whole app so state persists when navigating
+import { WorkoutProvider } from './context/WorkoutContext'
 
-// import components for navigation bar
 import {
   Routes,
   Route,
@@ -31,54 +29,68 @@ function Navigation() {
 
   return (
     <nav className="navigation">
-      <button id="backBtn" onClick={() => window.history.back()}>← Back</button>
+      <button id="backBtn" onClick={() => {
+          if (location.pathname === '/home') return
+          window.history.back()
+        }}
+      >
+        ← Back
+      </button>
+
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
       <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
       <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
       <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
     </nav>
-  );
+  )
 }
 
 function App() {
-  const [workout, setWorkout] = useState([])
+  const location = useLocation()
+  const { user } = useUser();
 
-  const fetchApi = async () => {
-    const response = await axios.get('http://localhost:5050/api')
-      app.get('/api/workouts', (req, res) => {
-          setWorkout(res.data.workouts)
-          console.log(res.data.workouts)
-      })
+  const hideNavigation =
+    location.pathname === '/welcomepage' ||
+    location.pathname === '/create-account' ||
+    location.pathname === '/classification'
 
+  const protectedRoute = (element) => {
+    if (!user) return <Navigate to="/welcomepage" replace />
+    // if (!user.onboarding_complete) return <Navigate to="/classification" replace />
+    return element
   }
 
- return (
+  return (
     <div className="App">
-      <Navigation />
-      
-      <div className="page-content">
-        <Routes>
-          {/* AUTH PAGES */}
-          <Route path="/welcomepage" element={<Welcomepage />} />
-          <Route path="/create-account" element={<CreateAcc />} />
+      <WorkoutProvider>
+        {/* ONLY SHOW NAV ON NON-AUTH PAGES */}
+        {!hideNavigation && <Navigation />}
 
-          {/* DEFAULT */}
-          <Route path="/" element={<Navigate to="/welcomepage" replace />} />
+        <div className="page-content">
+          <Routes>
+            {/* DEFAULT */}
+            <Route path="/" element={<Navigate to="/welcomepage" replace />} />
 
-          {/* APP PAGES */}
-          <Route path="/home" element={<Home />} />
-          <Route path="/day/:weekNum/:dayNum" element={<Day />} />
-          <Route path="/classification" element={<Classification />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-        
-      </div>
+            {/* AUTH PAGES */}
+            <Route path="/welcomepage" element={user ? <Navigate to="/home" replace /> : <Welcomepage />} />
+            <Route path="/create-account" element={user ? <Navigate to="/home" replace /> : <CreateAcc />} />
+
+            {/* ONBOARDING — requires login but not onboarding_complete */}
+            <Route path="/classification" element={user ? <Classification /> : <Navigate to="/welcomepage" replace />} />
+
+            {/* PROTECTED PAGES — requires login + onboarding_complete */}
+            <Route path="/home" element={protectedRoute(<Home />)} />
+            <Route path="/day/:weekNum/:dayNum" element={protectedRoute(<Day />)} />
+            <Route path="/goals" element={protectedRoute(<Goals />)} />
+            <Route path="/history" element={protectedRoute(<History />)} />
+            <Route path="/exerciseLibrary" element={protectedRoute(<ExerciseLibrary />)} />
+            <Route path="/settings" element={protectedRoute(<Settings />)} />
+          </Routes>
+        </div>
+      </WorkoutProvider>
     </div>
-);
+  )
 }
 
 export default App

@@ -5,13 +5,9 @@ import Day from "./day.jsx";
 // Use this import for custom styling of the react-calendar.
 // import 'react-calendar/dist/Calendar.css'
 
-
-
 function History () {
 
-
      const [date, setDate] = useState(new Date());
-
 
       return (
         <>

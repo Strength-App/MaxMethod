@@ -1,42 +1,31 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useUser } from '../context/UserContext'
+
 
 function Welcomepage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
+  const { setUser } = useUser()
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async(e) => {
     e.preventDefault()
 
-    // For now just log — later this goes to backend
-    //console.log('Email:', email)
-    //console.log('Password:', password)
-
-    try{
-    const res = await fetch("http://localhost:5050/users/login",{
-        method:"GET",
-        headers:{
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            email: email,
-            password: password
-        })
-
-    });
-    if(!res.ok){
-        throw new Error("Failed to log into account")
+    const request = await fetch('http://localhost:5050/logintest', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    
+    const response = await request.json()
+    console.log('Login response:', response)
+    if (response.success) {
+      setUser(response.user) // Store user info in context
+      navigate('/home', { replace: true }) // Redirect to home
+    } else {
+      alert('Login failed: ' + response.message)
     }
-
-    // After creating account navigate to home
-    navigate('/exerciseLibrary')
-  }
-
-  catch(err){
-      console.error(err);
-    }
-
   }
 
   return (
@@ -52,7 +41,7 @@ function Welcomepage() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        
+
         <input
           type="password"
           placeholder="Password"
@@ -62,11 +51,13 @@ function Welcomepage() {
         />
 
         <button type="submit">Sign In</button>
-        
+
         <button
           type="button"
           onClick={() => navigate('/create-account')}
-        >Create Account</button>
+        >
+          Create Account
+        </button>
       </form>
     </div>
   )
