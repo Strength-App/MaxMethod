@@ -14,7 +14,7 @@ function CreateAcc({ setIsAuthenticated }) {
     console.log({ name, email, password })
 
     //AUTHENTICATE USER
-    setIsAuthenticated(true)
+    // setIsAuthenticated(true)
 
     //GO TO HOME
     navigate('/home', { replace: true })
