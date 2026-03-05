@@ -1,7 +1,7 @@
 import { MongoClient, ServerApiVersion } from "mongodb";
 
-const URI = process.env.MONGODB_URI || "mongodb+srv://Admin:MQja461vqzV4QvAH@maxmethod.40qppa0.mongodb.net/?appName=MaxMethod";
-console.log(process.env.MONGODB_URI || 'hello');
+const URI = process.env.MONGODB_URI || "";
+console.log(process.env.MONGODB_URI);
 
 const client = new MongoClient(URI, {
   serverApi: {
@@ -9,7 +9,7 @@ const client = new MongoClient(URI, {
     strict: true,
     deprecationErrors: true,
   },
-  appName: "max-method",
+  appName: "sample-app-nodejs-mern-tutorial",
 });
 
 let db;

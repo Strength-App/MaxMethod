@@ -74,7 +74,7 @@ function App() {
 
             {/* AUTH PAGES */}
             <Route path="/welcomepage" element={user ? <Navigate to="/home" replace /> : <Welcomepage />} />
-            <Route path="/create-account" element={user ? <Navigate to="/create-account" replace /> : <CreateAcc />} />
+            <Route path="/create-account" element={user ? <Navigate to="/home" replace /> : <CreateAcc />} />
 
             {/* ONBOARDING — requires login but not onboarding_complete */}
             <Route path="/classification" element={user ? <Classification /> : <Navigate to="/welcomepage" replace />} />

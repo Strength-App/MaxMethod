@@ -32,6 +32,7 @@ function Welcomepage() {
     <div className="welcome-page">
       <h1>Welcome</h1>
       <p>Please sign in to continue</p>
+
       <form onSubmit={handleSubmit} className="welcome-form">
         <input
           type="email"
