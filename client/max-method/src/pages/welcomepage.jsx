@@ -12,7 +12,7 @@ function Welcomepage() {
   const handleSubmit = async(e) => {
     e.preventDefault()
 
-    const request = await fetch('http://localhost:5050/logintest', {
+    const request = await fetch('http://localhost:5050/users/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
