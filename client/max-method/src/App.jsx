@@ -23,6 +23,7 @@ import {
   Navigate
 } from 'react-router-dom'
 
+
 // Navigation Bar
 function Navigation() {
   const location = useLocation();
