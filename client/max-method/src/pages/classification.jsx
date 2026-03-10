@@ -21,7 +21,7 @@ function Classification() {
     };
 
     try {
-    const response = await fetch("http://localhost:5050/users/classification", {
+    const response = await fetch("http://localhost:5050/api/users/classification", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
