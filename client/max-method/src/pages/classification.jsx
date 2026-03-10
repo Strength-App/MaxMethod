@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from '../context/UserContext';
 
 function Classification() {
   const navigate = useNavigate()
+  const { user } = useUser()
 
   const handleSubmit = async (e) => {
     e.preventDefault(); // prevents page refresh
 
     // Convert string inputs to numbers before sending to backend
     const formattedData = {
+      email: user.email,
+      gender: formData.gender,
     ...formData,
     benchPress: Number(formData.benchPress),
     deadlift: Number(formData.deadlift),
@@ -17,7 +21,7 @@ function Classification() {
     };
 
     try {
-    const response = await fetch("http://localhost:5050/api/users/classification", {
+    const response = await fetch("http://localhost:5050/users/classification", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
