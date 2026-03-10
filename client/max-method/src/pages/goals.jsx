@@ -1,8 +1,53 @@
 import { useLocation } from "react-router-dom";
+import { useState } from "react";
 
 function Goals() {
   const location = useLocation();
   const classificationData = location.state; // Access classification data passed from Classification page
+
+  const [formData, setFormData] = useState({
+        daysPerWeek: "",
+        goalSelection: "",
+      });
+  
+  // Updates formData state when user inputs data
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault(); // prevents page refresh
+
+    const response = await fetch("http://localhost:5050/api/users/goals", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        classification: classificationData.classification,
+        daysPerWeek: formData.daysPerWeek,
+        goalSelection: formData.goalSelection
+      })
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("Server error:", text);
+      return;
+    }
+
+    const data = await response.json();
+
+    console.log(
+      "Classification Level:", data.classification,
+      "Days per Week:", data.daysPerWeek,
+      "Goal Selection:", data.goalSelection
+    );
+    };
+
   return (
     <div className="goals-page">
 
@@ -13,10 +58,14 @@ function Goals() {
 
     {classificationData && (
         <div className="classification-result">
-          <h2>Classification Level</h2>
-          <p>{classificationData.classification}</p>
+          <p> Classification Level: {classificationData.classification}</p>
+          <p> One Rep Max Total: {classificationData.totalOneRepMax} lbs</p>
         </div>
     )}
+
+
+    {/* Form for user input */}
+    <form onSubmit={handleSubmit}>
 
     {/* Workout Frequency Selection */}
     <main>
@@ -24,15 +73,36 @@ function Goals() {
 
       <div className="goals-days-options">
       <label>
-        <input type="radio" name="days" /> 3 Days
+        <input 
+        type="radio" 
+        name="daysPerWeek" 
+        value="3"
+        onChange={handleChange}
+        required
+        />
+        3 Days
       </label>
 
       <label>
-        <input type="radio" name="days" /> 4 Days
+        <input 
+        type="radio" 
+        name="daysPerWeek" 
+        value="4"
+        onChange={handleChange}
+        required
+        />
+        4 Days
       </label>
 
       <label>
-        <input type="radio" name="days" /> 5 Days
+        <input 
+        type="radio" 
+        name="daysPerWeek" 
+        value="5"
+        onChange={handleChange}
+        required
+        />
+        5 Days
       </label>
       </div>
 
@@ -41,19 +111,33 @@ function Goals() {
 
       <div className="goals-workout-options">
       <label>
-        <input type="radio" name="goal" /> Lose Weight
+        <input 
+        type="radio" 
+        name="goalSelection" 
+        value="loseWeight"
+        onChange={handleChange}
+        required
+        /> Lose Weight
       </label>
 
       <label>
-        <input type="radio" name="goal" /> Build Muscle
+        <input 
+        type="radio" 
+        name="goalSelection" 
+        value="buildMuscle"
+        onChange={handleChange}
+        required
+        /> Build Muscle
       </label>
 
       <label>
-        <input type="radio" name="goal" /> Get Stronger
-      </label>
-
-      <label>
-        <input type="radio" name="goal" /> Muscle Definition
+        <input 
+        type="radio" 
+        name="goalSelection" 
+        value="getStronger"
+        onChange={handleChange}
+        required
+        /> Get Stronger
       </label>
       </div>
 
@@ -62,6 +146,7 @@ function Goals() {
       </div>
 
     </main>
+    </form>
     </div>
   )
 }
