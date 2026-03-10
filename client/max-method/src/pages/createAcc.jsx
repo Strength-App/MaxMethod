@@ -18,8 +18,7 @@ function CreateAcc() {
     e.preventDefault();
     try {
       const userData = {firstName, lastName, email, password};
-      const response = await axios.post('http://localhost:5050/users/add', userData);
-      console.log("Status: ", response.status);
+      const response = await axios.post('http://localhost:5050/api/users/create-account', userData);      console.log("Status: ", response.status);
       setFirstName('');
       setLastName('');
       setEmail('');
