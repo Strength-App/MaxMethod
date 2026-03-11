@@ -11,6 +11,7 @@ import History from './pages/history'
 import Settings from './pages/settings'
 import CreateAcc from './pages/createAcc'
 import Welcomepage from './pages/welcomepage'
+import PickNewProgram from './pages/pickNewProgram'
 
 // Workout context — wraps the whole app so state persists when navigating
 import { WorkoutProvider } from './context/WorkoutContext'
@@ -39,6 +40,7 @@ function Navigation() {
 
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
       <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
+      <Link to="/pickNewProgram" className={location.pathname === '/pickNewProgram' ? "selected" : "nav-link"}>Pick New Program</Link>
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
       <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
       <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
@@ -86,6 +88,7 @@ function App() {
             <Route path="/history" element={protectedRoute(<History />)} />
             <Route path="/exerciseLibrary" element={protectedRoute(<ExerciseLibrary />)} />
             <Route path="/settings" element={protectedRoute(<Settings />)} />
+            <Route path="/pickNewProgram" element={protectedRoute(<PickNewProgram />)} />
           </Routes>
         </div>
       </WorkoutProvider>

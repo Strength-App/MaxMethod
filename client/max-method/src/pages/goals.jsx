@@ -1,7 +1,9 @@
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 function Goals() {
+  const navigate = useNavigate()
   const location = useLocation();
   const classificationData = location.state; // Access classification data passed from Classification page
 
@@ -46,6 +48,9 @@ function Goals() {
       "Days per Week:", data.daysPerWeek,
       "Goal Selection:", data.goalSelection
     );
+
+        // Navigate to goals page with pick new program data
+    navigate("/welcomepage", { state: data });
     };
 
   return (
