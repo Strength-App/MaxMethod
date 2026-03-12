@@ -53,9 +53,10 @@ function App() {
   const { user } = useUser();
 
   const hideNavigation =
-    location.pathname === '/welcomepage' ||
-    location.pathname === '/create-account'
-    //location.pathname === '/classification'
+  location.pathname === '/welcomepage' ||
+  location.pathname === '/create-account' ||
+  location.pathname === '/classification' ||
+  location.pathname === '/goals'
 
   const protectedRoute = (element) => {
     if (!user) return <Navigate to="/welcomepage" replace />
