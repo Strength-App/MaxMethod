@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 
 const WorkoutContext = createContext(null);
 
@@ -9,6 +9,9 @@ export function WorkoutProvider({ children }) {
   const [log, setLog] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Holds the debounce timer for updateLog
+  const updateLogTimer = useRef(null);
 
   // Saves userId to both localStorage and state
   const setUserId = useCallback((id) => {
@@ -79,6 +82,7 @@ export function WorkoutProvider({ children }) {
     }
   }, []); // intentionally runs once on mount only
 
+  // Change exercise choice for a day/slot (shared across all weeks)
   const setExercise = useCallback((dayIdx, slotIdx, exerciseName) => {
     setAssignments(prev => ({
       ...prev,
@@ -86,8 +90,9 @@ export function WorkoutProvider({ children }) {
     }));
   }, []);
 
+  // Update logged weight or notes — optimistic local update + debounced DB write
   const updateLog = useCallback(async (weekIdx, dayIdx, slotIdx, field, value) => {
-    // Optimistic local update
+    // Optimistic local update so the UI feels instant
     setLog(prev => ({
       ...prev,
       [weekIdx]: {
@@ -99,24 +104,28 @@ export function WorkoutProvider({ children }) {
       },
     }));
 
-    // Persist to DB
-    try {
-      await fetch('http://localhost:5050/api/users/workout/log', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          weekNum: weekIdx + 1,
-          dayNum: dayIdx + 1,
-          slotIdx,
-          [field]: value
-        })
-      });
-    } catch (err) {
-      console.error('Failed to save log entry:', err);
-    }
+    // Debounce the DB write — wait 500ms after the last keystroke before saving
+    clearTimeout(updateLogTimer.current);
+    updateLogTimer.current = setTimeout(async () => {
+      try {
+        await fetch('http://localhost:5050/api/users/workout/log', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId,
+            weekNum: weekIdx + 1,
+            dayNum: dayIdx + 1,
+            slotIdx,
+            [field]: value
+          })
+        });
+      } catch (err) {
+        console.error('Failed to save log entry:', err);
+      }
+    }, 500);
   }, [userId]);
 
+  // Mark a day complete
   const completeDay = useCallback(async (weekIdx, dayIdx) => {
     // Optimistic local update
     setWorkout(prev => {

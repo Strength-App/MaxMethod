@@ -36,9 +36,7 @@ function Goals() {
 
     const response = await fetch("http://localhost:5050/api/users/goals", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId,
         classification: classificationData.classification,
@@ -57,7 +55,7 @@ function Goals() {
     console.log("Workout generated:", data);
 
     // Make sure userId is set in context, then fetch the
-    // newly created workout so Home.jsx has it ready
+    // newly created/replaced workout so Home.jsx has it ready
     setUserId(userId);
     await fetchWorkout(userId);
 
@@ -67,7 +65,6 @@ function Goals() {
   return (
     <div className="goals-page">
 
-      {/* Goals Page Header */}
       <header>
         <h1>Goals</h1>
       </header>
@@ -79,11 +76,9 @@ function Goals() {
         </div>
       )}
 
-      {/* Form for user input */}
       <form onSubmit={handleSubmit}>
         <main>
 
-          {/* Workout Frequency Selection */}
           <p className="subheading">How Many Days Do You Workout Each Week?</p>
           <div className="goals-days-options">
             <label>
@@ -118,7 +113,6 @@ function Goals() {
             </label>
           </div>
 
-          {/* Goal Selection */}
           <p className="subheading">What Is Your Fitness Goal?</p>
           <div className="goals-workout-options">
             <label>
