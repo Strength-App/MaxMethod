@@ -1,17 +1,19 @@
-import { useState } from 'react'
 import './App.css'
-import axios from 'axios'
+import { useUser } from './context/UserContext';
 
 // import pages for navigation
 import Home from './pages/home'
+import Day from './pages/day'
 import Classification from './pages/classification'
+import Goals from './pages/goals'
 import ExerciseLibrary from './pages/exerciseLibrary'
 import History from './pages/history'
 import Settings from './pages/settings'
+import CreateAcc from './pages/createAcc'
+import Welcomepage from './pages/welcomepage'
+import PickNewProgram from './pages/pickNewProgram'
 
-// import components for navigation bar
 import {
-  BrowserRouter as Router,
   Routes,
   Route,
   Link,
@@ -25,43 +27,67 @@ function Navigation() {
 
   return (
     <nav className="navigation">
-      <button id="backBtn" onClick={() => window.history.back()}>← Back</button>
+      <button id="backBtn" onClick={() => {
+          if (location.pathname === '/home') return
+          window.history.back()
+        }}
+      >
+        ← Back
+      </button>
+
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
       <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
+      <Link to="/pickNewProgram" className={location.pathname === '/pickNewProgram' ? "selected" : "nav-link"}>Pick New Program</Link>
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
       <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
       <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
     </nav>
-  );
+  )
 }
 
 function App() {
-  const [workout, setWorkout] = useState([])
+  const location = useLocation()
+  const { user } = useUser();
 
-  const fetchApi = async () => {
-    const response = await axios.get('http://localhost:3000/api')
-    setWorkout(response.data.workouts)
-    console.log(response.data.workouts)
+  const hideNavigation =
+    location.pathname === '/welcomepage' ||
+    location.pathname === '/create-account' ||
+    location.pathname === '/classification' ||
+    location.pathname === '/goals'
+
+  const protectedRoute = (element) => {
+    if (!user) return <Navigate to="/welcomepage" replace />
+    return element
   }
 
- return (
-  <Router>
+  return (
     <div className="App">
-      <Navigation />
-      
+      {!hideNavigation && <Navigation />}
+
       <div className="page-content">
         <Routes>
-          <Route path="/" element={<Navigate to="/home" replace />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/classification" element={<Classification />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/exerciseLibrary" element={<ExerciseLibrary />} />
-          <Route path="/settings" element={<Settings />} />
+          {/* DEFAULT */}
+          <Route path="/" element={<Navigate to="/welcomepage" replace />} />
+
+          {/* AUTH PAGES */}
+          <Route path="/welcomepage" element={user ? <Navigate to="/home" replace /> : <Welcomepage />} />
+          <Route path="/create-account" element={user ? <Navigate to="/classification" replace /> : <CreateAcc />} />
+
+          {/* ONBOARDING — requires login but not onboarding_complete */}
+          <Route path="/classification" element={user ? <Classification /> : <Navigate to="/welcomepage" replace />} />
+
+          {/* PROTECTED PAGES — requires login + onboarding_complete */}
+          <Route path="/home" element={protectedRoute(<Home />)} />
+          <Route path="/day/:weekNum/:dayNum" element={protectedRoute(<Day />)} />
+          <Route path="/goals" element={protectedRoute(<Goals />)} />
+          <Route path="/history" element={protectedRoute(<History />)} />
+          <Route path="/exerciseLibrary" element={protectedRoute(<ExerciseLibrary />)} />
+          <Route path="/settings" element={protectedRoute(<Settings />)} />
+          <Route path="/pickNewProgram" element={protectedRoute(<PickNewProgram />)} />
         </Routes>
       </div>
     </div>
-  </Router>
-);
+  )
 }
 
 export default App

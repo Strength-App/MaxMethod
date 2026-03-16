@@ -41,6 +41,7 @@ function UpperBodyVideos({video}){
         <>
             <ReactPlayer src={video}
                          controls={true}
+                         volume={0.50}
                          width="400px"
                          height="225px"
             />
