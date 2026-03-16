@@ -9,7 +9,7 @@ function Home() {
   if (error) return <p>Error loading workout: {error}</p>;
   if (!workout) return <p>No workout found. Please complete onboarding first.</p>;
 
-const weeks = Array.from({ length: workout.weeks.length }, (_, i) => i + 1);
+  const weeks = Array.from({ length: workout.weeks.length }, (_, i) => i + 1);
 
   return (
     <div className="home-page-container">
