@@ -1,18 +1,18 @@
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useWorkout } from "../context/WorkoutContext";
 
 function Goals() {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const location = useLocation();
-  const classificationData = location.state; // Access classification data passed from Classification page
+  const classificationData = location.state;
+  const { setUserId, fetchWorkout } = useWorkout();
 
   const [formData, setFormData] = useState({
-        daysPerWeek: "",
-        goalSelection: "",
-      });
-  
-  // Updates formData state when user inputs data
+    daysPerWeek: "",
+    goalSelection: "",
+  });
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -21,7 +21,18 @@ function Goals() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); // prevents page refresh
+    e.preventDefault();
+
+    const userId = localStorage.getItem('userId');
+
+    if (!userId) {
+      console.error("No userId found in localStorage");
+      alert("Session error — please sign in again.");
+      navigate('/');
+      return;
+    }
+
+    console.log(classificationData.classification, formData.daysPerWeek, formData.goalSelection);
 
     const response = await fetch("http://localhost:5050/api/users/goals", {
       method: "POST",
@@ -29,6 +40,7 @@ function Goals() {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
+        userId,
         classification: classificationData.classification,
         daysPerWeek: formData.daysPerWeek,
         goalSelection: formData.goalSelection
@@ -42,118 +54,110 @@ function Goals() {
     }
 
     const data = await response.json();
+    console.log("Workout generated:", data);
 
-    console.log(
-      "Classification Level:", data.classification,
-      "Days per Week:", data.daysPerWeek,
-      "Goal Selection:", data.goalSelection
-    );
+    // Make sure userId is set in context, then fetch the
+    // newly created workout so Home.jsx has it ready
+    setUserId(userId);
+    await fetchWorkout(userId);
 
-        // Navigate to goals page with pick new program data
-    navigate("/welcomepage", { state: data });
-    };
+    navigate("/home");
+  };
 
   return (
     <div className="goals-page">
 
-    {/* Goals Page Header */}
-    <header>
-      <h1>Goals</h1>
-    </header>
+      {/* Goals Page Header */}
+      <header>
+        <h1>Goals</h1>
+      </header>
 
-    {classificationData && (
+      {classificationData && (
         <div className="classification-result">
-          <p> Classification Level: {classificationData.classification}</p>
-          <p> One Rep Max Total: {classificationData.totalOneRepMax} lbs</p>
+          <p>Classification Level: {classificationData.classification}</p>
+          <p>One Rep Max Total: {classificationData.totalOneRepMax} lbs</p>
         </div>
-    )}
+      )}
 
+      {/* Form for user input */}
+      <form onSubmit={handleSubmit}>
+        <main>
 
-    {/* Form for user input */}
-    <form onSubmit={handleSubmit}>
+          {/* Workout Frequency Selection */}
+          <p className="subheading">How Many Days Do You Workout Each Week?</p>
+          <div className="goals-days-options">
+            <label>
+              <input
+                type="radio"
+                name="daysPerWeek"
+                value="3"
+                onChange={handleChange}
+                required
+              />
+              3 Days
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="daysPerWeek"
+                value="4"
+                onChange={handleChange}
+                required
+              />
+              4 Days
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="daysPerWeek"
+                value="5"
+                onChange={handleChange}
+                required
+              />
+              5 Days
+            </label>
+          </div>
 
-    {/* Workout Frequency Selection */}
-    <main>
-      <p className="subheading">How Many Days Do You Workout Each Week?</p>
+          {/* Goal Selection */}
+          <p className="subheading">What Is Your Fitness Goal?</p>
+          <div className="goals-workout-options">
+            <label>
+              <input
+                type="radio"
+                name="goalSelection"
+                value="loseWeight"
+                onChange={handleChange}
+                required
+              /> Lose Weight
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="goalSelection"
+                value="hypertrophy"
+                onChange={handleChange}
+                required
+              /> Build Muscle
+            </label>
+            <label>
+              <input
+                type="radio"
+                name="goalSelection"
+                value="strength"
+                onChange={handleChange}
+                required
+              /> Get Stronger
+            </label>
+          </div>
 
-      <div className="goals-days-options">
-      <label>
-        <input 
-        type="radio" 
-        name="daysPerWeek" 
-        value="3"
-        onChange={handleChange}
-        required
-        />
-        3 Days
-      </label>
+          <div className="goals-submit">
+            <button type="submit">Submit</button>
+          </div>
 
-      <label>
-        <input 
-        type="radio" 
-        name="daysPerWeek" 
-        value="4"
-        onChange={handleChange}
-        required
-        />
-        4 Days
-      </label>
-
-      <label>
-        <input 
-        type="radio" 
-        name="daysPerWeek" 
-        value="5"
-        onChange={handleChange}
-        required
-        />
-        5 Days
-      </label>
-      </div>
-
-
-      <p className="subheading">What Is Your Fitness Goal?</p>
-
-      <div className="goals-workout-options">
-      <label>
-        <input 
-        type="radio" 
-        name="goalSelection" 
-        value="loseWeight"
-        onChange={handleChange}
-        required
-        /> Lose Weight
-      </label>
-
-      <label>
-        <input 
-        type="radio" 
-        name="goalSelection" 
-        value="buildMuscle"
-        onChange={handleChange}
-        required
-        /> Build Muscle
-      </label>
-
-      <label>
-        <input 
-        type="radio" 
-        name="goalSelection" 
-        value="getStronger"
-        onChange={handleChange}
-        required
-        /> Get Stronger
-      </label>
-      </div>
-
-      <div className="goals-submit">
-        <button type="submit">Submit</button>
-      </div>
-
-    </main>
-    </form>
+        </main>
+      </form>
     </div>
-  )
+  );
 }
 
 export default Goals;
