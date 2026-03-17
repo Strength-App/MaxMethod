@@ -25,8 +25,6 @@ const movementPatterns = {
   "Core": ["Plank", "Ab Wheel Rollouts", "Hanging Leg Raises", "Cable Crunches", "Decline Crunches", "Pallof Press", "Dead Bugs", "Suitcase Carries", "Farmer Carries"]
 };
 
-// Helper: if value is an array (progression-based), return the entry for this week.
-// If it's a plain value, return it directly.
 function resolveWeekValue(value, wi) {
   if (Array.isArray(value)) return value[wi] ?? null;
   return value ?? null;
@@ -35,27 +33,48 @@ function resolveWeekValue(value, wi) {
 function Day() {
   const { weekNum, dayNum } = useParams();
   const navigate = useNavigate();
-
-  // Convert to 0-based indices
   const wi = parseInt(weekNum, 10) - 1;
   const di = parseInt(dayNum, 10) - 1;
 
   const { workout, assignments, setExercise, log, updateLog, completeDay, loading, error } = useWorkout();
   const [editingSlot, setEditingSlot] = useState(null);
+  const [openCards, setOpenCards] = useState({ 0: true });
+  const [setData, setSetData] = useState({});
 
   if (loading) return <div className="day-page"><p className="status-msg">Loading workout...</p></div>;
   if (error) return <div className="day-page"><p className="status-msg status-msg--error">Error loading workout: {error}</p></div>;
 
   const day = workout?.weeks?.[wi]?.days?.[di];
 
-  if (!day) {
-    return (
-      <div className="day-page">
-        <p>No workout found for Week {weekNum}, Day {dayNum}.</p>
-        <button className="btn-back" onClick={() => navigate('/home')}>Back to Home</button>
-      </div>
-    );
-  }
+  if (!day) return (
+    <div className="day-page">
+      <p>No workout found for Week {weekNum}, Day {dayNum}.</p>
+      <button className="btn-back" onClick={() => navigate('/home')}>Back to Home</button>
+    </div>
+  );
+
+  const getSet = (si, j) => setData[`${si}-${j}`] ?? { actual: '', done: false };
+
+  const updateSet = (si, j, patch) =>
+    setSetData(prev => ({
+      ...prev,
+      [`${si}-${j}`]: { ...(prev[`${si}-${j}`] ?? { actual: '', done: false }), ...patch },
+    }));
+
+  const toggleCard = (si) =>
+    setOpenCards(prev => ({ ...prev, [si]: !prev[si] }));
+
+  // Summary counts
+  let totalSets = 0, doneSets = 0;
+  day.slots.forEach((slot, si) => {
+    const setsVal = resolveWeekValue(slot.sets, wi);
+    const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
+    totalSets += count;
+    for (let j = 0; j < count; j++) {
+      if (getSet(si, j).done) doneSets++;
+    }
+  });
+  const completionPct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
 
   const handleCompleteDay = async () => {
     await completeDay(wi, di);
@@ -64,7 +83,7 @@ function Day() {
 
   return (
     <div className="day-page">
-      {/* Page header */}
+      {/* Header */}
       <div className="day-header">
         <div className="day-header-meta">
           <span className="week-badge">Week {weekNum}</span>
@@ -76,120 +95,180 @@ function Day() {
         </p>
       </div>
 
-      {/* Workout table */}
-      <div className="workout-table-wrapper">
-        <table className="workout-table">
-          <thead>
-            <tr>
-              <th className="col-exercise">Exercise</th>
-              <th className="col-sets">Sets</th>
-              <th className="col-reps">Reps</th>
-              <th className="col-weight">Projected Wt</th>
-              <th className="col-weight">Actual Wt</th>
-              <th className="col-notes">Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {day.slots.map((slot, si) => {
-              // Use assignment override if set, otherwise use what the DB resolved
-              const exercise = assignments[di]?.[si] ?? slot.exercise ?? '';
-              const logEntry = log[wi]?.[di]?.[si] ?? { actualWeight: '', notes: '' };
-              const isEditing = editingSlot === si;
+      {/* Summary Bar */}
+      <div className="workout-summary-bar">
+        <div className="summary-pill">
+          <div className="summary-pill-val">{doneSets}</div>
+          <div className="summary-pill-lbl">Sets Done</div>
+        </div>
+        <div className="summary-pill">
+          <div className="summary-pill-val summary-pill-val--accent">{totalSets}</div>
+          <div className="summary-pill-lbl">Total Sets</div>
+        </div>
+        <div className="summary-pill">
+          <div className="summary-pill-val summary-pill-val--green">{completionPct}%</div>
+          <div className="summary-pill-lbl">Complete</div>
+        </div>
+      </div>
 
-              // For progression-based slots, read this week's values from the array
-              const sets = resolveWeekValue(slot.sets, wi);
-              const reps = resolveWeekValue(slot.reps, wi);
-              const weightNote = resolveWeekValue(slot.weightNote, wi);
+      {/* Exercise Cards */}
+      <div className="exercise-cards">
+        {day.slots.map((slot, si) => {
+          const exercise = assignments[di]?.[si] ?? slot.exercise ?? '';
+          const setsVal = resolveWeekValue(slot.sets, wi);
+          const setCount = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
+          const repsRaw = resolveWeekValue(slot.reps, wi);
+          // If reps is a comma-separated string (e.g. "10,8,8,6") or array, split per set
+          const repsArray = Array.isArray(repsRaw)
+            ? repsRaw
+            : (typeof repsRaw === 'string' && repsRaw.includes(','))
+              ? repsRaw.split(',').map(r => r.trim())
+              : null;
+          const getReps = (j) => repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
+          const weightNote = resolveWeekValue(slot.weightNote, wi);
+          const options = slot.label ? (movementPatterns[slot.label] ?? [exercise]) : [exercise];
+          const isOpen = openCards[si] ?? false;
+          const doneCount = Array.from({ length: setCount }, (_, j) => getSet(si, j).done).filter(Boolean).length;
+          const allDone = setCount > 0 && doneCount === setCount;
+          const progPct = setCount > 0 ? Math.round((doneCount / setCount) * 100) : 0;
+          const isEditing = editingSlot === si;
 
-              // Options for the exercise swap dropdown
-              const patternKey = slot.label;
-              const options = patternKey ? (movementPatterns[patternKey] ?? [exercise]) : [exercise];
+          return (
+            <div
+              key={si}
+              className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}
+            >
+              {/* Card Header */}
+              <div
+                className="ex-card-header"
+                onClick={() => { setEditingSlot(null); toggleCard(si); }}
+              >
+                <div className="ex-card-title-block">
+                  {slot.fixed ? (
+                    <div className="ex-card-name ex-card-name--fixed">{exercise}</div>
+                  ) : isEditing ? (
+                    <select
+                      autoFocus
+                      className="exercise-select"
+                      value={exercise}
+                      onClick={e => e.stopPropagation()}
+                      onChange={e => { setExercise(di, si, e.target.value); setEditingSlot(null); }}
+                      onBlur={() => setEditingSlot(null)}
+                    >
+                      {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                    </select>
+                  ) : (
+                    <button
+                      className="ex-card-name-btn"
+                      onClick={e => { e.stopPropagation(); setEditingSlot(si); }}
+                      title="Tap to change exercise"
+                    >
+                      <span className="ex-card-name">{exercise}</span>
+                      <span className="exercise-edit-icon">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      </span>
+                    </button>
+                  )}
+                  {slot.label && <div className="ex-card-type">{slot.label}</div>}
+                </div>
 
-              return (
-                <tr key={si} className={si % 2 === 0 ? 'row-even' : 'row-odd'}>
-                  {/* Exercise cell */}
-                  <td className="td-exercise">
-                    {slot.fixed ? (
-                      <span className="exercise-fixed">{exercise}</span>
-                    ) : isEditing ? (
-                      <select
-                        autoFocus
-                        className="exercise-select"
-                        value={exercise}
-                        onChange={e => {
-                          setExercise(di, si, e.target.value);
-                          setEditingSlot(null);
-                        }}
-                        onBlur={() => setEditingSlot(null)}
-                      >
-                        {options.map(opt => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <button
-                        className="exercise-btn"
-                        onClick={() => setEditingSlot(si)}
-                        title="Tap to change exercise"
-                        aria-label={`Change exercise: ${exercise}`}
-                      >
-                        <span className="exercise-name">{exercise}</span>
-                        <span className="exercise-edit-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
-                      </button>
-                    )}
-                    {slot.label && <div className="pattern-tag">{slot.label}</div>}
-                  </td>
+                <div className="ex-card-stats">
+                  <div className="stat-chip">
+                    <div className="stat-chip-val">{setCount}</div>
+                    <div className="stat-chip-lbl">Sets</div>
+                  </div>
+                  <div className="stat-chip stat-chip--done">
+                    <div className="stat-chip-val">{doneCount}/{setCount}</div>
+                    <div className="stat-chip-lbl">Done</div>
+                  </div>
+                </div>
 
-                  {/* Sets — show each set's rep scheme for progression slots */}
-                  <td className="td-center">
-                    {sets ?? '—'}
-                  </td>
+                <div className="ex-card-chevron" aria-hidden="true">▼</div>
+              </div>
 
-                  {/* Reps */}
-                  <td className="td-center">
-                    {reps ?? '—'}
-                  </td>
+              {/* Progress Bar */}
+              <div className="ex-progress-bar">
+                <div
+                  className={`ex-progress-fill${allDone ? ' ex-progress-fill--full' : ''}`}
+                  style={{ width: `${progPct}%` }}
+                />
+              </div>
 
-                  {/* Projected weight */}
-                  <td className="td-center">
-                    {weightNote ? (
-                      <span className="projected-badge">{weightNote}</span>
-                    ) : (
-                      <input
-                        className="weight-input"
-                        placeholder="—"
-                        readOnly
-                      />
-                    )}
-                  </td>
+              {/* Sets Panel */}
+              {isOpen && (
+                <div className="ex-sets-panel">
+                  <div className="ex-sets-col-header">
+                    <span className="ex-col-lbl">Set</span>
+                    <span className="ex-col-lbl">Reps</span>
+                    <span className="ex-col-lbl">Target</span>
+                    <span className="ex-col-lbl">Actual (lbs)</span>
+                    <span className="ex-col-lbl">✓</span>
+                  </div>
 
-                  {/* Actual weight */}
-                  <td className="td-center">
-                    <input
-                      className="weight-input"
-                      placeholder="lbs"
-                      value={logEntry.actualWeight}
-                      onChange={e => updateLog(wi, di, si, 'actualWeight', e.target.value)}
-                    />
-                  </td>
+                  {Array.from({ length: setCount }, (_, j) => {
+                    const s = getSet(si, j);
+                    const hasTarget = !!weightNote;
+                    const matched = s.actual !== '' && (hasTarget
+                      ? parseInt(s.actual) >= parseInt(weightNote)
+                      : s.actual > 0);
 
-                  {/* Notes */}
-                  <td className="td-notes">
+                    return (
+                      <div key={j} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
+                        <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{j + 1}</div>
+
+                        <div className="set-reps">{getReps(j) ?? '—'}</div>
+
+                        <div className="set-target">
+                          {weightNote
+                            ? <><span className="target-wt">{weightNote}</span><span className="target-unit"> lbs</span></>
+                            : <span className="target-dash">—</span>
+                          }
+                        </div>
+
+                        <input
+                          className={`actual-input${matched ? ' actual-input--matched' : ''}`}
+                          type="number"
+                          min="0"
+                          step="5"
+                          placeholder="0"
+                          value={s.actual}
+                          onChange={e => updateSet(si, j, { actual: e.target.value })}
+                        />
+
+                        <button
+                          className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
+                          onClick={() => updateSet(si, j, { done: !s.done })}
+                          title="Mark set done"
+                        >
+                          {s.done ? '✓' : ''}
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {allDone && (
+                    <div className="ex-complete-banner">
+                      <span>✓</span> All sets complete — nice work!
+                    </div>
+                  )}
+
+                  <div className="ex-notes-row">
+                    <span className="ex-notes-label">Notes</span>
                     <input
                       className="notes-input"
                       placeholder="notes..."
-                      value={logEntry.notes}
+                      value={(log[wi]?.[di]?.[si] ?? {}).notes ?? ''}
                       onChange={e => updateLog(wi, di, si, 'notes', e.target.value)}
                     />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Footer actions */}
+      {/* Footer */}
       <div className="day-footer">
         <button className="btn-back" onClick={() => navigate('/home')}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
@@ -203,7 +282,7 @@ function Day() {
         )}
         {day.completed && (
           <span className="day-completed-label">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{marginRight:'5px',verticalAlign:'middle'}}><polyline points="20 6 9 17 4 12"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginRight: '5px', verticalAlign: 'middle' }}><polyline points="20 6 9 17 4 12"/></svg>
             Day Completed
           </span>
         )}
