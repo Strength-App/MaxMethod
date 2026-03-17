@@ -5,15 +5,20 @@ function Home() {
   const navigate = useNavigate();
   const { workout, loading, error } = useWorkout();
 
-  if (loading) return <p>Loading your program...</p>;
-  if (error) return <p>Error loading workout: {error}</p>;
-  if (!workout) return <p>No workout found. Please complete onboarding first.</p>;
+  if (loading) return <p className="status-msg">Loading your program...</p>;
+  if (error) return <p className="status-msg status-msg--error">Error loading workout: {error}</p>;
+  if (!workout) return <p className="status-msg">No workout found. Please complete onboarding first.</p>;
 
   const weeks = Array.from({ length: workout.weeks.length }, (_, i) => i + 1);
 
+  const goalLabels = { strength: 'Strength', hypertrophy: 'Hypertrophy', loseWeight: 'Weight Loss' };
+  const days = workout.daysPerWeek ?? workout.weeks[0]?.days?.length;
+  const goal = goalLabels[workout.goalSelection ?? workout.goal] ?? '';
+  const programTitle = [days && `${days} Day`, workout.classification, goal].filter(Boolean).join(' ');
+
   return (
     <div className="home-page-container">
-      <h1>Current Program</h1>
+      <h1>{programTitle || 'Current Program'}</h1>
       <div className="fitness-level-container">
         <h2>Current Fitness Level: {workout.classification}</h2>
       </div>

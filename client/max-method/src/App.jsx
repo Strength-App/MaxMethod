@@ -27,20 +27,21 @@ function Navigation() {
 
   return (
     <nav className="navigation">
-      <button id="backBtn" onClick={() => {
+      <button id="backBtn" aria-label="Go back" onClick={() => {
           if (location.pathname === '/home') return
           window.history.back()
         }}
       >
-        ← Back
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{marginRight:'6px',verticalAlign:'middle'}}><polyline points="15 18 9 12 15 6"/></svg>
+        Back
       </button>
 
-      <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
-      <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"}>Classification</Link>
-      <Link to="/pickNewProgram" className={location.pathname === '/pickNewProgram' ? "selected" : "nav-link"}>Pick New Program</Link>
-      <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
-      <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
-      <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
+      <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"} aria-current={location.pathname === '/home' ? 'page' : undefined}>Home</Link>
+      <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"} aria-current={location.pathname === '/classification' ? 'page' : undefined}>Classification</Link>
+      <Link to="/pickNewProgram" className={location.pathname === '/pickNewProgram' ? "selected" : "nav-link"} aria-current={location.pathname === '/pickNewProgram' ? 'page' : undefined}>Pick New Program</Link>
+      <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"} aria-current={location.pathname === '/history' ? 'page' : undefined}>History</Link>
+      <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"} aria-current={location.pathname === '/exerciseLibrary' ? 'page' : undefined}>Exercise Library</Link>
+      <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"} aria-current={location.pathname === '/settings' ? 'page' : undefined}>Settings</Link>
     </nav>
   )
 }
