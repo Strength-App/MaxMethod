@@ -707,15 +707,15 @@ input::placeholder {
 }
 
 .day-cell--completed {
-  border-color: var(--accent-border);
-  background: var(--accent-dim);
-  box-shadow: inset 0 0 12px rgba(204, 4, 4, 0.08);
+  border-color: rgba(45, 186, 126, 0.45);
+  background: rgba(45, 186, 126, 0.10);
+  box-shadow: inset 0 0 12px rgba(45, 186, 126, 0.06);
 }
 
 .day-cell--completed:hover {
-  background: rgba(204, 4, 4, 0.20);
-  border-color: var(--accent);
-  box-shadow: var(--accent-glow-sm), 0 6px 20px rgba(0, 0, 0, 0.35);
+  background: rgba(45, 186, 126, 0.18);
+  border-color: #2dba7e;
+  box-shadow: 0 0 8px rgba(45, 186, 126, 0.30), 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
 .completed-badge {
@@ -723,7 +723,7 @@ input::placeholder {
   top: 6px;
   right: 9px;
   font-size: 10px;
-  color: var(--accent);
+  color: #2dba7e;
   font-weight: 700;
 }
 
@@ -1418,7 +1418,7 @@ input::placeholder {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: #2dba7e;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
