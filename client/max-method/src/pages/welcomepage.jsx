@@ -54,6 +54,7 @@ function Welcomepage() {
         <input
           type="email"
           placeholder="Email"
+          aria-label="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -62,6 +63,7 @@ function Welcomepage() {
         <input
           type="password"
           placeholder="Password"
+          aria-label="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
