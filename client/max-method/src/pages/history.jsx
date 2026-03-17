@@ -10,9 +10,9 @@ function History () {
      const [date, setDate] = useState(new Date());
 
       return (
-        <>
+        <div className="history-page">
         <div>
-          <h1>History</h1>
+          <h1 className="history-heading">History</h1>
         </div>
 
         <div className="react-calendar calendar-container">
@@ -20,12 +20,12 @@ function History () {
 
         </div>
             <div >
-                <button onClick={() => {setDate(new Date())}}>
+                <button className="history-button" onClick={() => {setDate(new Date())}}>
                     <DaySelect/>
                 </button>
             </div>
 
-        </>
+        </div>
       );
 }
 
