@@ -1,36 +1,173 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useUser } from '../context/UserContext'
 
 function Settings() {
-    const [name, setName] = useState("Carlos")
-    const [email, setEmail] = useState("carlos@email.com")
-    const [level] = useState(5)
+    const { user } = useUser()
+
+    const [firstName, setFirstName] = useState("")
+    const [lastName, setLastName] = useState("")
+    const [email, setEmail] = useState("")
+    const [classification, setClassification] = useState("")
+    const [loading, setLoading] = useState(true)
+    const [gender, setGender] = useState("")
+
+    // 🚨 guard against null user
+    if (!user) return <p>Not logged in</p>
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            try {
+                const res = await fetch(`http://localhost:5050/api/users/profile/${user._id}`)
+                console.log("STATUS:", res.status)
+
+                if (!res.ok) {
+                    const text = await res.text()
+                    console.error("Server error:", text)
+                    throw new Error("Failed to fetch user")
+                }
+
+                const data = await res.json()
+                console.log("DATA:", data)
+
+                setFirstName(data.firstName || "")
+                setLastName(data.lastName || "")
+                setEmail(data.email || "")
+                setClassification(data.current_classification || "")
+                setGender(data.gender || "")
+
+            } catch (err) {
+                console.error("Fetch error:", err)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        if (user?._id) {
+            fetchUser()
+        } else {
+            setLoading(false)
+        }
+    }, [user])
+
+    if (loading) return <p>Loading...</p>
 
     return (
         <div className="settings-page">
             <h1>Settings</h1>
 
-            <UserName 
-                name={name}
-                onSave={setName}
+            <UserName
+                firstName={firstName}
+                lastName={lastName}
+                userId={user._id}
+                setFirstName={setFirstName}
+                setLastName={setLastName}
             />
 
-            <UserEmail 
+            <UserEmail
                 email={email}
-                onSave={setEmail}
+                userId={user._id}
+                setEmail={setEmail}
             />
 
-            <UserLevel level={level} />
+            <UserGender
+                gender={gender}
+                userId={user._id}
+                setGender={setGender}
+            />
+
+            <UserLevel classification={classification} />
+
+            <ChangePassword userId={user._id} />
         </div>
     )
 }
 
-function UserEmail({ email, onSave }) {
+// ─────────────────────────────────────────
+// NAME
+// ─────────────────────────────────────────
+function UserName({ firstName, lastName, userId, setFirstName, setLastName }) {
     const [isEditing, setIsEditing] = useState(false)
-    const [tempEmail, setTempEmail] = useState(email)
+    const [tempFirst, setTempFirst] = useState("")
+    const [tempLast, setTempLast] = useState("")
 
-    const handleSave = () => {
-        onSave(tempEmail)
-        setIsEditing(false)
+    useEffect(() => {
+        setTempFirst(firstName)
+        setTempLast(lastName)
+    }, [firstName, lastName])
+
+    const handleSave = async () => {
+        try {
+            await fetch(`http://localhost:5050/api/users/update/${userId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    firstName: tempFirst,
+                    lastName: tempLast
+                })
+            })
+
+            setFirstName(tempFirst)
+            setLastName(tempLast)
+            setIsEditing(false)
+
+        } catch (err) {
+            console.error(err)
+        }
+    }
+
+    return (
+        <div className="user-setting">
+            <p>Name:</p>
+
+            {isEditing ? (
+                <>
+                    <input
+                        value={tempFirst}
+                        onChange={(e) => setTempFirst(e.target.value)}
+                        placeholder="First Name"
+                    />
+                    <input
+                        value={tempLast}
+                        onChange={(e) => setTempLast(e.target.value)}
+                        placeholder="Last Name"
+                    />
+                    <button onClick={handleSave}>Save</button>
+                </>
+            ) : (
+                <>
+                    <span>{firstName} {lastName}</span>
+                    <button onClick={() => setIsEditing(true)}>Edit</button>
+                </>
+            )}
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────
+// EMAIL
+// ─────────────────────────────────────────
+function UserEmail({ email, userId, setEmail }) {
+    const [isEditing, setIsEditing] = useState(false)
+    const [tempEmail, setTempEmail] = useState("")
+
+    useEffect(() => {
+        setTempEmail(email)
+    }, [email])
+
+    const handleSave = async () => {
+        try {
+            await fetch(`http://localhost:5050/api/users/update/${userId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: tempEmail })
+            })
+
+            setEmail(tempEmail)
+            setIsEditing(false)
+
+        } catch (err) {
+            console.error(err)
+        }
     }
 
     return (
@@ -40,7 +177,6 @@ function UserEmail({ email, onSave }) {
             {isEditing ? (
                 <>
                     <input
-                        type="text"
                         value={tempEmail}
                         onChange={(e) => setTempEmail(e.target.value)}
                     />
@@ -55,32 +191,72 @@ function UserEmail({ email, onSave }) {
         </div>
     )
 }
-
-function UserName({ name, onSave }) {
+// gender setting component with radio inputs and "other" option
+function UserGender({ gender, userId, setGender }) {
     const [isEditing, setIsEditing] = useState(false)
-    const [tempName, setTempName] = useState(name)
+    const [tempGender, setTempGender] = useState("")
 
-    const handleSave = () => {
-        onSave(tempName)
-        setIsEditing(false)
+    useEffect(() => {
+        setTempGender(gender)
+    }, [gender])
+
+    const handleSave = async () => {
+        try {
+            await fetch(`http://localhost:5050/api/users/update/${userId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ gender: tempGender })
+            })
+
+            setGender(tempGender)
+            setIsEditing(false)
+
+        } catch (err) {
+            console.error(err)
+        }
     }
 
     return (
         <div className="user-setting">
-            <p>Name:</p>
+            <p>Gender:</p>
 
             {isEditing ? (
                 <>
-                    <input
-                        type="text"
-                        value={tempName}
-                        onChange={(e) => setTempName(e.target.value)}
-                    />
+                    <label>
+                        <input
+                            type="radio"
+                            value="male"
+                            checked={tempGender === "male"}
+                            onChange={(e) => setTempGender(e.target.value)}
+                        />
+                        Male
+                    </label>
+
+                    <label>
+                        <input
+                            type="radio"
+                            value="female"
+                            checked={tempGender === "female"}
+                            onChange={(e) => setTempGender(e.target.value)}
+                        />
+                        Female
+                    </label>
+
+                    <label>
+                        <input
+                            type="radio"
+                            value="other"
+                            checked={tempGender === "other"}
+                            onChange={(e) => setTempGender(e.target.value)}
+                        />
+                        Other
+                    </label>
+
                     <button onClick={handleSave}>Save</button>
                 </>
             ) : (
                 <>
-                    <span>{name}</span>
+                    <span>{gender || "Not set"}</span>
                     <button onClick={() => setIsEditing(true)}>Edit</button>
                 </>
             )}
@@ -88,10 +264,71 @@ function UserName({ name, onSave }) {
     )
 }
 
-function UserLevel({ level }) {
+// ─────────────────────────────────────────
+// CLASSIFICATION
+// ─────────────────────────────────────────
+function UserLevel({ classification }) {
     return (
         <div className="user-setting">
-            <p>Level: {level}</p>
+            <p>Classification: {classification || "Not set"}</p>
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────
+// PASSWORD
+// ─────────────────────────────────────────
+function ChangePassword({ userId }) {
+    const [currentPassword, setCurrentPassword] = useState("")
+    const [newPassword, setNewPassword] = useState("")
+    const [message, setMessage] = useState("")
+
+    const handleSubmit = async (e) => {
+        e.preventDefault()
+
+        try {
+            const res = await fetch(`http://localhost:5050/api/users/change-password/${userId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ currentPassword, newPassword })
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) throw new Error(data.message)
+
+            setMessage("Password updated!")
+            setCurrentPassword("")
+            setNewPassword("")
+
+        } catch (err) {
+            setMessage(err.message)
+        }
+    }
+
+    return (
+        <div className="user-setting">
+            <p>Change Password</p>
+
+            <form onSubmit={handleSubmit}>
+                <input
+                    type="password"
+                    placeholder="Current Password"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                />
+
+                <input
+                    type="password"
+                    placeholder="New Password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                />
+
+                <button type="submit">Update</button>
+            </form>
+
+            {message && <p>{message}</p>}
         </div>
     )
 }

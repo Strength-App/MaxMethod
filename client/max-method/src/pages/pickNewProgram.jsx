@@ -7,7 +7,6 @@ function PickNewProgram() {
   const { user } = useUser()
 
   const [formData, setFormData] = useState({
-    gender: "",
     benchPress: "",
     deadlift: "",
     squat: "",
@@ -34,7 +33,6 @@ function PickNewProgram() {
 
     const formattedData = {
       email: user.email,
-      gender: formData.gender,
       benchPress: Number(formData.benchPress),
       deadlift: Number(formData.deadlift),
       squat: Number(formData.squat),
@@ -55,7 +53,12 @@ function PickNewProgram() {
 
       // Navigate to goals with classification data
       // Goals will handle generating the new workout and replacing the old one
-      navigate("/goals", { state: data });
+      navigate("/goals", { 
+      state: {
+        classification: data.classification,        // ✅ NEW VALUE
+        totalOneRepMax: data.totalOneRepMax         // ✅ NEW VALUE
+      }
+    });
 
     } catch (error) {
       console.error("Error saving data:", error);
@@ -72,40 +75,6 @@ function PickNewProgram() {
 
       <form onSubmit={handleSubmit}>
         <main>
-
-          <p className="subheading">Gender</p>
-          <div className="pick-new-program-gender-options">
-            <label>
-              <input
-                type="radio"
-                name="gender"
-                value="male"
-                onChange={handleChange}
-                required
-              />
-              Male
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="gender"
-                value="female"
-                onChange={handleChange}
-                required
-              />
-              Female
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="gender"
-                value="other"
-                onChange={handleChange}
-                required
-              />
-              Other
-            </label>
-          </div>
 
           <div className="pick-new-program-data-grid">
             <div className="pick-new-program-data-row">
