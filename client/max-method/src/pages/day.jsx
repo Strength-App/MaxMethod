@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 
@@ -41,10 +41,30 @@ function Day() {
   const [openCards, setOpenCards] = useState({ 0: true });
   const [setData, setSetData] = useState({});
 
+  const day = workout?.weeks?.[wi]?.days?.[di];
+
+  // Seed setData from persisted log when workout/log loads
+  useEffect(() => {
+    if (!day) return;
+    setSetData(prev => {
+      const seeded = { ...prev };
+      day.slots.forEach((slot, si) => {
+        const setsVal = resolveWeekValue(slot.sets, wi);
+        const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
+        const savedWeight = log[wi]?.[di]?.[si]?.actualWeight ?? '';
+        for (let j = 0; j < count; j++) {
+          const key = `${si}-${j}`;
+          if (!seeded[key]) {
+            seeded[key] = { actual: savedWeight, done: false };
+          }
+        }
+      });
+      return seeded;
+    });
+  }, [workout, log]);
+
   if (loading) return <div className="day-page"><p className="status-msg">Loading workout...</p></div>;
   if (error) return <div className="day-page"><p className="status-msg status-msg--error">Error loading workout: {error}</p></div>;
-
-  const day = workout?.weeks?.[wi]?.days?.[di];
 
   if (!day) return (
     <div className="day-page">
@@ -118,7 +138,6 @@ function Day() {
           const setsVal = resolveWeekValue(slot.sets, wi);
           const setCount = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
           const repsRaw = resolveWeekValue(slot.reps, wi);
-          // If reps is a comma-separated string (e.g. "10,8,8,6") or array, split per set
           const repsArray = Array.isArray(repsRaw)
             ? repsRaw
             : (typeof repsRaw === 'string' && repsRaw.includes(','))
@@ -232,7 +251,10 @@ function Day() {
                           step="5"
                           placeholder="0"
                           value={s.actual}
-                          onChange={e => updateSet(si, j, { actual: e.target.value })}
+                          onChange={e => {
+                            updateSet(si, j, { actual: e.target.value });
+                            updateLog(wi, di, si, 'actualWeight', e.target.value);
+                          }}
                         />
 
                         <button
