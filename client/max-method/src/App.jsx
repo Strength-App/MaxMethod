@@ -13,6 +13,8 @@ import Settings from './pages/settings'
 import CreateAcc from './pages/createAcc'
 import Welcomepage from './pages/welcomepage'
 import PickNewProgram from './pages/pickNewProgram'
+import CustomWorkout from './pages/customWorkout'
+import CustomDay from './pages/customDay'
 
 // Workout context — wraps the whole app so state persists when navigating
 import { WorkoutProvider } from './context/WorkoutContext'
@@ -31,8 +33,7 @@ function Navigation() {
   const location = useLocation();
   const { logout } = useUser();
   const navigate = useNavigate();
-  const handleLogout = () => { logout(); navigate("/welcomepage"); // send user back to login
-  };
+  const handleLogout = () => { logout(); navigate("/welcomepage"); };
 
   return (
     <nav className="navigation">
@@ -44,13 +45,12 @@ function Navigation() {
         ← Back
       </button>
 
-      <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"}>Home</Link>
-      
-      <Link to="/pickNewProgram" className={location.pathname === '/pickNewProgram' ? "selected" : "nav-link"}>Pick New Program</Link>
-      <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"}>History</Link>
-      <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"}>Exercise Library</Link>
-      <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"}>Settings</Link>
-      
+      <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"} aria-current={location.pathname === '/home' ? 'page' : undefined}>Home</Link>
+      <Link to="/pickNewProgram" className={location.pathname === '/pickNewProgram' ? "selected" : "nav-link"} aria-current={location.pathname === '/pickNewProgram' ? 'page' : undefined}>Programs</Link>
+      <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"} aria-current={location.pathname === '/history' ? 'page' : undefined}>History</Link>
+      <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"} aria-current={location.pathname === '/exerciseLibrary' ? 'page' : undefined}>Exercise Library</Link>
+      <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"} aria-current={location.pathname === '/settings' ? 'page' : undefined}>Settings</Link>
+
       <button onClick={handleLogout} className="logout-btn">
         Logout
       </button>
@@ -70,7 +70,6 @@ function App() {
 
   const protectedRoute = (element) => {
     if (!user) return <Navigate to="/welcomepage" replace />
-    // if (!user.onboarding_complete) return <Navigate to="/classification" replace />
     return element
   }
 
@@ -100,6 +99,8 @@ function App() {
             <Route path="/exerciseLibrary" element={protectedRoute(<ExerciseLibrary />)} />
             <Route path="/settings" element={protectedRoute(<Settings />)} />
             <Route path="/pickNewProgram" element={protectedRoute(<PickNewProgram />)} />
+            <Route path="/customWorkout" element={protectedRoute(<CustomWorkout />)} />
+            <Route path="/customDay/:weekNum/:dayNum" element={protectedRoute(<CustomDay />)} />
           </Routes>
         </div>
       </WorkoutProvider>
