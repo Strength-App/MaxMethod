@@ -10,19 +10,25 @@ export function WorkoutProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Holds the debounce timer for updateLog
   const updateLogTimer = useRef(null);
 
-  // Saves userId to both localStorage and state
   const setUserId = useCallback((id) => {
     localStorage.setItem('userId', id);
     setUserIdState(id);
   }, []);
 
-  // Explicitly fetch the workout — called by goals.jsx after workout is generated,
-  // and on app load if a userId already exists in localStorage
+  // Clears all workout state on logout
+  const logoutWorkout = useCallback(() => {
+    localStorage.removeItem('userId');
+    setUserIdState(null);
+    setWorkout(null);
+    setLog({});
+    setAssignments({});
+  }, []);
+
   const fetchWorkout = useCallback(async (id) => {
     const resolvedId = id ?? userId;
+    console.log('fetchWorkout called with:', resolvedId); // DEBUG
     if (!resolvedId) return;
 
     setLoading(true);
@@ -31,7 +37,6 @@ export function WorkoutProvider({ children }) {
     try {
       const res = await fetch(`http://localhost:5050/api/users/workout/${resolvedId}`);
 
-      // No workout yet — not an error, user just hasn't completed onboarding
       if (res.status === 404) {
         setWorkout(null);
         return;
@@ -40,6 +45,7 @@ export function WorkoutProvider({ children }) {
       if (!res.ok) throw new Error('Failed to fetch workout');
 
       const data = await res.json();
+      console.log('fetchWorkout got data, weeks:', data.weeks?.length); // DEBUG
       setWorkout(data);
 
       // Seed assignments from week 1's resolved exercises
@@ -66,6 +72,7 @@ export function WorkoutProvider({ children }) {
           });
         });
       });
+      console.log('fetchWorkout seeded log sample (w0,d0,s0):', initialLog[0]?.[0]?.[0]); // DEBUG
       setLog(initialLog);
 
     } catch (err) {
@@ -75,14 +82,14 @@ export function WorkoutProvider({ children }) {
     }
   }, [userId]);
 
-  // On app load, if a userId is already in localStorage, fetch their workout
+  // Re-fetch whenever userId changes (covers both app load and login)
   useEffect(() => {
+    console.log('userId effect fired, userId is:', userId); // DEBUG
     if (userId) {
       fetchWorkout(userId);
     }
-  }, []); // intentionally runs once on mount only
+  }, [userId]);
 
-  // Change exercise choice for a day/slot (shared across all weeks)
   const setExercise = useCallback((dayIdx, slotIdx, exerciseName) => {
     setAssignments(prev => ({
       ...prev,
@@ -90,9 +97,7 @@ export function WorkoutProvider({ children }) {
     }));
   }, []);
 
-  // Update logged weight or notes — optimistic local update + debounced DB write
   const updateLog = useCallback(async (weekIdx, dayIdx, slotIdx, field, value) => {
-    // Optimistic local update so the UI feels instant
     setLog(prev => ({
       ...prev,
       [weekIdx]: {
@@ -104,7 +109,6 @@ export function WorkoutProvider({ children }) {
       },
     }));
 
-    // Debounce the DB write — wait 500ms after the last keystroke before saving
     clearTimeout(updateLogTimer.current);
     updateLogTimer.current = setTimeout(async () => {
       try {
@@ -125,9 +129,7 @@ export function WorkoutProvider({ children }) {
     }, 500);
   }, [userId]);
 
-  // Mark a day complete
   const completeDay = useCallback(async (weekIdx, dayIdx) => {
-    // Optimistic local update
     setWorkout(prev => {
       const updated = structuredClone(prev);
       updated.weeks[weekIdx].days[dayIdx].completed = true;
@@ -161,7 +163,8 @@ export function WorkoutProvider({ children }) {
       fetchWorkout,
       setExercise,
       updateLog,
-      completeDay
+      completeDay,
+      logoutWorkout
     }}>
       {children}
     </WorkoutContext.Provider>

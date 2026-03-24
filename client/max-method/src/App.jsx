@@ -1,7 +1,6 @@
 import './App.css'
 import { useUser } from './context/UserContext';
 
-
 // import pages for navigation
 import Home from './pages/home'
 import Day from './pages/day'
@@ -18,6 +17,7 @@ import CustomDay from './pages/customDay'
 
 // Workout context — wraps the whole app so state persists when navigating
 import { WorkoutProvider } from './context/WorkoutContext'
+import { useWorkout } from './context/WorkoutContext'
 
 import {
   Routes,
@@ -32,8 +32,14 @@ import {
 function Navigation() {
   const location = useLocation();
   const { logout } = useUser();
+  const { logoutWorkout } = useWorkout();
   const navigate = useNavigate();
-  const handleLogout = () => { logout(); navigate("/welcomepage"); };
+
+  const handleLogout = () => {
+    logout();
+    logoutWorkout();
+    navigate("/welcomepage");
+  };
 
   return (
     <nav className="navigation">
