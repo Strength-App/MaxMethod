@@ -9,7 +9,7 @@ export function WorkoutProvider({ children }) {
   const [log, setLog] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
+  const [personalBests, setPersonalBests] = useState({});
   // Holds the debounce timer for updateLog
   const updateLogTimer = useRef(null);
 
@@ -29,7 +29,10 @@ export function WorkoutProvider({ children }) {
     setError(null);
 
     try {
-      const res = await fetch(`http://localhost:5050/api/users/workout/${resolvedId}`);
+      const [res, pbRes] = await Promise.all([
+          fetch(`http://localhost:5050/api/users/workout/${resolvedId}`),
+          fetch(`http://localhost:5050/api/users/workout/${resolvedId}/personal-bests`)
+      ])
 
       // No workout yet — not an error, user just hasn't completed onboarding
       if (res.status === 404) {
@@ -52,7 +55,7 @@ export function WorkoutProvider({ children }) {
       });
       setAssignments(initialAssignments);
 
-      // Seed log from all weeks
+      // Seed log from all weeks -- this is what persists weights week to week
       const initialLog = {};
       data.weeks.forEach((week, wi) => {
         initialLog[wi] = {};
@@ -67,7 +70,13 @@ export function WorkoutProvider({ children }) {
         });
       });
       setLog(initialLog);
+      console.log("Workout fetched:", data);
 
+      // Set personal bests
+      if (pbRes.ok) {
+        const pbData = await pbRes.json();
+        setPersonalBests(pbData.personal_bests);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -78,7 +87,9 @@ export function WorkoutProvider({ children }) {
   // On app load, if a userId is already in localStorage, fetch their workout
   useEffect(() => {
     if (userId) {
-      fetchWorkout(userId);
+      fetchWorkout(userId).then( value => {
+        console.log("Workout fetched:", value);
+      });
     }
   }, []); // intentionally runs once on mount only
 
@@ -103,6 +114,10 @@ export function WorkoutProvider({ children }) {
         },
       },
     }));
+
+    const exercise = assignments[dayIdx]?.[slotIdx];
+    const pb = personal_bests[exercise];
+
 
     // Debounce the DB write — wait 500ms after the last keystroke before saving
     clearTimeout(updateLogTimer.current);
@@ -157,6 +172,8 @@ export function WorkoutProvider({ children }) {
       log,
       loading,
       error,
+      personalBests,
+      setPersonalBests,
       setUserId,
       fetchWorkout,
       setExercise,
