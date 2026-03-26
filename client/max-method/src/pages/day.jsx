@@ -36,7 +36,8 @@ function Day() {
   const wi = parseInt(weekNum, 10) - 1;
   const di = parseInt(dayNum, 10) - 1;
 
-  const { workout, assignments, setExercise, log, updateLog, completeDay, loading, error } = useWorkout();
+  /* Added Personal Bests to useWorkout hook */
+  const { workout, assignments, setExercise, log, updateLog, completeDay, loading, error, personalBests } = useWorkout();
   const [editingSlot, setEditingSlot] = useState(null);
   const [openCards, setOpenCards] = useState({ 0: true });
   const [setData, setSetData] = useState({});
@@ -212,6 +213,11 @@ function Day() {
                       ? parseInt(s.actual) >= parseInt(weightNote)
                       : s.actual > 0);
 
+                    // Adding Lines for last week's weight
+                    const lastWeekWeight = log[wi - 1]?.[di]?.[si]?.actualWeight;
+                    const pb = personalBests?.[exercise];
+                    const isPersonalBest = s.actual && pb && Number(s.actual) >= Number(pb);
+
                     return (
                       <div key={j} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
                         <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{j + 1}</div>
@@ -225,6 +231,7 @@ function Day() {
                           }
                         </div>
 
+                        {/* Added updated log function to update actualWeight */}
                         <input
                           className={`actual-input${matched ? ' actual-input--matched' : ''}`}
                           type="number"
@@ -232,8 +239,19 @@ function Day() {
                           step="5"
                           placeholder="0"
                           value={s.actual}
-                          onChange={e => updateSet(si, j, { actual: e.target.value })}
+                          onChange={e => {
+                            updateSet(si, j, { actual: e.target.value });
+                            updateLog(wi,di, si, 'actualWeight', e.target.value);
+                          }}
                         />
+
+                        {/* Adding Lines for last week's weight */}
+                        {lastWeekWeight && !s.actual && (
+                            <span className={"last-week-hint"}>Last: {lastWeekWeight} lbs</span>
+                        )}
+                        {isPersonalBest && (
+                            <span className={"pb-badge"}>🏆 PB!</span>
+                        )}
 
                         <button
                           className={`check-btn${s.done ? ' check-btn--checked' : ''}`}

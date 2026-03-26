@@ -115,10 +115,6 @@ export function WorkoutProvider({ children }) {
       },
     }));
 
-    const exercise = assignments[dayIdx]?.[slotIdx];
-    const pb = personal_bests[exercise];
-
-
     // Debounce the DB write — wait 500ms after the last keystroke before saving
     clearTimeout(updateLogTimer.current);
     updateLogTimer.current = setTimeout(async () => {
