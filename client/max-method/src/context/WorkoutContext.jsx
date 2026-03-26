@@ -130,6 +130,14 @@ export function WorkoutProvider({ children }) {
             [field]: value
           })
         });
+
+        const data = await res.json();
+        if (data.pbUpdate?.isPersonalBest) {
+          setPersonalBests(prev => ({
+            ...prev,
+            [data.pbUpdate.exercise]: data.pbUpdate.newPersonalBest
+          }));
+        }
       } catch (err) {
         console.error('Failed to save log entry:', err);
       }
