@@ -56,6 +56,8 @@ function Day() {
 
   const getSet = (si, j) => setData[`${si}-${j}`] ?? { actual: '', done: false };
 
+
+
   const updateSet = (si, j, patch) =>
     setSetData(prev => ({
       ...prev,
@@ -64,6 +66,8 @@ function Day() {
 
   const toggleCard = (si) =>
     setOpenCards(prev => ({ ...prev, [si]: !prev[si] }));
+
+
 
   // Summary counts
   let totalSets = 0, doneSets = 0;
@@ -81,7 +85,6 @@ function Day() {
     await completeDay(wi, di);
     navigate('/home');
   };
-
   return (
     <div className="day-page">
       {/* Header */}
@@ -133,6 +136,7 @@ function Day() {
           const allDone = setCount > 0 && doneCount === setCount;
           const progPct = setCount > 0 ? Math.round((doneCount / setCount) * 100) : 0;
           const isEditing = editingSlot === si;
+          const pb = personalBests?.[exercise];
 
           return (
             <div
@@ -184,6 +188,20 @@ function Day() {
                   </div>
                 </div>
 
+                {/*/!* Added Badge and Personal Best to Card Header *!/*/}
+
+                {pb ? (
+                    <div className="stat-chip stat-chip--pb">
+                      <div className="stat-chip-val">🏆 {pb}</div>
+                      <div className="stat-chip-lbl">Current PR</div>
+                    </div>
+                ) : (
+                    <div className="stat-chip stat-chip--pb">
+                      <div className="stat-chip-val">—</div>
+                      <div className="stat-chip-lbl">No PR yet</div>
+                    </div>
+                )}
+
                 <div className="ex-card-chevron" aria-hidden="true">▼</div>
               </div>
 
@@ -216,7 +234,8 @@ function Day() {
                     // Adding Lines for last week's weight
                     const lastWeekWeight = log[wi - 1]?.[di]?.[si]?.actualWeight;
                     const pb = personalBests?.[exercise];
-                    const isPersonalBest = s.actual && pb && Number(s.actual) >= Number(pb);
+                 const isPersonalBest = s.actual && pb && Number(s.actual) >= Number(pb);
+                //     const isPersonalBest = s.actual !== '' && pb && Number(s.actual) >= Number(pb) && Number(s.actual) === maxActual;
 
                     return (
                       <div key={j} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
@@ -252,7 +271,6 @@ function Day() {
                         {isPersonalBest && (
                             <span className={"pb-badge"}>🏆 PB!</span>
                         )}
-
                         <button
                           className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
                           onClick={() => updateSet(si, j, { done: !s.done })}
@@ -307,6 +325,7 @@ function Day() {
       </div>
     </div>
   );
+
 }
 
 export default Day;
