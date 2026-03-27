@@ -6,7 +6,7 @@ function Goals() {
   const navigate = useNavigate();
   const location = useLocation();
   const classificationData = location.state;
-  const { setUserId, fetchWorkout } = useWorkout();
+  const { setUserId, fetchWorkout, setActiveProgram } = useWorkout();
 
   const [formData, setFormData] = useState({
     daysPerWeek: "",
@@ -54,10 +54,17 @@ function Goals() {
     const data = await response.json();
     console.log("Workout generated:", data);
 
-    // Make sure userId is set in context, then fetch the
-    // newly created/replaced workout so Home.jsx has it ready
     setUserId(userId);
-    await fetchWorkout(userId);
+    setActiveProgram(null);
+
+    const workoutSource = data?.weeks?.length > 0 ? {
+      ...data,
+      classification: data.classification ?? classificationData.classification,
+      goalSelection: data.goalSelection ?? formData.goalSelection,
+      daysPerWeek: data.daysPerWeek ?? Number(formData.daysPerWeek),
+    } : null;
+
+    await fetchWorkout(userId, workoutSource);
 
     navigate("/home");
   };

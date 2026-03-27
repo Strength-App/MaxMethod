@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 
 const movementPatterns = {
@@ -33,22 +33,71 @@ function resolveWeekValue(value, wi) {
 function Day() {
   const { weekNum, dayNum } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const wi = parseInt(weekNum, 10) - 1;
   const di = parseInt(dayNum, 10) - 1;
 
-  const { workout, assignments, setExercise, log, updateLog, completeDay, loading, error } = useWorkout();
+  const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error } = useWorkout();
+  const viewWorkout = location.state?.viewWorkout ?? null;
+  const editMode = location.state?.editMode ?? false;
+  const workoutLogId = location.state?.workoutLogId ?? null;
+  const isExternalWorkout = !!viewWorkout;
+  const isReadOnly = isExternalWorkout && !editMode;
+  const isViewingPast = isReadOnly; // kept for existing read-only checks
+  const workout = viewWorkout ?? displayWorkout;
+  const isCustom = workout?.type === 'custom';
   const [editingSlot, setEditingSlot] = useState(null);
   const [openCards, setOpenCards] = useState({ 0: true });
   const [setData, setSetData] = useState({});
 
   const day = workout?.weeks?.[wi]?.days?.[di];
 
-  // Seed setData from persisted log when workout/log loads
+  // Custom workout exercise state
+  const [customExercises, setCustomExercises] = useState(() =>
+    isCustom ? (day?.exercises ?? []) : []
+  );
+  const saveTimerRef = useRef(null);
+
+  // Load custom exercises from day if state is empty (handles delayed context load)
   useEffect(() => {
-    if (!day) return;
+    if (!isCustom || !day) return;
+    if (customExercises.length === 0 && day.exercises?.length > 0) {
+      setCustomExercises(day.exercises);
+    }
+  }, [day]);
+
+  // Save custom exercises to DB (debounced)
+  useEffect(() => {
+    if (!isCustom) return;
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+    clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(async () => {
+      try {
+        const url = (editMode && workoutLogId)
+          ? `http://localhost:5050/api/users/workout-log/${workoutLogId}/custom-day`
+          : 'http://localhost:5050/api/users/workout/custom-day';
+        const body = (editMode && workoutLogId)
+          ? { weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: customExercises }
+          : { userId, weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: customExercises };
+        await fetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      } catch (err) {
+        console.error('Failed to save custom day:', err);
+      }
+    }, 500);
+    return () => clearTimeout(saveTimerRef.current);
+  }, [customExercises, weekNum, dayNum, isCustom]);
+
+  // Seed setData from persisted log when workout/log loads (generated workouts only)
+  useEffect(() => {
+    if (isCustom || !day) return;
     setSetData(prev => {
       const seeded = { ...prev };
-      day.slots.forEach((slot, si) => {
+      (day.slots ?? []).forEach((slot, si) => {
         const setsVal = resolveWeekValue(slot.sets, wi);
         const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
         const savedWeight = log[wi]?.[di]?.[si]?.actualWeight ?? '';
@@ -84,16 +133,28 @@ function Day() {
   const toggleCard = (si) =>
     setOpenCards(prev => ({ ...prev, [si]: !prev[si] }));
 
+  const updateCustomSet = (ei, si, patch) =>
+    setCustomExercises(prev => prev.map((ex, i) =>
+      i === ei ? { ...ex, sets: ex.sets.map((s, j) => j === si ? { ...s, ...patch } : s) } : ex
+    ));
+
   // Summary counts
   let totalSets = 0, doneSets = 0;
-  day.slots.forEach((slot, si) => {
-    const setsVal = resolveWeekValue(slot.sets, wi);
-    const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
-    totalSets += count;
-    for (let j = 0; j < count; j++) {
-      if (getSet(si, j).done) doneSets++;
-    }
-  });
+  if (isCustom) {
+    customExercises.forEach(ex => {
+      totalSets += ex.sets.length;
+      doneSets += ex.sets.filter(s => s.done).length;
+    });
+  } else {
+    (day.slots ?? []).forEach((slot, si) => {
+      const setsVal = resolveWeekValue(slot.sets, wi);
+      const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
+      totalSets += count;
+      for (let j = 0; j < count; j++) {
+        if (getSet(si, j).done) doneSets++;
+      }
+    });
+  }
   const completionPct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
 
   const handleCompleteDay = async () => {
@@ -109,10 +170,12 @@ function Day() {
           <span className="week-badge">Week {weekNum}</span>
           <h1 className="day-title">{day.title ?? `Day ${dayNum}`}</h1>
         </div>
-        <p className="progression-note">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-          Progression: Add 5 lbs when all sets and reps are completed
-        </p>
+        {!isCustom && (
+          <p className="progression-note">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            Progression: Add 5 lbs when all sets and reps are completed
+          </p>
+        )}
       </div>
 
       {/* Summary Bar */}
@@ -133,7 +196,67 @@ function Day() {
 
       {/* Exercise Cards */}
       <div className="exercise-cards">
-        {day.slots.map((slot, si) => {
+        {isCustom ? customExercises.map((ex, ei) => {
+          const doneCount = ex.sets.filter(s => s.done).length;
+          const allDone = ex.sets.length > 0 && doneCount === ex.sets.length;
+          const progPct = ex.sets.length > 0 ? Math.round((doneCount / ex.sets.length) * 100) : 0;
+          const isOpen = openCards[ei] ?? true;
+          return (
+            <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
+              <div className="ex-card-header" onClick={() => toggleCard(ei)}>
+                <div className="ex-card-title-block">
+                  <div className="ex-card-name ex-card-name--fixed">{ex.name}</div>
+                </div>
+                <div className="ex-card-stats">
+                  <div className="stat-chip">
+                    <div className="stat-chip-val">{ex.sets.length}</div>
+                    <div className="stat-chip-lbl">Sets</div>
+                  </div>
+                  <div className="stat-chip stat-chip--done">
+                    <div className="stat-chip-val">{doneCount}/{ex.sets.length}</div>
+                    <div className="stat-chip-lbl">Done</div>
+                  </div>
+                </div>
+                <div className="ex-card-chevron" aria-hidden="true">▼</div>
+              </div>
+              <div className="ex-progress-bar">
+                <div className={`ex-progress-fill${allDone ? ' ex-progress-fill--full' : ''}`} style={{ width: `${progPct}%` }} />
+              </div>
+              {isOpen && (
+                <div className="ex-sets-panel">
+                  <div className="ex-sets-col-header">
+                    <span className="ex-col-lbl">Set</span>
+                    <span className="ex-col-lbl">Reps</span>
+                    <span className="ex-col-lbl">Target</span>
+                    <span className="ex-col-lbl">Actual (lbs)</span>
+                    <span className="ex-col-lbl">✓</span>
+                  </div>
+                  {ex.sets.map((s, si) => (
+                    <div key={si} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
+                      <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{si + 1}</div>
+                      <div className="set-reps">{s.reps || '—'}</div>
+                      <div className="set-target">
+                        {s.target ? <><span className="target-wt">{s.target}</span><span className="target-unit"> lbs</span></> : <span className="target-dash">—</span>}
+                      </div>
+                      <input
+                        className="actual-input"
+                        type="number" min="0" step="5" placeholder="0"
+                        value={s.actual}
+                        onChange={e => updateCustomSet(ei, si, { actual: e.target.value })}
+                      />
+                      <button
+                        className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
+                        onClick={() => updateCustomSet(ei, si, { done: !s.done })}
+                        title="Mark set done"
+                      >{s.done ? '✓' : ''}</button>
+                    </div>
+                  ))}
+                  {allDone && <div className="ex-complete-banner"><span>✓</span> All sets complete — nice work!</div>}
+                </div>
+              )}
+            </div>
+          );
+        }) : (day.slots ?? []).map((slot, si) => {
           const exercise = assignments[di]?.[si] ?? slot.exercise ?? '';
           const setsVal = resolveWeekValue(slot.sets, wi);
           const setCount = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
@@ -144,7 +267,13 @@ function Day() {
               ? repsRaw.split(',').map(r => r.trim())
               : null;
           const getReps = (j) => repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
-          const weightNote = resolveWeekValue(slot.weightNote, wi);
+          const weightNoteRaw = resolveWeekValue(slot.weightNote, wi);
+          const weightNoteArray = Array.isArray(weightNoteRaw)
+            ? weightNoteRaw
+            : (typeof weightNoteRaw === 'string' && weightNoteRaw.includes(','))
+              ? weightNoteRaw.split(',').map(w => w.trim())
+              : null;
+          const getWeightNote = (j) => weightNoteArray ? (weightNoteArray[j] ?? weightNoteArray[weightNoteArray.length - 1]) : weightNoteRaw;
           const options = slot.label ? (movementPatterns[slot.label] ?? [exercise]) : [exercise];
           const isOpen = openCards[si] ?? false;
           const doneCount = Array.from({ length: setCount }, (_, j) => getSet(si, j).done).filter(Boolean).length;
@@ -163,7 +292,7 @@ function Day() {
                 onClick={() => { setEditingSlot(null); toggleCard(si); }}
               >
                 <div className="ex-card-title-block">
-                  {slot.fixed ? (
+                  {slot.fixed || isViewingPast ? (
                     <div className="ex-card-name ex-card-name--fixed">{exercise}</div>
                   ) : isEditing ? (
                     <select
@@ -171,7 +300,17 @@ function Day() {
                       className="exercise-select"
                       value={exercise}
                       onClick={e => e.stopPropagation()}
-                      onChange={e => { setExercise(di, si, e.target.value); setEditingSlot(null); }}
+                      onChange={e => {
+                        setExercise(di, si, e.target.value);
+                        setEditingSlot(null);
+                        if (editMode && workoutLogId) {
+                          fetch(`http://localhost:5050/api/users/workout-log/${workoutLogId}/slot-exercise`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ weekNum: wi + 1, dayNum: di + 1, slotIdx: si, exercise: e.target.value })
+                          }).catch(err => console.error('Failed to save exercise:', err));
+                        }
+                      }}
                       onBlur={() => setEditingSlot(null)}
                     >
                       {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
@@ -226,9 +365,10 @@ function Day() {
 
                   {Array.from({ length: setCount }, (_, j) => {
                     const s = getSet(si, j);
-                    const hasTarget = !!weightNote;
+                    const wn = getWeightNote(j);
+                    const hasTarget = !!wn;
                     const matched = s.actual !== '' && (hasTarget
-                      ? parseInt(s.actual) >= parseInt(weightNote)
+                      ? parseInt(s.actual) >= parseInt(wn)
                       : s.actual > 0);
 
                     return (
@@ -238,8 +378,8 @@ function Day() {
                         <div className="set-reps">{getReps(j) ?? '—'}</div>
 
                         <div className="set-target">
-                          {weightNote
-                            ? <><span className="target-wt">{weightNote}</span><span className="target-unit"> lbs</span></>
+                          {wn
+                            ? <><span className="target-wt">{wn}</span><span className="target-unit"> lbs</span></>
                             : <span className="target-dash">—</span>
                           }
                         </div>
@@ -251,6 +391,7 @@ function Day() {
                           step="5"
                           placeholder="0"
                           value={s.actual}
+                          disabled={isViewingPast}
                           onChange={e => {
                             updateSet(si, j, { actual: e.target.value });
                             updateLog(wi, di, si, 'actualWeight', e.target.value);
@@ -259,7 +400,8 @@ function Day() {
 
                         <button
                           className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
-                          onClick={() => updateSet(si, j, { done: !s.done })}
+                          onClick={() => !isViewingPast && updateSet(si, j, { done: !s.done })}
+                          disabled={isViewingPast}
                           title="Mark set done"
                         >
                           {s.done ? '✓' : ''}
@@ -292,11 +434,11 @@ function Day() {
 
       {/* Footer */}
       <div className="day-footer">
-        <button className="btn-back" onClick={() => navigate('/home')}>
+        <button className="btn-back" onClick={() => isExternalWorkout ? navigate(-1) : navigate('/home')}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-          Back to Home
+          {isExternalWorkout ? 'Back' : 'Back to Home'}
         </button>
-        {!day.completed && (
+        {!day.completed && !isExternalWorkout && (
           <button className="btn-complete" onClick={handleCompleteDay}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
             Mark Day Complete

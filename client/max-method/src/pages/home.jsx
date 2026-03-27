@@ -3,20 +3,28 @@ import { useWorkout } from '../context/WorkoutContext';
 
 function Home() {
   const navigate = useNavigate();
-  const { workout, loading, error } = useWorkout();
+  const { displayWorkout, loading, error } = useWorkout();
 
   if (loading) return <p className="status-msg">Loading your program...</p>;
   if (error) return <p className="status-msg status-msg--error">Error loading workout: {error}</p>;
-  if (!workout) return <p className="status-msg">No workout found. Please complete onboarding first.</p>;
+  if (!displayWorkout) {
+    return <p className="status-msg">No workout found. Generate a program in the Programs page to get started.</p>;
+  }
+
+  const isCustom = displayWorkout?.type === 'custom';
 
   const goalLabels = { strength: 'Strength', hypertrophy: 'Hypertrophy', loseWeight: 'Weight Loss' };
-  const days = workout.daysPerWeek ?? workout.weeks[0]?.days?.length;
-  const goal = goalLabels[workout.goalSelection ?? workout.goal] ?? '';
-  const programTitle = [days && `${days} Day`, workout.classification, goal].filter(Boolean).join(' ');
+  let programTitle;
+  if (isCustom) {
+    programTitle = displayWorkout.title;
+  } else {
+    const days = displayWorkout.daysPerWeek ?? displayWorkout.weeks[0]?.days?.length;
+    const goal = goalLabels[displayWorkout.goalSelection ?? displayWorkout.goal] ?? '';
+    programTitle = [days && `${days} Day`, displayWorkout.classification, goal].filter(Boolean).join(' ');
+  }
 
-  // Overall program progress
   let totalDays = 0, completedDays = 0;
-  workout.weeks.forEach(week => {
+  displayWorkout.weeks.forEach(week => {
     week.days.forEach(day => {
       totalDays++;
       if (day.completed) completedDays++;
@@ -24,12 +32,18 @@ function Home() {
   });
   const overallPct = totalDays > 0 ? Math.round((completedDays / totalDays) * 100) : 0;
 
+  const handleDayClick = (weekNum, di) => {
+    navigate(`/day/${weekNum}/${di + 1}`);
+  };
+
   return (
     <div className="home-page-container">
       <h1>{programTitle || 'Current Program'}</h1>
-      <div className="fitness-level-container">
-        <h2>Current Fitness Level: {workout.classification}</h2>
-      </div>
+      {!isCustom && (
+        <div className="fitness-level-container">
+          <h2>Current Fitness Level: {displayWorkout.classification}</h2>
+        </div>
+      )}
 
       {/* Program summary bar */}
       <div className="workout-summary-bar" style={{ marginBottom: '40px' }}>
@@ -48,7 +62,7 @@ function Home() {
       </div>
 
       <div className="schedule-table">
-        {workout.weeks.map((week, wi) => {
+        {displayWorkout.weeks.map((week, wi) => {
           const weekNum = wi + 1;
           const weekTotal = week.days.length;
           const weekDone = week.days.filter(d => d.completed).length;
@@ -69,12 +83,12 @@ function Home() {
                 </div>
               </div>
               <div className="week-days">
-                {week.days.map((day, di) => (
+                {week.days.filter(d => d?.title != null).map((day, di) => (
                   <button
                     key={di}
                     type="button"
                     className={`day-cell ${day.completed ? 'day-cell--completed' : ''}`}
-                    onClick={() => navigate(`/day/${weekNum}/${di + 1}`)}
+                    onClick={() => handleDayClick(weekNum, di)}
                   >
                     {day.title ?? `Day ${di + 1}`}
                     {day.completed && <span className="completed-badge">✓</span>}

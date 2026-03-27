@@ -9,6 +9,14 @@ export function WorkoutProvider({ children }) {
   const [log, setLog] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [activeProgram, setActiveProgramState] = useState(null);
+
+  const setActiveProgram = useCallback((program) => {
+    setActiveProgramState(program);
+  }, []);
+
+  // displayWorkout always uses live fetched data — no more localStorage snapshot
+  const displayWorkout = workout;
 
   const updateLogTimer = useRef(null);
 
@@ -17,42 +25,47 @@ export function WorkoutProvider({ children }) {
     setUserIdState(id);
   }, []);
 
-  // Clears all workout state on logout
   const logoutWorkout = useCallback(() => {
     localStorage.removeItem('userId');
     setUserIdState(null);
     setWorkout(null);
     setLog({});
     setAssignments({});
+    setActiveProgramState(null);
   }, []);
 
-  const fetchWorkout = useCallback(async (id) => {
+  const fetchWorkout = useCallback(async (id, preloadedData = null) => {
     const resolvedId = id ?? userId;
-    console.log('fetchWorkout called with:', resolvedId); // DEBUG
-    if (!resolvedId) return;
+    console.log('fetchWorkout called with:', resolvedId);
+    if (!resolvedId && !preloadedData) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const res = await fetch(`http://localhost:5050/api/users/workout/${resolvedId}`);
+      let data;
+      if (preloadedData) {
+        data = preloadedData;
+      } else {
+        const res = await fetch(`http://localhost:5050/api/users/workout/${resolvedId}`);
 
-      if (res.status === 404) {
-        setWorkout(null);
-        return;
+        if (res.status === 404) {
+          return;
+        }
+
+        if (!res.ok) throw new Error('Failed to fetch workout');
+
+        data = await res.json();
       }
 
-      if (!res.ok) throw new Error('Failed to fetch workout');
-
-      const data = await res.json();
-      console.log('fetchWorkout got data, weeks:', data.weeks?.length); // DEBUG
+      console.log('fetchWorkout got data, weeks:', data.weeks?.length);
       setWorkout(data);
 
       // Seed assignments from week 1's resolved exercises
       const initialAssignments = {};
       data.weeks[0].days.forEach((day, di) => {
         initialAssignments[di] = {};
-        day.slots.forEach((slot, si) => {
+        (day.slots ?? []).forEach((slot, si) => {
           initialAssignments[di][si] = slot.exercise ?? '';
         });
       });
@@ -64,7 +77,7 @@ export function WorkoutProvider({ children }) {
         initialLog[wi] = {};
         week.days.forEach((day, di) => {
           initialLog[wi][di] = {};
-          day.slots.forEach((slot, si) => {
+          (day.slots ?? []).forEach((slot, si) => {
             initialLog[wi][di][si] = {
               actualWeight: slot.actualWeight ?? '',
               notes: slot.notes ?? ''
@@ -72,8 +85,10 @@ export function WorkoutProvider({ children }) {
           });
         });
       });
-      console.log('fetchWorkout seeded log sample (w0,d0,s0):', initialLog[0]?.[0]?.[0]); // DEBUG
+      console.log('fetchWorkout seeded log sample (w0,d0,s0):', initialLog[0]?.[0]?.[0]);
       setLog(initialLog);
+
+      return data;
 
     } catch (err) {
       setError(err.message);
@@ -84,7 +99,7 @@ export function WorkoutProvider({ children }) {
 
   // Re-fetch whenever userId changes (covers both app load and login)
   useEffect(() => {
-    console.log('userId effect fired, userId is:', userId); // DEBUG
+    console.log('userId effect fired, userId is:', userId);
     if (userId) {
       fetchWorkout(userId);
     }
@@ -155,6 +170,9 @@ export function WorkoutProvider({ children }) {
   return (
     <WorkoutContext.Provider value={{
       workout,
+      displayWorkout,
+      activeProgram,
+      setActiveProgram,
       assignments,
       log,
       loading,

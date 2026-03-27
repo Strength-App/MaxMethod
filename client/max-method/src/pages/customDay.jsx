@@ -1,21 +1,79 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useWorkout } from '../context/WorkoutContext';
 
 function CustomDay() {
   const { weekNum, dayNum } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { workout } = useWorkout();
+  const wi = Number(weekNum) - 1;
+  const di = Number(dayNum) - 1;
+
+  // When accessed from viewProgram edit mode, workoutLogId and exercises come from route state
+  const externalWorkoutLogId = location.state?.workoutLogId ?? null;
+  const isExternal = !!externalWorkoutLogId;
+  const isDbWorkout = isExternal;
+
   const [exercises, setExercises] = useState(() => {
+    // If accessed from viewProgram, use the passed exercises
+    if (location.state?.exercises) return location.state.exercises;
+    // localStorage first — valid during creation and same-session edits
     try {
       const saved = localStorage.getItem(`customDay-week${weekNum}-day${dayNum}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    // Fall back to DB data if workout is already loaded
+    return workout?.weeks[wi]?.days[di]?.exercises ?? [];
   });
   const [openCards, setOpenCards] = useState({});
   const [saved, setSaved] = useState(false);
+  const saveTimer = useRef(null);
+  const initialised = useRef(false);
 
+  // If exercises are still empty after mount and workout loads, pull from DB
   useEffect(() => {
+    if (initialised.current) return;
+    initialised.current = true;
+    if (exercises.length === 0 && isDbWorkout) {
+      const dbExercises = workout.weeks[wi]?.days[di]?.exercises;
+      if (Array.isArray(dbExercises) && dbExercises.length > 0) {
+        setExercises(dbExercises);
+      }
+    }
+  }, [workout]);
+
+  // Keep localStorage in sync (only for active workout, not external edits)
+  useEffect(() => {
+    if (isExternal) return;
     localStorage.setItem(`customDay-week${weekNum}-day${dayNum}`, JSON.stringify(exercises));
-  }, [exercises, weekNum, dayNum]);
+  }, [exercises, weekNum, dayNum, isExternal]);
+
+  // Save to DB when editing a saved custom workout (debounced)
+  useEffect(() => {
+    if (!isDbWorkout) return;
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try {
+        const url = isExternal
+          ? `http://localhost:5050/api/users/workout-log/${externalWorkoutLogId}/custom-day`
+          : 'http://localhost:5050/api/users/workout/custom-day';
+        const body = isExternal
+          ? { weekNum: Number(weekNum), dayNum: Number(dayNum), exercises }
+          : { userId, weekNum: Number(weekNum), dayNum: Number(dayNum), exercises };
+        await fetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+      } catch (err) {
+        console.error('Failed to save custom day:', err);
+      }
+    }, 500);
+    return () => clearTimeout(saveTimer.current);
+  }, [exercises, weekNum, dayNum, isDbWorkout]);
 
   const saveWorkout = () => {
     localStorage.setItem(`customDay-week${weekNum}-day${dayNum}`, JSON.stringify(exercises));
@@ -200,7 +258,7 @@ function CustomDay() {
 
       {/* Footer */}
       <div className="day-footer">
-        <button className="btn-back" onClick={() => navigate('/customWorkout')}>
+        <button className="btn-back" onClick={() => isExternal ? navigate(`/view-program/${location.state?.programLogId}`, { state: { isEditing: true } }) : navigate('/customWorkout')}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
           Back
         </button>

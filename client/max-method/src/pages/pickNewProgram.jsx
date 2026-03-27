@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
@@ -15,6 +15,42 @@ function PickNewProgram() {
   const { workout } = useWorkout();
 
   const [formData, setFormData] = useState({ benchPress: '', deadlift: '', squat: '', bodyWeight: '' });
+  const [myPrograms, setMyPrograms] = useState([]);
+  const [loadingPrograms, setLoadingPrograms] = useState(true);
+
+  // Fetch programs from DB on mount
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
+
+    fetch(`http://localhost:5050/api/users/program-logs/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        setMyPrograms(data);
+        setLoadingPrograms(false);
+      })
+      .catch(err => {
+        console.error("Failed to load programs:", err);
+        setLoadingPrograms(false);
+      });
+  }, []);
+
+  const deleteProgram = async (e, programLogId) => {
+    e.stopPropagation();
+    const userId = localStorage.getItem('userId');
+
+    try {
+      await fetch(`http://localhost:5050/api/users/program-logs/${programLogId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId })
+      });
+
+      setMyPrograms(prev => prev.filter(p => p._id !== programLogId));
+    } catch (err) {
+      console.error("Failed to delete program:", err);
+    }
+  };
 
   const handleChange = (e) =>
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -57,13 +93,16 @@ function PickNewProgram() {
     }
   };
 
+const handleSelectProgram = (p) => {
+  navigate(`/view-program/${p._id}`, { state: { program: p } });
+};
+
   return (
     <div className="programs-page">
       <h1 className="programs-page-title">Programs</h1>
 
       <div className="programs-top-row">
 
-        {/* Left column: classification banner + generate new program */}
         <div className="programs-left-col">
           {workout?.classification && (
             <div className="programs-classification-banner">
@@ -72,7 +111,6 @@ function PickNewProgram() {
             </div>
           )}
 
-          {/* Section 1: Generate New Program */}
           <div className="programs-section-card programs-section-card--top">
             <div className="programs-section-title">Generate New Program</div>
 
@@ -105,9 +143,8 @@ function PickNewProgram() {
               <button type="submit" className="programs-btn-primary">Submit</button>
             </form>
           </div>
-        </div>{/* end left col */}
+        </div>
 
-        {/* Section 3: Featured Programs */}
         <div className="programs-section-card programs-section-card--top">
           <div className="programs-section-title">Featured Programs</div>
           <div className="programs-grid programs-grid--col1">
@@ -121,22 +158,77 @@ function PickNewProgram() {
           </div>
         </div>
 
-      </div>{/* end top row */}
-
-      {/* Section 2: Past Programs */}
-      <div className="programs-section-card">
-        <div className="programs-section-title">Past Programs</div>
-        <div className="programs-empty-state">
-          <svg width="38" height="38" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="6" y="8" width="28" height="26" rx="3"/>
-            <path d="M13 8V5M27 8V5M6 16h28"/>
-            <path d="M13 23h14M13 29h8"/>
-          </svg>
-          No past programs yet — generate your first one above.
-        </div>
       </div>
 
-      {/* Section 4: Create Custom Workout */}
+      {/* My Programs */}
+      <div className="programs-section-card">
+        <div className="programs-section-title">My Programs</div>
+
+        {loadingPrograms ? (
+          <div className="programs-empty-state">Loading programs...</div>
+        ) : myPrograms.length === 0 ? (
+          <div className="programs-empty-state">
+            <svg width="38" height="38" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <rect x="6" y="8" width="28" height="26" rx="3"/>
+              <path d="M13 8V5M27 8V5M6 16h28"/>
+              <path d="M13 23h14M13 29h8"/>
+            </svg>
+            No programs yet — generate your first one above.
+          </div>
+        ) : (
+          <div className="programs-grid">
+            {myPrograms.map((p) => {
+              const isActive = p.isActive;
+              return (
+                <div
+                  key={p._id}
+                  className="programs-program-card"
+                  style={{ cursor: 'pointer', position: 'relative' }}
+                  onClick={() => handleSelectProgram(p)}
+                >
+                  {isActive && (
+                    <span
+                      title="Currently active"
+                      style={{
+                        position: 'absolute', top: '8px', left: '8px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '18px', height: '18px', borderRadius: '50%',
+                        background: 'var(--accent, #e63946)',
+                      }}
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                    </span>
+                  )}
+                  <button
+                    onClick={(e) => deleteProgram(e, p._id)}
+                    title="Delete program"
+                    style={{
+                      position: 'absolute', top: '8px', right: '8px',
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      color: 'var(--text-muted, #888)', padding: '4px',
+                      lineHeight: 1, borderRadius: '4px',
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6M14 11v6"/>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                  </button>
+                  <div className="programs-program-tag" style={{ paddingLeft: '26px' }}>
+                    {p.type === 'custom' ? 'Custom' : 'Generated'} · {new Date(p.createdAt).toLocaleDateString()}
+                  </div>
+                  <div className="programs-program-name">{p.title}</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div className="programs-footer">
         <button className="programs-btn-secondary" onClick={() => navigate('/customWorkout')}>
           Create Custom Workout
