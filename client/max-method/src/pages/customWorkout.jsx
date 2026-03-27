@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useWorkout } from '../context/WorkoutContext';
 
 function CustomWorkout() {
   const navigate = useNavigate();
+  const { fetchWorkout, setActiveProgram } = useWorkout();
   const [title, setTitle] = useState(() => localStorage.getItem('customWorkoutTitle') || '');
   const [weeks, setWeeks] = useState(() => {
     try {
@@ -27,8 +29,41 @@ function CustomWorkout() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const finishWorkout = () => {
-    localStorage.setItem('customWorkout', JSON.stringify(weeks));
+  const finishWorkout = async () => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      navigate('/home');
+      return;
+    }
+
+    const weeksWithExercises = weeks.map((week, wi) => ({
+      ...week,
+      days: week.days.map((day, di) => {
+        try {
+          const saved = localStorage.getItem(`customDay-week${wi + 1}-day${di + 1}`);
+          return { ...day, exercises: saved ? JSON.parse(saved) : [] };
+        } catch { return day; }
+      })
+    }));
+
+    try {
+      const res = await fetch('http://localhost:5050/api/users/custom-workout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId, title: title || 'Custom Workout', weeks: weeksWithExercises })
+      });
+
+      if (!res.ok) throw new Error('Failed to save custom workout');
+
+      localStorage.removeItem('customWorkout');
+      localStorage.removeItem('customWorkoutTitle');
+
+      await fetchWorkout(userId);
+      setActiveProgram(null);
+    } catch (err) {
+      console.error('Error saving custom workout:', err);
+    }
+
     navigate('/home');
   };
 
