@@ -30,6 +30,21 @@ function resolveWeekValue(value, wi) {
   return value ?? null;
 }
 
+// Which 1RM to apply when a weightNote is a percentage string (e.g. "75%")
+const PERCENT_REF_1RM = {
+  "Horizontal Push": "bench",
+  "Vertical Push":   "bench",
+  "Squat Pattern":   "squat",
+  "Hinge":           "deadlift",
+};
+
+// Fallback for "Main Lift" slots where label doesn't identify the lift
+const FIXED_EXERCISE_1RM = {
+  "Bench Press": "bench",
+  "Back Squat":  "squat",
+  "Deadlift":    "deadlift",
+};
+
 function Day() {
   const { weekNum, dayNum } = useParams();
   const navigate = useNavigate();
@@ -49,6 +64,16 @@ function Day() {
   const [editingSlot, setEditingSlot] = useState(null);
   const [openCards, setOpenCards] = useState({ 0: true });
   const [setData, setSetData] = useState({});
+  const [userOneRMs, setUserOneRMs] = useState(null);
+
+  useEffect(() => {
+    const uid = localStorage.getItem('userId');
+    if (!uid) return;
+    fetch(`http://localhost:5050/api/users/profile/${uid}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.current_one_rep_maxes) setUserOneRMs(data.current_one_rep_maxes); })
+      .catch(() => {});
+  }, []);
 
   const day = workout?.weeks?.[wi]?.days?.[di];
 
@@ -274,6 +299,7 @@ function Day() {
               ? weightNoteRaw.split(',').map(w => w.trim())
               : null;
           const getWeightNote = (j) => weightNoteArray ? (weightNoteArray[j] ?? weightNoteArray[weightNoteArray.length - 1]) : weightNoteRaw;
+          const projectedWeight = slot.projectedWeight ?? null;
           const options = slot.label ? (movementPatterns[slot.label] ?? [exercise]) : [exercise];
           const isOpen = openCards[si] ?? false;
           const doneCount = Array.from({ length: setCount }, (_, j) => getSet(si, j).done).filter(Boolean).length;
@@ -365,10 +391,20 @@ function Day() {
 
                   {Array.from({ length: setCount }, (_, j) => {
                     const s = getSet(si, j);
-                    const wn = getWeightNote(j);
-                    const hasTarget = !!wn;
+                    let target = projectedWeight ?? getWeightNote(j);
+                    // If target is a percentage string (e.g. "75%", "90%+"), resolve it
+                    // to an lb value using the user's 1RM for this movement pattern or fixed exercise.
+                    if (typeof target === 'string' && /^\d+(\.\d+)?%/.test(target)) {
+                      const pct = parseFloat(target) / 100;
+                      const refKey = PERCENT_REF_1RM[slot.label]
+                        ?? FIXED_EXERCISE_1RM[slot.fixed]
+                        ?? FIXED_EXERCISE_1RM[exercise];
+                      const ref1rm = userOneRMs?.[refKey];
+                      target = ref1rm ? Math.max(45, Math.round((ref1rm * pct) / 5) * 5) : null;
+                    }
+                    const hasTarget = target != null && target !== '';
                     const matched = s.actual !== '' && (hasTarget
-                      ? parseInt(s.actual) >= parseInt(wn)
+                      ? parseInt(s.actual) >= parseInt(target)
                       : s.actual > 0);
 
                     return (
@@ -378,8 +414,8 @@ function Day() {
                         <div className="set-reps">{getReps(j) ?? '—'}</div>
 
                         <div className="set-target">
-                          {wn
-                            ? <><span className="target-wt">{wn}</span><span className="target-unit"> lbs</span></>
+                          {hasTarget
+                            ? <><span className="target-wt">{target}</span><span className="target-unit"> lbs</span></>
                             : <span className="target-dash">—</span>
                           }
                         </div>
