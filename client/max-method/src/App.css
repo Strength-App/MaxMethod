@@ -2300,6 +2300,288 @@ button,
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   ONBOARDING PAGE
+═══════════════════════════════════════════════════════════════════ */
+.onboarding-page {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 60px 24px 80px;
+}
+
+.onboarding-title {
+  font-family: var(--font-heading);
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  color: var(--text);
+  text-shadow: 3px 3px 0 rgba(0,0,0,0.4);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.onboarding-subtitle {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 48px;
+  text-align: center;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* ── Section ─── */
+.ob-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: obFadeUp 0.4s forwards;
+}
+.ob-section:nth-child(1)  { animation-delay: 0.05s; }
+.ob-section:nth-child(3)  { animation-delay: 0.10s; }
+.ob-section:nth-child(5)  { animation-delay: 0.15s; }
+.ob-section:nth-child(7)  { animation-delay: 0.20s; }
+.ob-section:nth-child(9)  { animation-delay: 0.25s; }
+.ob-section:nth-child(11) { animation-delay: 0.30s; }
+@keyframes obFadeUp {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.ob-section-label {
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.20em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.ob-section-label::after {
+  content: '';
+  display: block;
+  width: 28px;
+  height: 2px;
+  background: var(--accent);
+  margin-top: 5px;
+}
+
+.ob-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-strong), transparent);
+}
+
+/* ── Toggle buttons ─── */
+.ob-btn-group {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ob-toggle-btn {
+  flex: 1;
+  min-width: 100px;
+  min-height: 44px;
+  padding: 13px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  color: var(--text);
+  font-family: var(--font-sub);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: border-color var(--transition-md), color var(--transition-md), background var(--transition-md), box-shadow var(--transition-md);
+  text-transform: uppercase;
+}
+.ob-toggle-btn:hover {
+  border-color: var(--accent);
+}
+.ob-toggle-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 0 1px var(--accent-border), var(--accent-glow-sm);
+}
+
+/* ── Input grid ─── */
+.ob-input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.ob-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ob-input-group label {
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.ob-input-wrap {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  overflow: hidden;
+  transition: border-color var(--transition-md);
+}
+.ob-input-wrap:focus-within {
+  border-color: var(--accent);
+}
+.ob-input-wrap input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 11px 14px;
+}
+.ob-input-wrap input::placeholder {
+  color: var(--muted);
+}
+.ob-input-unit {
+  padding: 0 12px;
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  background: var(--surface-deep);
+  display: flex;
+  align-items: center;
+  border-left: 1px solid var(--border-strong);
+}
+
+/* ── Focus cards ─── */
+.ob-focus-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.ob-focus-card {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color var(--transition-md), transform var(--transition-md), background var(--transition-md), box-shadow var(--transition-md);
+  display: flex;
+  flex-direction: column;
+}
+.ob-focus-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.ob-focus-card.active {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  box-shadow: 0 0 0 1px var(--accent-border), var(--accent-glow-sm);
+}
+
+.ob-focus-img {
+  width: 100%;
+  height: 100px;
+  background: var(--surface-deep);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-strong);
+}
+.ob-focus-icon {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+.ob-focus-body {
+  padding: 14px 14px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ob-focus-name {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text);
+  transition: color var(--transition-md);
+}
+.ob-focus-card.active .ob-focus-name {
+  color: var(--accent);
+}
+.ob-focus-desc {
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* ── Submit button ─── */
+.ob-submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: var(--accent);
+  border: none;
+  border-radius: 4px;
+  color: #fff;
+  font-family: var(--font-sub);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--transition-md), transform 0.1s, box-shadow var(--transition-md);
+}
+.ob-submit-btn:hover:not(:disabled) {
+  background: #e01010;
+  transform: translateY(-1px);
+  box-shadow: var(--accent-glow-sm);
+}
+.ob-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+.ob-submit-btn:disabled {
+  opacity: 0.60;
+  cursor: not-allowed;
+}
+
+/* ── Responsive ─── */
+@media (max-width: 620px) {
+  .ob-focus-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .ob-input-grid { grid-template-columns: 1fr; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    REDUCED MOTION — Respect user preference (per skill guideline)
 ═══════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
