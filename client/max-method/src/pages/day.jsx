@@ -42,6 +42,7 @@ const PERCENT_REF_1RM = {
 const FIXED_EXERCISE_1RM = {
   "Bench Press": "bench",
   "Back Squat":  "squat",
+  "Squat":       "squat",
   "Deadlift":    "deadlift",
 };
 

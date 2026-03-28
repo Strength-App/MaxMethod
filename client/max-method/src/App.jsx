@@ -12,6 +12,7 @@ import Settings from './pages/settings'
 import CreateAcc from './pages/createAcc'
 import Welcomepage from './pages/welcomepage'
 import PickNewProgram from './pages/pickNewProgram'
+import Onboarding from './pages/onboarding'
 import CustomWorkout from './pages/customWorkout'
 import CustomDay from './pages/customDay'
 import ViewProgram from './pages/viewProgram'
@@ -75,7 +76,8 @@ function App() {
   location.pathname === '/welcomepage' ||
   location.pathname === '/create-account' ||
   location.pathname === '/classification' ||
-  location.pathname === '/goals'
+  location.pathname === '/goals' ||
+  location.pathname === '/onboarding'
 
   const protectedRoute = (element) => {
     if (!user) return <Navigate to="/welcomepage" replace />
@@ -95,10 +97,11 @@ function App() {
 
             {/* AUTH PAGES */}
             <Route path="/welcomepage" element={user ? <Navigate to="/home" replace /> : <Welcomepage />} />
-            <Route path="/create-account" element={user ? <Navigate to="/classification" replace /> : <CreateAcc />} />
+            <Route path="/create-account" element={user ? <Navigate to="/onboarding" replace /> : <CreateAcc />} />
 
             {/* ONBOARDING — requires login but not onboarding_complete */}
             <Route path="/classification" element={user ? <Classification /> : <Navigate to="/welcomepage" replace />} />
+            <Route path="/onboarding" element={user ? <Onboarding /> : <Navigate to="/welcomepage" replace />} />
 
             {/* PROTECTED PAGES — requires login + onboarding_complete */}
             <Route path="/home" element={protectedRoute(<Home />)} />
