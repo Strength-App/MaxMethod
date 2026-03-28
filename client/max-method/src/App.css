@@ -1589,6 +1589,87 @@ input::placeholder {
   font-weight: 600;
 }
 
+.slot-label-divider {
+  font-family: var(--font-sub);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 16px 4px;
+  border-top: 1px solid var(--border);
+  background: rgba(255,255,255,0.02);
+}
+
+.rest-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(99, 102, 241, 0.06);
+  border-top: 1px solid rgba(99, 102, 241, 0.20);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.20);
+}
+
+.rest-timer-label {
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: #818cf8;
+}
+
+.rest-timer-display {
+  font-size: 38px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.rest-timer-controls {
+  display: flex;
+  gap: 8px;
+}
+
+.rest-timer-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(129, 140, 248, 0.30);
+  background: rgba(99, 102, 241, 0.12);
+  color: #a5b4fc;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-sub);
+  transition: background 0.15s, border-color 0.15s;
+  min-height: unset;
+}
+
+.rest-timer-btn:hover {
+  background: rgba(99, 102, 241, 0.22);
+  border-color: rgba(129, 140, 248, 0.55);
+}
+
+.rest-timer-btn--pause {
+  min-width: 68px;
+}
+
+.rest-timer-btn--skip {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.10);
+  color: var(--muted);
+}
+
+.rest-timer-btn--skip:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.20);
+  color: var(--text);
+}
+
 .ex-notes-row {
   display: flex;
   align-items: center;
@@ -2148,6 +2229,47 @@ input::placeholder {
   border-color: var(--accent-border);
   color: var(--accent);
   background: var(--accent-dim);
+}
+
+.toggle-btn {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+  min-height: unset;
+}
+
+.toggle-btn--on {
+  background: #2dba7e;
+  border-color: #2dba7e;
+}
+
+.toggle-btn--on:hover {
+  background: #28a870;
+  border-color: #28a870;
+  color: inherit;
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.toggle-btn--on .toggle-knob {
+  transform: translateX(20px);
+  background: #fff;
 }
 
 /* ═══════════════════════════════════════════════════════════════════

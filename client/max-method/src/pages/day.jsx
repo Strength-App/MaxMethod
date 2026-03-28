@@ -2,6 +2,48 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 
+const BIG_THREE = ['bench', 'squat', 'deadlift'];
+function getRestSeconds(exerciseName) {
+  const lower = (exerciseName || '').toLowerCase();
+  return BIG_THREE.some(n => lower.includes(n)) ? 120 : 90;
+}
+
+function RestTimer({ initialSeconds, onSkip }) {
+  const [seconds, setSeconds] = useState(initialSeconds);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused) return;
+    const id = setInterval(() => {
+      setSeconds(s => (s <= 1 ? 0 : s - 1));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [paused]);
+
+  useEffect(() => {
+    if (seconds === 0) onSkip();
+  }, [seconds]);
+
+  const adjust = (delta) => setSeconds(s => Math.max(0, s + delta));
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+
+  return (
+    <div className="rest-timer">
+      <div className="rest-timer-label">Rest Timer</div>
+      <div className="rest-timer-display">{mins}:{String(secs).padStart(2, '0')}</div>
+      <div className="rest-timer-controls">
+        <button className="rest-timer-btn" onClick={() => adjust(-30)}>-30s</button>
+        <button className="rest-timer-btn rest-timer-btn--pause" onClick={() => setPaused(p => !p)}>
+          {paused ? 'Resume' : 'Pause'}
+        </button>
+        <button className="rest-timer-btn rest-timer-btn--skip" onClick={onSkip}>Skip</button>
+        <button className="rest-timer-btn" onClick={() => adjust(30)}>+30s</button>
+      </div>
+    </div>
+  );
+}
+
 const movementPatterns = {
   "Horizontal Push": ["Bench Press", "Incline Bench Press", "Decline Bench Press", "Floor Press"],
   "Vertical Push": ["Military Press", "Seated Military Press", "Push Press"],
@@ -66,6 +108,7 @@ function Day() {
   const [openCards, setOpenCards] = useState({ 0: true });
   const [setData, setSetData] = useState({});
   const [userOneRMs, setUserOneRMs] = useState(null);
+  const [timerState, setTimerState] = useState(null); // { cardKey, id }
 
   useEffect(() => {
     const uid = localStorage.getItem('userId');
@@ -188,6 +231,22 @@ function Day() {
     navigate('/home');
   };
 
+  // Group consecutive slots with the same exercise into one card
+  const groupedSlots = (() => {
+    if (isCustom) return [];
+    const groups = [];
+    (day.slots ?? []).forEach((slot, si) => {
+      const exercise = assignments[di]?.[si] ?? slot.exercise ?? '';
+      const last = groups[groups.length - 1];
+      if (last && last.exercise === exercise) {
+        last.items.push({ slot, si });
+      } else {
+        groups.push({ exercise, items: [{ slot, si }] });
+      }
+    });
+    return groups;
+  })();
+
   return (
     <div className="day-page">
       {/* Header */}
@@ -272,54 +331,62 @@ function Day() {
                       />
                       <button
                         className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
-                        onClick={() => updateCustomSet(ei, si, { done: !s.done })}
+                        onClick={() => {
+                          const markingDone = !s.done;
+                          updateCustomSet(ei, si, { done: markingDone });
+                          if (markingDone && doneCount + 1 < ex.sets.length
+                            && localStorage.getItem('restTimerEnabled') !== 'false') {
+                            setTimerState(prev => ({ cardKey: `c-${ei}`, id: (prev?.id ?? 0) + 1 }));
+                          }
+                        }}
                         title="Mark set done"
                       >{s.done ? '✓' : ''}</button>
                     </div>
                   ))}
+                  {timerState?.cardKey === `c-${ei}` && !allDone && (
+                    <RestTimer
+                      key={timerState.id}
+                      initialSeconds={getRestSeconds(ex.name)}
+                      onSkip={() => setTimerState(null)}
+                    />
+                  )}
                   {allDone && <div className="ex-complete-banner"><span>✓</span> All sets complete — nice work!</div>}
                 </div>
               )}
             </div>
           );
-        }) : (day.slots ?? []).map((slot, si) => {
-          const exercise = assignments[di]?.[si] ?? slot.exercise ?? '';
-          const setsVal = resolveWeekValue(slot.sets, wi);
-          const setCount = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
-          const repsRaw = resolveWeekValue(slot.reps, wi);
-          const repsArray = Array.isArray(repsRaw)
-            ? repsRaw
-            : (typeof repsRaw === 'string' && repsRaw.includes(','))
-              ? repsRaw.split(',').map(r => r.trim())
-              : null;
-          const getReps = (j) => repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
-          const weightNoteRaw = resolveWeekValue(slot.weightNote, wi);
-          const weightNoteArray = Array.isArray(weightNoteRaw)
-            ? weightNoteRaw
-            : (typeof weightNoteRaw === 'string' && weightNoteRaw.includes(','))
-              ? weightNoteRaw.split(',').map(w => w.trim())
-              : null;
-          const getWeightNote = (j) => weightNoteArray ? (weightNoteArray[j] ?? weightNoteArray[weightNoteArray.length - 1]) : weightNoteRaw;
-          const projectedWeight = slot.projectedWeight ?? null;
-          const options = slot.label ? (movementPatterns[slot.label] ?? [exercise]) : [exercise];
-          const isOpen = openCards[si] ?? false;
-          const doneCount = Array.from({ length: setCount }, (_, j) => getSet(si, j).done).filter(Boolean).length;
-          const allDone = setCount > 0 && doneCount === setCount;
-          const progPct = setCount > 0 ? Math.round((doneCount / setCount) * 100) : 0;
-          const isEditing = editingSlot === si;
+        }) : groupedSlots.map((group, gi) => {
+          const { exercise, items } = group;
+          const { slot: firstSlot, si: firstSi } = items[0];
+
+          let groupSetCount = 0;
+          let groupDoneCount = 0;
+          items.forEach(({ slot, si }) => {
+            const setsVal = resolveWeekValue(slot.sets, wi);
+            const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
+            groupSetCount += count;
+            for (let j = 0; j < count; j++) {
+              if (getSet(si, j).done) groupDoneCount++;
+            }
+          });
+          const allDone = groupSetCount > 0 && groupDoneCount === groupSetCount;
+          const progPct = groupSetCount > 0 ? Math.round((groupDoneCount / groupSetCount) * 100) : 0;
+          const isOpen = openCards[gi] ?? false;
+          const isEditing = editingSlot === firstSi;
+          const options = firstSlot.label ? (movementPatterns[firstSlot.label] ?? [exercise]) : [exercise];
 
           return (
             <div
-              key={si}
+              key={gi}
               className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}
             >
               {/* Card Header */}
               <div
                 className="ex-card-header"
-                onClick={() => { setEditingSlot(null); toggleCard(si); }}
+                onClick={() => { setEditingSlot(null); toggleCard(gi); }}
               >
                 <div className="ex-card-title-block">
-                  {slot.fixed || isViewingPast ? (
+                  {firstSlot.fixed || isViewingPast ? (
                     <div className="ex-card-name ex-card-name--fixed">{exercise}</div>
                   ) : isEditing ? (
                     <select
@@ -328,14 +395,16 @@ function Day() {
                       value={exercise}
                       onClick={e => e.stopPropagation()}
                       onChange={e => {
-                        setExercise(di, si, e.target.value);
+                        items.forEach(({ si }) => setExercise(di, si, e.target.value));
                         setEditingSlot(null);
                         if (editMode && workoutLogId) {
-                          fetch(`http://localhost:5050/api/users/workout-log/${workoutLogId}/slot-exercise`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ weekNum: wi + 1, dayNum: di + 1, slotIdx: si, exercise: e.target.value })
-                          }).catch(err => console.error('Failed to save exercise:', err));
+                          items.forEach(({ si }) =>
+                            fetch(`http://localhost:5050/api/users/workout-log/${workoutLogId}/slot-exercise`, {
+                              method: 'PATCH',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ weekNum: wi + 1, dayNum: di + 1, slotIdx: si, exercise: e.target.value })
+                            }).catch(err => console.error('Failed to save exercise:', err))
+                          );
                         }
                       }}
                       onBlur={() => setEditingSlot(null)}
@@ -345,7 +414,7 @@ function Day() {
                   ) : (
                     <button
                       className="ex-card-name-btn"
-                      onClick={e => { e.stopPropagation(); setEditingSlot(si); }}
+                      onClick={e => { e.stopPropagation(); setEditingSlot(firstSi); }}
                       title="Tap to change exercise"
                     >
                       <span className="ex-card-name">{exercise}</span>
@@ -354,16 +423,15 @@ function Day() {
                       </span>
                     </button>
                   )}
-                  {slot.label && <div className="ex-card-type">{slot.label}</div>}
                 </div>
 
                 <div className="ex-card-stats">
                   <div className="stat-chip">
-                    <div className="stat-chip-val">{setCount}</div>
+                    <div className="stat-chip-val">{groupSetCount}</div>
                     <div className="stat-chip-lbl">Sets</div>
                   </div>
                   <div className="stat-chip stat-chip--done">
-                    <div className="stat-chip-val">{doneCount}/{setCount}</div>
+                    <div className="stat-chip-val">{groupDoneCount}/{groupSetCount}</div>
                     <div className="stat-chip-lbl">Done</div>
                   </div>
                 </div>
@@ -390,63 +458,104 @@ function Day() {
                     <span className="ex-col-lbl">✓</span>
                   </div>
 
-                  {Array.from({ length: setCount }, (_, j) => {
-                    const s = getSet(si, j);
-                    let target = projectedWeight ?? getWeightNote(j);
-                    // If target is a percentage string (e.g. "75%", "90%+"), resolve it
-                    // to an lb value using the user's 1RM for this movement pattern or fixed exercise.
-                    if (typeof target === 'string' && /^\d+(\.\d+)?%/.test(target)) {
-                      const pct = parseFloat(target) / 100;
-                      const refKey = PERCENT_REF_1RM[slot.label]
-                        ?? FIXED_EXERCISE_1RM[slot.fixed]
-                        ?? FIXED_EXERCISE_1RM[exercise];
-                      const ref1rm = userOneRMs?.[refKey];
-                      target = ref1rm ? Math.max(45, Math.round((ref1rm * pct) / 5) * 5) : null;
-                    }
-                    const hasTarget = target != null && target !== '';
-                    const matched = s.actual !== '' && (hasTarget
-                      ? parseInt(s.actual) >= parseInt(target)
-                      : s.actual > 0);
+                  {(() => {
+                    const rows = [];
+                    let globalSetNum = 0;
+                    items.forEach(({ slot, si }) => {
+                      const setsVal = resolveWeekValue(slot.sets, wi);
+                      const setCount = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
+                      const repsRaw = resolveWeekValue(slot.reps, wi);
+                      const repsArray = Array.isArray(repsRaw)
+                        ? repsRaw
+                        : (typeof repsRaw === 'string' && repsRaw.includes(','))
+                          ? repsRaw.split(',').map(r => r.trim())
+                          : null;
+                      const getReps = (j) => repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
+                      const weightNoteRaw = resolveWeekValue(slot.weightNote, wi);
+                      const weightNoteArray = Array.isArray(weightNoteRaw)
+                        ? weightNoteRaw
+                        : (typeof weightNoteRaw === 'string' && weightNoteRaw.includes(','))
+                          ? weightNoteRaw.split(',').map(w => w.trim())
+                          : null;
+                      const getWeightNote = (j) => weightNoteArray ? (weightNoteArray[j] ?? weightNoteArray[weightNoteArray.length - 1]) : weightNoteRaw;
+                      const projectedWeight = slot.projectedWeight ?? null;
 
-                    return (
-                      <div key={j} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
-                        <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{j + 1}</div>
+                      if (items.length > 1 && slot.label) {
+                        rows.push(
+                          <div key={`label-${si}`} className="slot-label-divider">{slot.label}</div>
+                        );
+                      }
 
-                        <div className="set-reps">{getReps(j) ?? '—'}</div>
+                      for (let j = 0; j < setCount; j++) {
+                        globalSetNum++;
+                        const s = getSet(si, j);
+                        let target = projectedWeight ?? getWeightNote(j);
+                        if (typeof target === 'string' && /^\d+(\.\d+)?%/.test(target)) {
+                          const pct = parseFloat(target) / 100;
+                          const refKey = PERCENT_REF_1RM[slot.label]
+                            ?? FIXED_EXERCISE_1RM[slot.fixed]
+                            ?? FIXED_EXERCISE_1RM[exercise];
+                          const ref1rm = userOneRMs?.[refKey];
+                          target = ref1rm ? Math.max(45, Math.round((ref1rm * pct) / 5) * 5) : null;
+                        }
+                        const hasTarget = target != null && target !== '';
+                        const matched = s.actual !== '' && (hasTarget
+                          ? parseInt(s.actual) >= parseInt(target)
+                          : s.actual > 0);
 
-                        <div className="set-target">
-                          {hasTarget
-                            ? <><span className="target-wt">{target}</span><span className="target-unit"> lbs</span></>
-                            : <span className="target-dash">—</span>
-                          }
-                        </div>
+                        rows.push(
+                          <div key={`${si}-${j}`} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
+                            <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{globalSetNum}</div>
+                            <div className="set-reps">{getReps(j) ?? '—'}</div>
+                            <div className="set-target">
+                              {hasTarget
+                                ? <><span className="target-wt">{target}</span><span className="target-unit"> lbs</span></>
+                                : <span className="target-dash">—</span>
+                              }
+                            </div>
+                            <input
+                              className={`actual-input${matched ? ' actual-input--matched' : ''}`}
+                              type="number"
+                              min="0"
+                              step="5"
+                              placeholder="0"
+                              value={s.actual}
+                              disabled={isViewingPast}
+                              onChange={e => {
+                                updateSet(si, j, { actual: e.target.value });
+                                updateLog(wi, di, si, 'actualWeight', e.target.value);
+                              }}
+                            />
+                            <button
+                              className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
+                              onClick={() => {
+                                if (isViewingPast) return;
+                                const markingDone = !s.done;
+                                updateSet(si, j, { done: markingDone });
+                                if (markingDone && groupDoneCount + 1 < groupSetCount
+                                  && localStorage.getItem('restTimerEnabled') !== 'false') {
+                                  setTimerState(prev => ({ cardKey: `g-${gi}`, id: (prev?.id ?? 0) + 1 }));
+                                }
+                              }}
+                              disabled={isViewingPast}
+                              title="Mark set done"
+                            >
+                              {s.done ? '✓' : ''}
+                            </button>
+                          </div>
+                        );
+                      }
+                    });
+                    return rows;
+                  })()}
 
-                        <input
-                          className={`actual-input${matched ? ' actual-input--matched' : ''}`}
-                          type="number"
-                          min="0"
-                          step="5"
-                          placeholder="0"
-                          value={s.actual}
-                          disabled={isViewingPast}
-                          onChange={e => {
-                            updateSet(si, j, { actual: e.target.value });
-                            updateLog(wi, di, si, 'actualWeight', e.target.value);
-                          }}
-                        />
-
-                        <button
-                          className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
-                          onClick={() => !isViewingPast && updateSet(si, j, { done: !s.done })}
-                          disabled={isViewingPast}
-                          title="Mark set done"
-                        >
-                          {s.done ? '✓' : ''}
-                        </button>
-                      </div>
-                    );
-                  })}
-
+                  {timerState?.cardKey === `g-${gi}` && !allDone && (
+                    <RestTimer
+                      key={timerState.id}
+                      initialSeconds={getRestSeconds(exercise)}
+                      onSkip={() => setTimerState(null)}
+                    />
+                  )}
                   {allDone && (
                     <div className="ex-complete-banner">
                       <span>✓</span> All sets complete — nice work!
@@ -458,8 +567,8 @@ function Day() {
                     <input
                       className="notes-input"
                       placeholder="notes..."
-                      value={(log[wi]?.[di]?.[si] ?? {}).notes ?? ''}
-                      onChange={e => updateLog(wi, di, si, 'notes', e.target.value)}
+                      value={(log[wi]?.[di]?.[firstSi] ?? {}).notes ?? ''}
+                      onChange={e => updateLog(wi, di, firstSi, 'notes', e.target.value)}
                     />
                   </div>
                 </div>

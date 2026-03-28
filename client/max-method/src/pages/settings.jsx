@@ -78,6 +78,8 @@ function Settings() {
             <UserLevel classification={classification} />
 
             <ChangePassword userId={user._id} />
+
+            <RestTimerToggle />
         </div>
     )
 }
@@ -329,6 +331,35 @@ function ChangePassword({ userId }) {
             </form>
 
             {message && <p>{message}</p>}
+        </div>
+    )
+}
+
+// ─────────────────────────────────────────
+// REST TIMER TOGGLE
+// ─────────────────────────────────────────
+function RestTimerToggle() {
+    const [enabled, setEnabled] = useState(
+        () => localStorage.getItem('restTimerEnabled') !== 'false'
+    )
+
+    const toggle = () => {
+        const next = !enabled
+        setEnabled(next)
+        localStorage.setItem('restTimerEnabled', String(next))
+    }
+
+    return (
+        <div className="user-setting">
+            <p>Rest Timer</p>
+            <span>{enabled ? 'On' : 'Off'}</span>
+            <button
+                className={`toggle-btn${enabled ? ' toggle-btn--on' : ''}`}
+                onClick={toggle}
+                aria-pressed={enabled}
+            >
+                <span className="toggle-knob" />
+            </button>
         </div>
     )
 }
