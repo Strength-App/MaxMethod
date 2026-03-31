@@ -16,6 +16,7 @@ import Onboarding from './pages/onboarding'
 import CustomWorkout from './pages/customWorkout'
 import CustomDay from './pages/customDay'
 import ViewProgram from './pages/viewProgram'
+import LoadingPage from './pages/loadingPage'
 
 // Workout context — wraps the whole app so state persists when navigating
 import { WorkoutProvider } from './context/WorkoutContext'
@@ -77,7 +78,8 @@ function App() {
   location.pathname === '/create-account' ||
   location.pathname === '/classification' ||
   location.pathname === '/goals' ||
-  location.pathname === '/onboarding'
+  location.pathname === '/onboarding' ||
+  location.pathname === '/loading'
 
   const protectedRoute = (element) => {
     if (!user) return <Navigate to="/welcomepage" replace />
@@ -102,6 +104,7 @@ function App() {
             {/* ONBOARDING — requires login but not onboarding_complete */}
             <Route path="/classification" element={user ? <Classification /> : <Navigate to="/welcomepage" replace />} />
             <Route path="/onboarding" element={user ? <Onboarding /> : <Navigate to="/welcomepage" replace />} />
+            <Route path="/loading" element={user ? <LoadingPage /> : <Navigate to="/welcomepage" replace />} />
 
             {/* PROTECTED PAGES — requires login + onboarding_complete */}
             <Route path="/home" element={protectedRoute(<Home />)} />

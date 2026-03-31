@@ -1809,6 +1809,225 @@ input::placeholder {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   LOADING PAGE
+═══════════════════════════════════════════════════════════════════ */
+.loading-page {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  text-align: center;
+  padding: 0 24px;
+}
+
+.loading-logo {
+  font-family: var(--font-heading);
+  font-size: 2.6rem;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.loading-spinner-wrap {
+  position: relative;
+  width: 72px;
+  height: 72px;
+}
+
+.loading-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--accent);
+  animation: loading-spin 1s linear infinite;
+}
+
+.loading-ring--delay {
+  inset: 10px;
+  border-top-color: rgba(204, 4, 4, 0.35);
+  animation-duration: 1.4s;
+  animation-direction: reverse;
+}
+
+@keyframes loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-message {
+  font-family: var(--font-sub);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.04em;
+  animation: loading-fade-in 0.4s ease;
+  min-height: 20px;
+}
+
+.loading-sub {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: -16px;
+}
+
+@keyframes loading-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   POST-WORKOUT MODAL
+═══════════════════════════════════════════════════════════════════ */
+.post-workout-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .7);
+  z-index: 400;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.post-workout-modal {
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding-bottom: 32px;
+  animation: histSlideUp .3s ease;
+}
+
+.post-workout-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  margin: 12px auto 0;
+}
+
+.post-workout-header {
+  padding: 24px 24px 0;
+  text-align: center;
+}
+
+.post-workout-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--text);
+}
+
+.post-workout-subtitle {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-top: 4px;
+}
+
+.post-workout-volume-block {
+  text-align: center;
+  padding: 28px 24px 8px;
+}
+
+.post-workout-volume-val {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  color: var(--accent);
+  line-height: 1;
+  text-shadow: var(--accent-glow-sm);
+}
+
+.post-workout-volume-lbl {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-top: 6px;
+}
+
+.post-workout-breakdown {
+  margin: 20px 24px 0;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.post-workout-breakdown-title {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin-bottom: 10px;
+}
+
+.post-workout-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.post-workout-breakdown-name {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.post-workout-breakdown-vol {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.post-workout-btn {
+  display: block;
+  width: calc(100% - 48px);
+  margin: 24px 24px 0;
+  padding: 14px;
+  background: var(--accent);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow: var(--accent-glow-sm);
+  transition: opacity var(--transition-md), transform var(--transition);
+}
+
+.post-workout-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    HISTORY PAGE
 ═══════════════════════════════════════════════════════════════════ */
 .hist-page {
