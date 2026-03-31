@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import { useWorkout } from "../context/WorkoutContext";
 
 function Onboarding() {
   const navigate = useNavigate();
   const { user } = useUser();
-  const { setUserId, fetchWorkout, setActiveProgram } = useWorkout();
 
   const [formData, setFormData] = useState({
     gender: "",
@@ -18,24 +16,22 @@ function Onboarding() {
     goalSelection: "",
   });
 
-  const [loading, setLoading] = useState(false);
-
   const set = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
   const handleInput = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     const missing = [];
-    if (!formData.gender)       missing.push("gender");
-    if (!formData.bodyWeight)   missing.push("body weight");
-    if (!formData.benchPress)   missing.push("bench press");
-    if (!formData.squat)        missing.push("squat");
-    if (!formData.deadlift)     missing.push("deadlift");
-    if (!formData.daysPerWeek)  missing.push("training days");
+    if (!formData.gender)        missing.push("gender");
+    if (!formData.bodyWeight)    missing.push("body weight");
+    if (!formData.benchPress)    missing.push("bench press");
+    if (!formData.squat)         missing.push("squat");
+    if (!formData.deadlift)      missing.push("deadlift");
+    if (!formData.daysPerWeek)   missing.push("training days");
     if (!formData.goalSelection) missing.push("training focus");
 
     if (missing.length) {
@@ -50,68 +46,20 @@ function Onboarding() {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      // Step 1: classify
-      const classRes = await fetch("http://localhost:5050/api/users/classification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user.email,
-          gender: formData.gender,
-          benchPress: Number(formData.benchPress),
-          deadlift: Number(formData.deadlift),
-          squat: Number(formData.squat),
-          bodyWeight: Number(formData.bodyWeight),
-        }),
-      });
-
-      if (!classRes.ok) throw new Error("Classification failed");
-      const classData = await classRes.json();
-
-      // Step 2: goals
-      const goalsRes = await fetch("http://localhost:5050/api/users/goals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          classification: classData.classification,
-          daysPerWeek: formData.daysPerWeek,
-          goalSelection: formData.goalSelection,
-        }),
-      });
-
-      if (!goalsRes.ok) {
-        const text = await goalsRes.text();
-        console.error("Goals error:", text);
-        throw new Error("Goals failed");
+    navigate("/loading", {
+      state: {
+        source: 'onboarding',
+        userId,
+        email: user.email,
+        gender: formData.gender,
+        benchPress: Number(formData.benchPress),
+        squat: Number(formData.squat),
+        deadlift: Number(formData.deadlift),
+        bodyWeight: Number(formData.bodyWeight),
+        daysPerWeek: formData.daysPerWeek,
+        goalSelection: formData.goalSelection,
       }
-
-      const goalsData = await goalsRes.json();
-      console.log("Workout generated:", goalsData);
-
-      setUserId(userId);
-      setActiveProgram(null);
-
-      const workoutSource =
-        goalsData?.weeks?.length > 0
-          ? {
-              ...goalsData,
-              classification: goalsData.classification ?? classData.classification,
-              goalSelection: goalsData.goalSelection ?? formData.goalSelection,
-              daysPerWeek: goalsData.daysPerWeek ?? Number(formData.daysPerWeek),
-            }
-          : null;
-
-      await fetchWorkout(userId, workoutSource);
-      navigate("/home");
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   const focusOptions = [
@@ -237,8 +185,8 @@ function Onboarding() {
 
         {/* ── SUBMIT ── */}
         <div className="ob-section">
-          <button type="submit" className="ob-submit-btn" disabled={loading}>
-            {loading ? "Building Your Program…" : "Begin My Program"}
+          <button type="submit" className="ob-submit-btn">
+            Begin My Program
           </button>
         </div>
 

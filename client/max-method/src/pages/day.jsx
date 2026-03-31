@@ -109,6 +109,7 @@ function Day() {
   const [setData, setSetData] = useState({});
   const [userOneRMs, setUserOneRMs] = useState(null);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
+  const [postWorkoutData, setPostWorkoutData] = useState(null); // { totalVolume, breakdown }
 
   useEffect(() => {
     const uid = localStorage.getItem('userId');
@@ -228,7 +229,44 @@ function Day() {
 
   const handleCompleteDay = async () => {
     await completeDay(wi, di);
-    navigate('/home');
+
+    // Calculate total volume
+    const breakdown = [];
+    if (isCustom) {
+      customExercises.forEach(ex => {
+        let vol = 0;
+        ex.sets.forEach(s => {
+          const reps = parseInt(s.reps) || 0;
+          const weight = parseFloat(s.actual) || 0;
+          vol += reps * weight;
+        });
+        if (vol > 0) breakdown.push({ name: ex.name, volume: vol });
+      });
+    } else {
+      groupedSlots.forEach(({ exercise, items }) => {
+        let vol = 0;
+        items.forEach(({ slot, si }) => {
+          const setsVal = resolveWeekValue(slot.sets, wi);
+          const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
+          const repsRaw = resolveWeekValue(slot.reps, wi);
+          const repsArray = Array.isArray(repsRaw)
+            ? repsRaw
+            : (typeof repsRaw === 'string' && repsRaw.includes(','))
+              ? repsRaw.split(',').map(r => r.trim())
+              : null;
+          for (let j = 0; j < count; j++) {
+            const s = getSet(si, j);
+            const weight = parseFloat(s.actual) || 0;
+            const repsVal = repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
+            const reps = parseInt(repsVal) || 0;
+            vol += reps * weight;
+          }
+        });
+        if (vol > 0) breakdown.push({ name: exercise, volume: vol });
+      });
+    }
+    const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
+    setPostWorkoutData({ totalVolume, breakdown });
   };
 
   // Group consecutive slots with the same exercise into one card
@@ -577,6 +615,41 @@ function Day() {
           );
         })}
       </div>
+
+      {/* Post-Workout Modal */}
+      {postWorkoutData && (
+        <div className="post-workout-overlay" onClick={() => { setPostWorkoutData(null); navigate('/home'); }}>
+          <div className="post-workout-modal" onClick={e => e.stopPropagation()}>
+            <div className="post-workout-handle" />
+            <div className="post-workout-header">
+              <div className="post-workout-title">Workout Complete</div>
+              <div className="post-workout-subtitle">{day.title ?? `Day ${dayNum}`}</div>
+            </div>
+            <div className="post-workout-volume-block">
+              <div className="post-workout-volume-val">
+                {postWorkoutData.totalVolume > 0
+                  ? postWorkoutData.totalVolume.toLocaleString()
+                  : '—'}
+              </div>
+              <div className="post-workout-volume-lbl">Total Volume (lbs)</div>
+            </div>
+            {postWorkoutData.breakdown.length > 0 && (
+              <div className="post-workout-breakdown">
+                <div className="post-workout-breakdown-title">By Exercise</div>
+                {postWorkoutData.breakdown.map((e, i) => (
+                  <div key={i} className="post-workout-breakdown-row">
+                    <span className="post-workout-breakdown-name">{e.name}</span>
+                    <span className="post-workout-breakdown-vol">{e.volume.toLocaleString()} lbs</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <button className="post-workout-btn" onClick={() => { setPostWorkoutData(null); navigate('/home'); }}>
+              Done
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <div className="day-footer">

@@ -13,6 +13,7 @@ function CustomWorkout() {
     } catch { return []; }
   });
   const [saved, setSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'week'|'day', wi, di? }
   const workout = { title: title || 'Custom Workout', weeks };
 
   useEffect(() => {
@@ -132,18 +133,42 @@ function CustomWorkout() {
                     />
                   </div>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete({ type: 'week', wi })}
+                  title="Delete week"
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', padding: '4px', lineHeight: 1 }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
               </div>
               <div className="week-days">
                 {week.days.map((day, di) => (
-                  <button
-                    key={di}
-                    type="button"
-                    className={`day-cell ${day.completed ? 'day-cell--completed' : ''}`}
-                    onClick={() => navigate(`/customDay/${weekNum}/${di + 1}`)}
-                  >
-                    {day.title ?? `Day ${di + 1}`}
-                    {day.completed && <span className="completed-badge">✓</span>}
-                  </button>
+                  <div key={di} style={{ position: 'relative', display: 'inline-flex' }}>
+                    <button
+                      type="button"
+                      className={`day-cell ${day.completed ? 'day-cell--completed' : ''}`}
+                      onClick={() => navigate(`/customDay/${weekNum}/${di + 1}`)}
+                    >
+                      {day.title ?? `Day ${di + 1}`}
+                      {day.completed && <span className="completed-badge">✓</span>}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete({ type: 'day', wi, di })}
+                      title="Delete day"
+                      style={{ position: 'absolute', top: '4px', right: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', padding: '2px', lineHeight: 1 }}
+                    >
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
+                  </div>
                 ))}
                 {week.days.length < 7 && (
                   <button
@@ -170,6 +195,45 @@ function CustomWorkout() {
           )}
         </div>
       </div>
+
+      {confirmDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '12px', padding: '28px 32px', maxWidth: '360px', width: '90%', textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 10px', color: 'var(--text)' }}>
+              Delete {confirmDelete.type === 'week' ? `Week ${confirmDelete.wi + 1}` : `Day ${confirmDelete.di + 1}`}?
+            </h3>
+            <p style={{ margin: '0 0 24px', color: 'var(--text-muted, #888)', fontSize: '14px', lineHeight: 1.5 }}>
+              All exercise data in this {confirmDelete.type} will be permanently lost.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                className="btn-back"
+                onClick={() => setConfirmDelete(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-complete"
+                style={{ background: 'var(--accent)' }}
+                onClick={() => {
+                  if (confirmDelete.type === 'week') {
+                    setWeeks(prev => prev.filter((_, i) => i !== confirmDelete.wi));
+                  } else {
+                    setWeeks(prev => prev.map((w, i) =>
+                      i === confirmDelete.wi ? { ...w, days: w.days.filter((_, j) => j !== confirmDelete.di) } : w
+                    ));
+                  }
+                  setConfirmDelete(null);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

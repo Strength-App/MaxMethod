@@ -106,6 +106,45 @@ function CustomDay() {
   const toggleCard = (ei) =>
     setOpenCards(prev => ({ ...prev, [ei]: !prev[ei] }));
 
+  const deleteExercise = (ei) =>
+    setExercises(prev => prev.filter((_, i) => i !== ei));
+
+  const applyToAllWeeks = async () => {
+    const totalWeeks = isExternal
+      ? workout?.weeks?.length ?? 0
+      : (() => { try { return JSON.parse(localStorage.getItem('customWorkout') || '[]').length; } catch { return 0; } })();
+
+    if (totalWeeks <= 1) return;
+
+    const stripped = exercises.map(ex => ({
+      ...ex,
+      sets: ex.sets.map(s => ({ ...s, actual: '', done: false })),
+    }));
+
+    if (isExternal) {
+      const requests = [];
+      for (let w = 1; w <= totalWeeks; w++) {
+        if (w === Number(weekNum)) continue;
+        requests.push(
+          fetch(`http://localhost:5050/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ weekNum: w, dayNum: Number(dayNum), exercises: stripped }),
+          })
+        );
+      }
+      await Promise.all(requests);
+    } else {
+      for (let w = 1; w <= totalWeeks; w++) {
+        if (w === Number(weekNum)) continue;
+        localStorage.setItem(`customDay-week${w}-day${dayNum}`, JSON.stringify(stripped));
+      }
+    }
+  };
+
+  const [applyConfirm, setApplyConfirm] = useState(false);
+  const [applyDone, setApplyDone] = useState(false);
+
   // Summary counts
   let totalSets = 0, doneSets = 0;
   exercises.forEach(ex => {
@@ -172,6 +211,19 @@ function CustomDay() {
                     <div className="stat-chip-lbl">Done</div>
                   </div>
                 </div>
+                <button
+                  className="ex-card-delete"
+                  onClick={e => { e.stopPropagation(); deleteExercise(ei); }}
+                  title="Delete exercise"
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', padding: '4px', lineHeight: 1 }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                    <path d="M10 11v6M14 11v6"/>
+                    <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                  </svg>
+                </button>
                 <div className="ex-card-chevron" aria-hidden="true">▼</div>
               </div>
 
@@ -197,14 +249,21 @@ function CustomDay() {
                   {ex.sets.map((s, si) => (
                     <div key={si} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
                       <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{si + 1}</div>
-                      <input
-                        className="actual-input"
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        value={s.reps}
-                        onChange={e => updateSet(ei, si, { reps: e.target.value })}
-                      />
+                      <div className="actual-input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', gap: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => updateSet(ei, si, { reps: Math.max(0, (Number(s.reps) || 0) - 1) })}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                        >−</button>
+                        <span style={{ textAlign: 'center', fontSize: '14px', color: s.reps !== '' ? 'var(--text)' : 'var(--muted)' }}>
+                          {s.reps !== '' ? s.reps : '0'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => updateSet(ei, si, { reps: (Number(s.reps) || 0) + 1 })}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                        >+</button>
+                      </div>
                       <input
                         className="actual-input"
                         type="number"
@@ -262,10 +321,39 @@ function CustomDay() {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
           Back
         </button>
+        <button type="button" className="btn-back" onClick={() => setApplyConfirm(true)}>
+          Apply to All Weeks
+        </button>
         <button className="btn-complete" onClick={saveWorkout}>
           {saved ? '✓ Saved!' : 'Save Workout'}
         </button>
       </div>
+
+      {applyConfirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '12px', padding: '28px 32px', maxWidth: '360px', width: '90%', textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 10px', color: 'var(--text)' }}>Apply to All Weeks?</h3>
+            <p style={{ margin: '0 0 24px', color: 'var(--text-muted, #888)', fontSize: '14px', lineHeight: 1.5 }}>
+              The exercises in Day {dayNum} will be copied to every other week, overwriting any existing data for that day.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button type="button" className="btn-back" onClick={() => setApplyConfirm(false)}>Cancel</button>
+              <button
+                type="button"
+                className="btn-complete"
+                onClick={async () => {
+                  await applyToAllWeeks();
+                  setApplyConfirm(false);
+                  setApplyDone(true);
+                  setTimeout(() => setApplyDone(false), 2000);
+                }}
+              >
+                {applyDone ? '✓ Applied!' : 'Apply'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
