@@ -15,8 +15,14 @@ function Classification() {
       gender: formData.gender,
     ...formData,
     benchPress: Number(formData.benchPress),
+    benchRep: Number(formData.benchRep),
+    benchMax: Number(formData.benchMax),
     deadlift: Number(formData.deadlift),
+    deadliftRep: Number(formData.deadliftRep),
+    deadliftMax: Number(formData.deadliftMax),
     squat: Number(formData.squat),
+    squatRep: Number(formData.squatRep),
+    squatMax: Number(formData.squatMax),
     bodyWeight: Number(formData.bodyWeight),
     };
 
@@ -48,17 +54,45 @@ function Classification() {
   const [formData, setFormData] = useState({
     gender: "",
     benchPress: "",
+    benchRep: "",
+    benchMax: "",
     deadlift: "",
+    deadliftRep: "",
+    deadliftMax: "",
     squat: "",
+    squatRep: "",
+    squatMax: "",
     bodyWeight: ""
   });
 
   // Updates formData state when user inputs data
   const handleChange = (e) => {
-    setFormData({
+    const updated = setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+
+
+  const bench = Number(updated.benchPress);
+  const benchRep = Number(updated.benchRep);
+
+  const deadlift = Number(updated.deadlift);
+  const deadliftRep = Number(updated.deadliftRep);
+
+  const squat = Number(updated.squat);
+  const squatRep = Number(updated.squatRep);
+
+  // Calculate 1RM (only if values exist)
+  updated.benchMax =
+    bench && benchRep ? (bench * (1 + benchRep / 30)).toFixed(1) : "";
+
+  updated.deadliftMax =
+    deadlift && deadliftRep ? (deadlift * (1 + deadliftRep / 30)).toFixed(1) : "";
+
+  updated.squatMax =
+    squat && squatRep ? (squat * (1 + squatRep / 30)).toFixed(1) : "";
+
+  setFormData(updated);
   };
 
   return (
@@ -130,6 +164,28 @@ function Classification() {
         </div>
 
         <div className="classification-data">
+          <p>Bench Rep</p>
+          <div className="input-unit">
+          <input 
+          type="number"
+          name="benchPress"
+          value={formData.benchRep}
+          onChange={handleChange}
+          placeholder="Enter weight"
+          min="0"
+          required
+          />
+          <span>lbs</span>
+          </div>
+        </div>
+
+        <div className="classification-data">
+          <p>Bench Max</p>
+          <input type="text" value={formData.benchMax} readOnly />
+        </div>
+
+
+        <div className="classification-data">
           <p>Deadlift</p>
           <div className="input-unit">
           <input
@@ -146,6 +202,27 @@ function Classification() {
         </div>
 
         <div className="classification-data">
+          <p>Deadlift Rep</p>
+          <div className="input-unit">
+          <input
+          type="number"
+          name="deadlift"
+          value={formData.deadliftRep}
+          onChange={handleChange}
+          placeholder="Enter weight"
+          min="0"
+          required
+          />
+          <span>lbs</span>
+          </div>
+        </div>
+
+         <div className="classification-data">
+          <p>Deadlift Max</p>
+          <input type="text" value={formData.deadliftMax} readOnly />
+        </div>
+
+        <div className="classification-data">
           <p>Squat</p>
           <div className="input-unit">
           <input
@@ -159,6 +236,27 @@ function Classification() {
           />
           <span>lbs</span>
           </div>
+        </div>
+
+        <div className="classification-data">
+          <p>Squat Rep</p>
+          <div className="input-unit">
+          <input
+          type="number"
+          name="squat"
+          value={formData.squatRep}
+          onChange={handleChange}
+          placeholder="Enter weight"
+          min="0"
+          required
+          />
+          <span>lbs</span>
+          </div>
+        </div>
+
+         <div className="classification-data">
+          <p>Squat Max</p>
+          <input type="text" value={formData.squatMax} readOnly />
         </div>
 
         <div className="classification-data">
