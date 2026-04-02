@@ -6,7 +6,7 @@ function CustomDay() {
   const { weekNum, dayNum } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { workout } = useWorkout();
+  const { workout, fetchWorkout } = useWorkout();
   const wi = Number(weekNum) - 1;
   const di = Number(dayNum) - 1;
 
@@ -81,6 +81,22 @@ function CustomDay() {
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const saveToDbNow = async (currentExercises) => {
+    if (!isExternal) return;
+    clearTimeout(saveTimer.current);
+    try {
+      await fetch(`http://localhost:5050/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: currentExercises })
+      });
+      const userId = localStorage.getItem('userId');
+      if (userId) await fetchWorkout(userId);
+    } catch (err) {
+      console.error('Failed to save custom day:', err);
+    }
+  };
+
   const addExercise = () => {
     const idx = exercises.length;
     setExercises(prev => [...prev, {
@@ -111,7 +127,7 @@ function CustomDay() {
 
   const applyToAllWeeks = async () => {
     const totalWeeks = isExternal
-      ? workout?.weeks?.length ?? 0
+      ? location.state?.totalWeeks ?? 0
       : (() => { try { return JSON.parse(localStorage.getItem('customWorkout') || '[]').length; } catch { return 0; } })();
 
     if (totalWeeks <= 1) return;
@@ -122,9 +138,12 @@ function CustomDay() {
     }));
 
     if (isExternal) {
+      const weekDayCounts = location.state?.weekDayCounts ?? [];
       const requests = [];
       for (let w = 1; w <= totalWeeks; w++) {
         if (w === Number(weekNum)) continue;
+        // Only apply to weeks that already have a day at this index
+        if ((weekDayCounts[w - 1] ?? 0) < Number(dayNum)) continue;
         requests.push(
           fetch(`http://localhost:5050/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
             method: 'PATCH',
@@ -206,10 +225,6 @@ function CustomDay() {
                     <div className="stat-chip-val">{ex.sets.length}</div>
                     <div className="stat-chip-lbl">Sets</div>
                   </div>
-                  <div className="stat-chip stat-chip--done">
-                    <div className="stat-chip-val">{doneCount}/{ex.sets.length}</div>
-                    <div className="stat-chip-lbl">Done</div>
-                  </div>
                 </div>
                 <button
                   className="ex-card-delete"
@@ -238,17 +253,16 @@ function CustomDay() {
               {/* Sets Panel */}
               {isOpen && (
                 <div className="ex-sets-panel">
-                  <div className="ex-sets-col-header">
+                  <div className="ex-sets-col-header" style={{ gridTemplateColumns: '36px repeat(3, 1fr)' }}>
                     <span className="ex-col-lbl">Set</span>
                     <span className="ex-col-lbl">Reps</span>
                     <span className="ex-col-lbl">Target</span>
                     <span className="ex-col-lbl">Actual (lbs)</span>
-                    <span className="ex-col-lbl">✓</span>
                   </div>
 
                   {ex.sets.map((s, si) => (
-                    <div key={si} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
-                      <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{si + 1}</div>
+                    <div key={si} className="ex-set-row" style={{ gridTemplateColumns: '36px repeat(3, 1fr)' }}>
+                      <div className="set-num">{si + 1}</div>
                       <div className="actual-input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', gap: '4px' }}>
                         <button
                           type="button"
@@ -282,13 +296,6 @@ function CustomDay() {
                         value={s.actual}
                         onChange={e => updateSet(ei, si, { actual: e.target.value })}
                       />
-                      <button
-                        className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
-                        onClick={() => updateSet(ei, si, { done: !s.done })}
-                        title="Mark set done"
-                      >
-                        {s.done ? '✓' : ''}
-                      </button>
                     </div>
                   ))}
 
@@ -317,12 +324,12 @@ function CustomDay() {
 
       {/* Footer */}
       <div className="day-footer">
-        <button className="btn-back" onClick={() => isExternal ? navigate(`/view-program/${location.state?.programLogId}`, { state: { isEditing: true } }) : navigate('/customWorkout')}>
+        <button className="btn-back" onClick={async () => { if (isExternal) { await saveToDbNow(exercises); navigate(`/view-program/${location.state?.programLogId}`, { state: { isEditing: true } }); } else { navigate('/customWorkout'); } }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
           Back
         </button>
         <button type="button" className="btn-back" onClick={() => setApplyConfirm(true)}>
-          Apply to All Weeks
+          {applyDone ? '✓ Applied!' : 'Apply to All Weeks'}
         </button>
         <button className="btn-complete" onClick={saveWorkout}>
           {saved ? '✓ Saved!' : 'Save Workout'}
