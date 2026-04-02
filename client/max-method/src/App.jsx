@@ -17,6 +17,7 @@ import CustomWorkout from './pages/customWorkout'
 import CustomDay from './pages/customDay'
 import ViewProgram from './pages/viewProgram'
 import LoadingPage from './pages/loadingPage'
+import ReviewProgram from './pages/reviewProgram'
 
 // Workout context — wraps the whole app so state persists when navigating
 import { WorkoutProvider } from './context/WorkoutContext'
@@ -79,7 +80,8 @@ function App() {
   location.pathname === '/classification' ||
   location.pathname === '/goals' ||
   location.pathname === '/onboarding' ||
-  location.pathname === '/loading'
+  location.pathname === '/loading' ||
+  location.pathname === '/review-program'
 
   const protectedRoute = (element) => {
     if (!user) return <Navigate to="/welcomepage" replace />
@@ -92,7 +94,7 @@ function App() {
         {/* ONLY SHOW NAV ON NON-AUTH PAGES */}
         {!hideNavigation && <Navigation />}
 
-        <div className="page-content">
+        <div className={`page-content${hideNavigation ? ' page-content--full' : ''}`}>
           <Routes>
             {/* DEFAULT */}
             <Route path="/" element={<Navigate to="/welcomepage" replace />} />
@@ -117,6 +119,7 @@ function App() {
             <Route path="/customWorkout" element={protectedRoute(<CustomWorkout />)} />
             <Route path="/customDay/:weekNum/:dayNum" element={protectedRoute(<CustomDay />)} />
             <Route path="/view-program/:programLogId" element={protectedRoute(<ViewProgram />)} />
+            <Route path="/review-program" element={user ? <ReviewProgram /> : <Navigate to="/welcomepage" replace />} />
           </Routes>
         </div>
       </WorkoutProvider>

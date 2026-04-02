@@ -171,10 +171,11 @@ function Day() {
         const setsVal = resolveWeekValue(slot.sets, wi);
         const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
         const savedWeight = log[wi]?.[di]?.[si]?.actualWeight ?? '';
+        const savedActualReps = log[wi]?.[di]?.[si]?.actualReps ?? '';
         for (let j = 0; j < count; j++) {
           const key = `${si}-${j}`;
           if (!seeded[key]) {
-            seeded[key] = { actual: savedWeight, done: false };
+            seeded[key] = { actual: savedWeight, actualReps: savedActualReps, done: false };
           }
         }
       });
@@ -192,7 +193,7 @@ function Day() {
     </div>
   );
 
-  const getSet = (si, j) => setData[`${si}-${j}`] ?? { actual: '', done: false };
+  const getSet = (si, j) => setData[`${si}-${j}`] ?? { actual: '', actualReps: '', done: false };
 
   const updateSet = (si, j, patch) =>
     setSetData(prev => ({
@@ -236,7 +237,7 @@ function Day() {
       customExercises.forEach(ex => {
         let vol = 0;
         ex.sets.forEach(s => {
-          const reps = parseInt(s.reps) || 0;
+          const reps = parseInt(s.actualReps || s.reps) || 0;
           const weight = parseFloat(s.actual) || 0;
           vol += reps * weight;
         });
@@ -257,8 +258,8 @@ function Day() {
           for (let j = 0; j < count; j++) {
             const s = getSet(si, j);
             const weight = parseFloat(s.actual) || 0;
-            const repsVal = repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
-            const reps = parseInt(repsVal) || 0;
+            const targetRepsVal = repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
+            const reps = parseInt(s.actualReps || targetRepsVal) || 0;
             vol += reps * weight;
           }
         });
@@ -349,7 +350,8 @@ function Day() {
                 <div className="ex-sets-panel">
                   <div className="ex-sets-col-header">
                     <span className="ex-col-lbl">Set</span>
-                    <span className="ex-col-lbl">Reps</span>
+                    <span className="ex-col-lbl">Target Reps</span>
+                    <span className="ex-col-lbl">Actual Reps</span>
                     <span className="ex-col-lbl">Target</span>
                     <span className="ex-col-lbl">Actual (lbs)</span>
                     <span className="ex-col-lbl">✓</span>
@@ -358,6 +360,27 @@ function Day() {
                     <div key={si} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
                       <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{si + 1}</div>
                       <div className="set-reps">{s.reps || '—'}</div>
+                      <div className="stepper-wrap">
+                        <button
+                          type="button"
+                          className="stepper-btn stepper-btn--dec"
+                          onClick={() => updateCustomSet(ei, si, { actualReps: Math.max(0, (Number(s.actualReps) || 0) - 1) })}
+                        >−</button>
+                        <input
+                          className="actual-input"
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="0"
+                          value={s.actualReps ?? ''}
+                          onChange={e => updateCustomSet(ei, si, { actualReps: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          className="stepper-btn stepper-btn--inc"
+                          onClick={() => updateCustomSet(ei, si, { actualReps: (Number(s.actualReps) || 0) + 1 })}
+                        >+</button>
+                      </div>
                       <div className="set-target">
                         {s.target ? <><span className="target-wt">{s.target}</span><span className="target-unit"> lbs</span></> : <span className="target-dash">—</span>}
                       </div>
@@ -490,7 +513,8 @@ function Day() {
                 <div className="ex-sets-panel">
                   <div className="ex-sets-col-header">
                     <span className="ex-col-lbl">Set</span>
-                    <span className="ex-col-lbl">Reps</span>
+                    <span className="ex-col-lbl">Target Reps</span>
+                    <span className="ex-col-lbl">Actual Reps</span>
                     <span className="ex-col-lbl">Target</span>
                     <span className="ex-col-lbl">Actual (lbs)</span>
                     <span className="ex-col-lbl">✓</span>
@@ -545,6 +569,42 @@ function Day() {
                           <div key={`${si}-${j}`} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
                             <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{globalSetNum}</div>
                             <div className="set-reps">{getReps(j) ?? '—'}</div>
+                            <div className="stepper-wrap">
+                              <button
+                                type="button"
+                                className="stepper-btn stepper-btn--dec"
+                                disabled={isViewingPast}
+                                onClick={() => {
+                                  const next = Math.max(0, (Number(s.actualReps) || 0) - 1);
+                                  updateSet(si, j, { actualReps: next });
+                                  updateLog(wi, di, si, 'actualReps', next);
+                                }}
+                              >−</button>
+                              <input
+                                className="actual-input"
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="0"
+                                value={s.actualReps ?? ''}
+                                disabled={isViewingPast}
+                                onChange={e => {
+                                  const next = e.target.value;
+                                  updateSet(si, j, { actualReps: next });
+                                  updateLog(wi, di, si, 'actualReps', next);
+                                }}
+                              />
+                              <button
+                                type="button"
+                                className="stepper-btn stepper-btn--inc"
+                                disabled={isViewingPast}
+                                onClick={() => {
+                                  const next = (Number(s.actualReps) || 0) + 1;
+                                  updateSet(si, j, { actualReps: next });
+                                  updateLog(wi, di, si, 'actualReps', next);
+                                }}
+                              >+</button>
+                            </div>
                             <div className="set-target">
                               {hasTarget
                                 ? <><span className="target-wt">{target}</span><span className="target-unit"> lbs</span></>

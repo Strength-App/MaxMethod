@@ -13,7 +13,7 @@ const MESSAGES = [
 function LoadingPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUserId, fetchWorkout, setActiveProgram } = useWorkout();
+  const { setUserId, setActiveProgram } = useWorkout();
   const [msgIndex, setMsgIndex] = useState(0);
   const hasRun = useRef(false);
 
@@ -61,15 +61,15 @@ function LoadingPage() {
           setUserId(userId);
           setActiveProgram(null);
 
-          const workoutSource = goalsData?.weeks?.length > 0 ? {
-            ...goalsData,
-            classification: goalsData.classification ?? classData.classification,
-            goalSelection: goalsData.goalSelection ?? goalSelection,
-            daysPerWeek: goalsData.daysPerWeek ?? Number(daysPerWeek),
-          } : null;
-
-          await fetchWorkout(userId, workoutSource);
-          navigate('/home', { replace: true });
+          navigate('/review-program', {
+            replace: true,
+            state: {
+              workoutLogId: goalsData.workoutId.toString(),
+              weeks: goalsData.weeks,
+              userId,
+              classification: goalsData.classification,
+            }
+          });
 
         } else if (source === 'goals') {
           const { userId, classification, daysPerWeek, goalSelection } = state;
@@ -82,18 +82,15 @@ function LoadingPage() {
           if (!goalsRes.ok) throw new Error('Goals failed');
           const data = await goalsRes.json();
 
-          setUserId(userId);
-          setActiveProgram(null);
-
-          const workoutSource = data?.weeks?.length > 0 ? {
-            ...data,
-            classification: data.classification ?? classification,
-            goalSelection: data.goalSelection ?? goalSelection,
-            daysPerWeek: data.daysPerWeek ?? Number(daysPerWeek),
-          } : null;
-
-          await fetchWorkout(userId, workoutSource);
-          navigate('/home', { replace: true });
+          navigate('/review-program', {
+            replace: true,
+            state: {
+              workoutLogId: data.workoutId.toString(),
+              weeks: data.weeks,
+              userId,
+              classification: data.classification,
+            }
+          });
 
         } else {
           navigate('/home', { replace: true });
