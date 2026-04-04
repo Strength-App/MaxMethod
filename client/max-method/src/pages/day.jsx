@@ -95,7 +95,7 @@ function Day() {
   const wi = parseInt(weekNum, 10) - 1;
   const di = parseInt(dayNum, 10) - 1;
 
-  const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error } = useWorkout();
+  const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error, personalBests } = useWorkout();
   const viewWorkout = location.state?.viewWorkout ?? null;
   const editMode = location.state?.editMode ?? false;
   const workoutLogId = location.state?.workoutLogId ?? null;
@@ -170,10 +170,10 @@ function Day() {
       (day.slots ?? []).forEach((slot, si) => {
         const setsVal = resolveWeekValue(slot.sets, wi);
         const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
-        const savedWeight = log[wi]?.[di]?.[si]?.actualWeight ?? '';
         const savedActualReps = log[wi]?.[di]?.[si]?.actualReps ?? '';
         for (let j = 0; j < count; j++) {
           const key = `${si}-${j}`;
+          const savedWeight = log[wi]?.[di]?.[si]?.actualWeights?.[j] ?? '';
           if (!seeded[key]) {
             seeded[key] = { actual: savedWeight, actualReps: savedActualReps, done: false };
           }
@@ -436,6 +436,15 @@ function Day() {
           const isEditing = editingSlot === firstSi;
           const options = firstSlot.label ? (movementPatterns[firstSlot.label] ?? [exercise]) : [exercise];
 
+          const pb = personalBests?.[exercise];
+          const maxActual = Math.max(
+              ...items.flatMap(({ si }) =>
+                  Array.from({ length: groupSetCount }, (_, j) => Number(getSet(si, j).actual) || 0)
+              )
+          );
+          const displayPb = maxActual > Number(pb ?? 0) ? maxActual : pb;
+          const isNewPbThisSession = maxActual > Number(pb ?? 0);
+
           return (
             <div
               key={gi}
@@ -496,6 +505,18 @@ function Day() {
                     <div className="stat-chip-lbl">Done</div>
                   </div>
                 </div>
+
+                {displayPb ? (
+                    <div className={`stat-chip stat-chip--pb${isNewPbThisSession ? ' stat-chip--pb-new' : ''}`}>
+                      <div className="stat-chip-val">🏆 {displayPb}</div>
+                      <div className="stat-chip-lbl">{isNewPbThisSession ? 'New PR!' : 'Current PR'}</div>
+                    </div>
+                ) : (
+                    <div className="stat-chip stat-chip--pb">
+                      <div className="stat-chip-val">—</div>
+                      <div className="stat-chip-lbl">No PR yet</div>
+                    </div>
+                )}
 
                 <div className="ex-card-chevron" aria-hidden="true">▼</div>
               </div>
@@ -577,7 +598,7 @@ function Day() {
                                 onClick={() => {
                                   const next = Math.max(0, (Number(s.actualReps) || 0) - 1);
                                   updateSet(si, j, { actualReps: next });
-                                  updateLog(wi, di, si, 'actualReps', next);
+                                  updateLog(wi, di, si, j,'actualReps', next);
                                 }}
                               >−</button>
                               <input
@@ -591,7 +612,7 @@ function Day() {
                                 onChange={e => {
                                   const next = e.target.value;
                                   updateSet(si, j, { actualReps: next });
-                                  updateLog(wi, di, si, 'actualReps', next);
+                                  updateLog(wi, di, si, j, 'actualReps', next);
                                 }}
                               />
                               <button
@@ -601,7 +622,7 @@ function Day() {
                                 onClick={() => {
                                   const next = (Number(s.actualReps) || 0) + 1;
                                   updateSet(si, j, { actualReps: next });
-                                  updateLog(wi, di, si, 'actualReps', next);
+                                  updateLog(wi, di, si, j, 'actualReps', next);
                                 }}
                               >+</button>
                             </div>
@@ -621,7 +642,7 @@ function Day() {
                               disabled={isViewingPast}
                               onChange={e => {
                                 updateSet(si, j, { actual: e.target.value });
-                                updateLog(wi, di, si, 'actualWeight', e.target.value);
+                                updateLog(wi, di, si,j, 'actualWeight', e.target.value);
                               }}
                             />
                             <button
@@ -666,7 +687,7 @@ function Day() {
                       className="notes-input"
                       placeholder="notes..."
                       value={(log[wi]?.[di]?.[firstSi] ?? {}).notes ?? ''}
-                      onChange={e => updateLog(wi, di, firstSi, 'notes', e.target.value)}
+                      onChange={e => updateLog(wi, di, firstSi, null, 'notes', e.target.value)}
                     />
                   </div>
                 </div>
