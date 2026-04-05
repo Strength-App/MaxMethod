@@ -209,6 +209,20 @@ function Day() {
       i === ei ? { ...ex, sets: ex.sets.map((s, j) => j === si ? { ...s, ...patch } : s) } : ex
     ));
 
+  const handleSetComplete = (exercise, actual, markingDone) => {
+    if (markingDone && actual) {
+      fetch('http://localhost:5050/api/users/workout/pb-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: localStorage.getItem('userId'),
+          exercise,
+          actualWeight: Number(actual)
+        })
+      }).catch(err => console.error('Failed to check PB:', err));
+    }
+  };
+
   // Summary counts
   let totalSets = 0, doneSets = 0;
   if (isCustom) {
@@ -561,7 +575,7 @@ function Day() {
                           ? weightNoteRaw.split(',').map(w => w.trim())
                           : null;
                       const getWeightNote = (j) => weightNoteArray ? (weightNoteArray[j] ?? weightNoteArray[weightNoteArray.length - 1]) : weightNoteRaw;
-                      const projectedWeight = slot.projectedWeight ?? null;
+                      const projectedWeight = slot.projectedWeight ?? 0;
 
                       if (items.length > 1 && slot.label) {
                         rows.push(
@@ -651,6 +665,7 @@ function Day() {
                                 if (isViewingPast) return;
                                 const markingDone = !s.done;
                                 updateSet(si, j, { done: markingDone });
+                                handleSetComplete(exercise, s.actual, markingDone);
                                 if (markingDone && groupDoneCount + 1 < groupSetCount
                                   && localStorage.getItem('restTimerEnabled') !== 'false') {
                                   setTimerState(prev => ({ cardKey: `g-${gi}`, id: (prev?.id ?? 0) + 1 }));
