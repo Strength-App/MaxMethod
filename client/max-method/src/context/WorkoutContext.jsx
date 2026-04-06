@@ -63,7 +63,8 @@ export function WorkoutProvider({ children }) {
           if (pbRes.ok) {
             const pbData = await pbRes.json();
             setPersonalBests(pbData.personal_bests ?? {});
-          }        }
+          }
+        }
 
         console.log('fetchWorkout got data, weeks:', data.weeks?.length);
         setWorkout(data);
@@ -199,7 +200,7 @@ export function WorkoutProvider({ children }) {
     } catch (err) {
       console.error('Failed to mark day complete:', err);
     }
-  }, [userId]);
+  }, [userId, fetchWorkout]);
 
   return (
     <WorkoutContext.Provider value={{
