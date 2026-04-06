@@ -95,7 +95,7 @@ function Day() {
   const wi = parseInt(weekNum, 10) - 1;
   const di = parseInt(dayNum, 10) - 1;
 
-  const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error } = useWorkout();
+  const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error, personalBests } = useWorkout();
   const viewWorkout = location.state?.viewWorkout ?? null;
   const editMode = location.state?.editMode ?? false;
   const workoutLogId = location.state?.workoutLogId ?? null;
@@ -170,10 +170,10 @@ function Day() {
       (day.slots ?? []).forEach((slot, si) => {
         const setsVal = resolveWeekValue(slot.sets, wi);
         const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
-        const savedWeight = log[wi]?.[di]?.[si]?.actualWeight ?? '';
         const savedActualReps = log[wi]?.[di]?.[si]?.actualReps ?? '';
         for (let j = 0; j < count; j++) {
           const key = `${si}-${j}`;
+          const savedWeight = log[wi]?.[di]?.[si]?.actualWeights?.[j] ?? '';
           if (!seeded[key]) {
             seeded[key] = { actual: savedWeight, actualReps: savedActualReps, done: false };
           }
@@ -208,6 +208,20 @@ function Day() {
     setCustomExercises(prev => prev.map((ex, i) =>
       i === ei ? { ...ex, sets: ex.sets.map((s, j) => j === si ? { ...s, ...patch } : s) } : ex
     ));
+
+  const handleSetComplete = (exercise, actual, markingDone) => {
+    if (markingDone && actual) {
+      fetch('http://localhost:5050/api/users/workout/pb-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: localStorage.getItem('userId'),
+          exercise,
+          actualWeight: Number(actual)
+        })
+      }).catch(err => console.error('Failed to check PB:', err));
+    }
+  };
 
   // Summary counts
   let totalSets = 0, doneSets = 0;
@@ -436,6 +450,15 @@ function Day() {
           const isEditing = editingSlot === firstSi;
           const options = firstSlot.label ? (movementPatterns[firstSlot.label] ?? [exercise]) : [exercise];
 
+          const pb = personalBests?.[exercise];
+          const maxActual = Math.max(
+              ...items.flatMap(({ si }) =>
+                  Array.from({ length: groupSetCount }, (_, j) => Number(getSet(si, j).actual) || 0)
+              )
+          );
+          const displayPb = maxActual > Number(pb ?? 0) ? maxActual : pb;
+          const isNewPbThisSession = maxActual > Number(pb ?? 0);
+
           return (
             <div
               key={gi}
@@ -497,6 +520,18 @@ function Day() {
                   </div>
                 </div>
 
+                {displayPb ? (
+                    <div className={`stat-chip stat-chip--pb${isNewPbThisSession ? ' stat-chip--pb-new' : ''}`}>
+                      <div className="stat-chip-val">🏆 {displayPb}</div>
+                      <div className="stat-chip-lbl">{isNewPbThisSession ? 'New PR!' : 'Current PR'}</div>
+                    </div>
+                ) : (
+                    <div className="stat-chip stat-chip--pb">
+                      <div className="stat-chip-val">—</div>
+                      <div className="stat-chip-lbl">No PR yet</div>
+                    </div>
+                )}
+
                 <div className="ex-card-chevron" aria-hidden="true">▼</div>
               </div>
 
@@ -540,7 +575,7 @@ function Day() {
                           ? weightNoteRaw.split(',').map(w => w.trim())
                           : null;
                       const getWeightNote = (j) => weightNoteArray ? (weightNoteArray[j] ?? weightNoteArray[weightNoteArray.length - 1]) : weightNoteRaw;
-                      const projectedWeight = slot.projectedWeight ?? null;
+                      const projectedWeight = slot.projectedWeight ?? 0;
 
                       if (items.length > 1 && slot.label) {
                         rows.push(
@@ -577,7 +612,7 @@ function Day() {
                                 onClick={() => {
                                   const next = Math.max(0, (Number(s.actualReps) || 0) - 1);
                                   updateSet(si, j, { actualReps: next });
-                                  updateLog(wi, di, si, 'actualReps', next);
+                                  updateLog(wi, di, si, j,'actualReps', next);
                                 }}
                               >−</button>
                               <input
@@ -591,7 +626,7 @@ function Day() {
                                 onChange={e => {
                                   const next = e.target.value;
                                   updateSet(si, j, { actualReps: next });
-                                  updateLog(wi, di, si, 'actualReps', next);
+                                  updateLog(wi, di, si, j, 'actualReps', next);
                                 }}
                               />
                               <button
@@ -601,7 +636,7 @@ function Day() {
                                 onClick={() => {
                                   const next = (Number(s.actualReps) || 0) + 1;
                                   updateSet(si, j, { actualReps: next });
-                                  updateLog(wi, di, si, 'actualReps', next);
+                                  updateLog(wi, di, si, j, 'actualReps', next);
                                 }}
                               >+</button>
                             </div>
@@ -621,7 +656,7 @@ function Day() {
                               disabled={isViewingPast}
                               onChange={e => {
                                 updateSet(si, j, { actual: e.target.value });
-                                updateLog(wi, di, si, 'actualWeight', e.target.value);
+                                updateLog(wi, di, si,j, 'actualWeight', e.target.value);
                               }}
                             />
                             <button
@@ -630,6 +665,7 @@ function Day() {
                                 if (isViewingPast) return;
                                 const markingDone = !s.done;
                                 updateSet(si, j, { done: markingDone });
+                                handleSetComplete(exercise, s.actual, markingDone);
                                 if (markingDone && groupDoneCount + 1 < groupSetCount
                                   && localStorage.getItem('restTimerEnabled') !== 'false') {
                                   setTimerState(prev => ({ cardKey: `g-${gi}`, id: (prev?.id ?? 0) + 1 }));
@@ -666,7 +702,7 @@ function Day() {
                       className="notes-input"
                       placeholder="notes..."
                       value={(log[wi]?.[di]?.[firstSi] ?? {}).notes ?? ''}
-                      onChange={e => updateLog(wi, di, firstSi, 'notes', e.target.value)}
+                      onChange={e => updateLog(wi, di, firstSi, null, 'notes', e.target.value)}
                     />
                   </div>
                 </div>
