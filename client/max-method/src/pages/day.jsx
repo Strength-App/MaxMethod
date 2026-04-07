@@ -110,6 +110,7 @@ function Day() {
   const [userOneRMs, setUserOneRMs] = useState(null);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
   const [postWorkoutData, setPostWorkoutData] = useState(null); // { totalVolume, breakdown }
+  const [sessionPRs, setSessionPRs] = useState([]);
 
   useEffect(() => {
     const uid = localStorage.getItem('userId');
@@ -170,10 +171,10 @@ function Day() {
       (day.slots ?? []).forEach((slot, si) => {
         const setsVal = resolveWeekValue(slot.sets, wi);
         const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
-        const savedActualReps = log[wi]?.[di]?.[si]?.actualReps ?? '';
         for (let j = 0; j < count; j++) {
           const key = `${si}-${j}`;
           const savedWeight = log[wi]?.[di]?.[si]?.actualWeights?.[j] ?? '';
+          const savedActualReps = log[wi]?.[di]?.[si]?.actualReps?.[j] ?? '';
           if (!seeded[key]) {
             seeded[key] = { actual: savedWeight, actualReps: savedActualReps, done: false };
           }
@@ -223,6 +224,19 @@ function Day() {
     }
   };
 
+  const recordPRIfBeaten = (exercise, weight, reps) => {
+    const w = parseFloat(weight) || 0;
+    if (!w || !exercise) return;
+    const currentPB = personalBests?.[exercise] ?? 0;
+    if (w > currentPB) {
+      setSessionPRs(prev => {
+        const existing = prev.find(p => p.exercise === exercise);
+        if (existing && existing.weight >= w) return prev;
+        return [...prev.filter(p => p.exercise !== exercise), { exercise, weight: w, reps: reps || '' }];
+      });
+    }
+  };
+
   // Summary counts
   let totalSets = 0, doneSets = 0;
   if (isCustom) {
@@ -250,16 +264,20 @@ function Day() {
     if (isCustom) {
       customExercises.forEach(ex => {
         let vol = 0;
+        let sets = 0;
         ex.sets.forEach(s => {
+          if (!s.done) return;
           const reps = parseInt(s.actualReps || s.reps) || 0;
           const weight = parseFloat(s.actual) || 0;
           vol += reps * weight;
+          sets++;
         });
-        if (vol > 0) breakdown.push({ name: ex.name, volume: vol });
+        if (sets > 0) breakdown.push({ name: ex.name, volume: vol, sets });
       });
     } else {
       groupedSlots.forEach(({ exercise, items }) => {
         let vol = 0;
+        let sets = 0;
         items.forEach(({ slot, si }) => {
           const setsVal = resolveWeekValue(slot.sets, wi);
           const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
@@ -271,17 +289,20 @@ function Day() {
               : null;
           for (let j = 0; j < count; j++) {
             const s = getSet(si, j);
+            if (!s.done) continue;
             const weight = parseFloat(s.actual) || 0;
             const targetRepsVal = repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
             const reps = parseInt(s.actualReps || targetRepsVal) || 0;
             vol += reps * weight;
+            sets++;
           }
         });
-        if (vol > 0) breakdown.push({ name: exercise, volume: vol });
+        if (sets > 0) breakdown.push({ name: exercise, volume: vol, sets });
       });
     }
     const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
-    setPostWorkoutData({ totalVolume, breakdown });
+    const totalSetsCompleted = breakdown.reduce((sum, e) => sum + e.sets, 0);
+    setPostWorkoutData({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs });
   };
 
   // Group consecutive slots with the same exercise into one card
@@ -409,9 +430,12 @@ function Day() {
                         onClick={() => {
                           const markingDone = !s.done;
                           updateCustomSet(ei, si, { done: markingDone });
-                          if (markingDone && doneCount + 1 < ex.sets.length
-                            && localStorage.getItem('restTimerEnabled') !== 'false') {
-                            setTimerState(prev => ({ cardKey: `c-${ei}`, id: (prev?.id ?? 0) + 1 }));
+                          if (markingDone) {
+                            recordPRIfBeaten(ex.name, s.actual, s.actualReps);
+                            if (doneCount + 1 < ex.sets.length
+                              && localStorage.getItem('restTimerEnabled') !== 'false') {
+                              setTimerState(prev => ({ cardKey: `c-${ei}`, id: (prev?.id ?? 0) + 1 }));
+                            }
                           }
                         }}
                         title="Mark set done"
@@ -666,9 +690,12 @@ function Day() {
                                 const markingDone = !s.done;
                                 updateSet(si, j, { done: markingDone });
                                 handleSetComplete(exercise, s.actual, markingDone);
-                                if (markingDone && groupDoneCount + 1 < groupSetCount
-                                  && localStorage.getItem('restTimerEnabled') !== 'false') {
-                                  setTimerState(prev => ({ cardKey: `g-${gi}`, id: (prev?.id ?? 0) + 1 }));
+                                if (markingDone) {
+                                  recordPRIfBeaten(exercise, s.actual, s.actualReps);
+                                  if (groupDoneCount + 1 < groupSetCount
+                                    && localStorage.getItem('restTimerEnabled') !== 'false') {
+                                    setTimerState(prev => ({ cardKey: `g-${gi}`, id: (prev?.id ?? 0) + 1 }));
+                                  }
                                 }
                               }}
                               disabled={isViewingPast}
@@ -721,13 +748,21 @@ function Day() {
               <div className="post-workout-title">Workout Complete</div>
               <div className="post-workout-subtitle">{day.title ?? `Day ${dayNum}`}</div>
             </div>
-            <div className="post-workout-volume-block">
-              <div className="post-workout-volume-val">
-                {postWorkoutData.totalVolume > 0
-                  ? postWorkoutData.totalVolume.toLocaleString()
-                  : '—'}
+            <div className="post-workout-stats-row">
+              <div className="post-workout-volume-block">
+                <div className="post-workout-volume-val">
+                  {postWorkoutData.totalVolume > 0
+                    ? postWorkoutData.totalVolume.toLocaleString()
+                    : '—'}
+                </div>
+                <div className="post-workout-volume-lbl">Total Volume (lbs)</div>
               </div>
-              <div className="post-workout-volume-lbl">Total Volume (lbs)</div>
+              <div className="post-workout-volume-block">
+                <div className="post-workout-volume-val">
+                  {postWorkoutData.totalSets ?? '—'}
+                </div>
+                <div className="post-workout-volume-lbl">Total Sets</div>
+              </div>
             </div>
             {postWorkoutData.breakdown.length > 0 && (
               <div className="post-workout-breakdown">
@@ -735,7 +770,21 @@ function Day() {
                 {postWorkoutData.breakdown.map((e, i) => (
                   <div key={i} className="post-workout-breakdown-row">
                     <span className="post-workout-breakdown-name">{e.name}</span>
-                    <span className="post-workout-breakdown-vol">{e.volume.toLocaleString()} lbs</span>
+                    <span className="post-workout-breakdown-sets">{e.sets} {e.sets === 1 ? 'set' : 'sets'}</span>
+                    <span className="post-workout-breakdown-vol">{e.volume > 0 ? `${e.volume.toLocaleString()} lbs` : '—'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {postWorkoutData.prs?.length > 0 && (
+              <div className="post-workout-breakdown post-workout-prs">
+                <div className="post-workout-breakdown-title">Personal Records</div>
+                {postWorkoutData.prs.map((pr, i) => (
+                  <div key={i} className="post-workout-breakdown-row">
+                    <span className="post-workout-breakdown-name">{pr.exercise}</span>
+                    <span className="post-workout-pr-detail">
+                      {pr.weight.toLocaleString()} lbs{pr.reps ? ` x ${pr.reps} reps` : ''}
+                    </span>
                   </div>
                 ))}
               </div>
