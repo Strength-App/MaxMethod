@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useWorkout } from '../context/WorkoutContext'
 import './exerciseLibrary.css'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -331,8 +332,47 @@ function ExerciseCard({ exercise, onSelect }) {
 
 // ─── Detail View ──────────────────────────────────────────────────────────────
 
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const DAYS_SHORT_EL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
+
 function DetailView({ exercise, onBack }) {
+  const { personalBests } = useWorkout()
+  const [detailTab, setDetailTab] = useState('cues')
+  const [exerciseHistory, setExerciseHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
   const bodyLabel = exercise.body === 'upper' ? 'Upper Body' : exercise.body === 'lower' ? 'Lower Body' : 'Core'
+
+  // Fetch all-time exercise history across every program
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    if (!userId) return
+    setHistoryLoading(true)
+    fetch(`http://localhost:5050/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(exercise.name)}`)
+      .then(r => r.ok ? r.json() : { history: [] })
+      .then(data => {
+        setExerciseHistory(
+          (data.history ?? []).map(entry => {
+            const repsRaw = entry.reps
+            const repsArr = Array.isArray(repsRaw)
+              ? repsRaw
+              : typeof repsRaw === 'string' && repsRaw.includes(',')
+                ? repsRaw.split(',').map(r => r.trim())
+                : null
+            return {
+              ...entry,
+              date: new Date(entry.date),
+              getReps: (j) => repsArr ? (repsArr[j] ?? repsArr[repsArr.length - 1]) : repsRaw,
+            }
+          })
+        )
+      })
+      .catch(() => setExerciseHistory([]))
+      .finally(() => setHistoryLoading(false))
+  }, [exercise.name])
+
+  const pr = personalBests?.[exercise.name] ?? null
+
   return (
     <div className="el-page">
       <button className="el-detail-back" onClick={onBack}>
@@ -357,22 +397,120 @@ function DetailView({ exercise, onBack }) {
       </div>
 
       <div className="el-detail-body">
-        <div>
-          <div className="el-steps-title">{exercise.name}</div>
-          <div className="el-step-list">
-            {exercise.steps.map((step, i) => (
-              <div className="el-step" key={i}>
-                <div className="el-step-num">{i + 1}</div>
-                <div>
-                  <div className="el-step-label">{step.t}</div>
-                  <div
-                    className="el-step-text"
-                    dangerouslySetInnerHTML={{ __html: step.d }}
-                  />
-                </div>
-              </div>
-            ))}
+        <div className="el-steps-container">
+          <div className="el-steps-header">
+            <div className="el-steps-title">{exercise.name}</div>
+            <div className="el-steps-subtitle">Step-by-step execution</div>
           </div>
+
+          {/* Tabs */}
+          <div className="el-detail-tabs">
+            <button
+              className={`el-detail-tab${detailTab === 'cues' ? ' active' : ''}`}
+              onClick={() => setDetailTab('cues')}
+            >
+              Coaching Cues
+            </button>
+            <button
+              className={`el-detail-tab${detailTab === 'pr' ? ' active' : ''}`}
+              onClick={() => setDetailTab('pr')}
+            >
+              Personal Record
+            </button>
+            <button
+              className={`el-detail-tab${detailTab === 'history' ? ' active' : ''}`}
+              onClick={() => setDetailTab('history')}
+            >
+              Exercise History
+            </button>
+          </div>
+
+          {/* Coaching Cues */}
+          {detailTab === 'cues' && (
+            <div className="el-step-list">
+              {exercise.steps.map((step, i) => (
+                <div className="el-step" key={i}>
+                  <div className="el-step-num">{i + 1}</div>
+                  <div>
+                    <div className="el-step-label">{step.t}</div>
+                    <div
+                      className="el-step-text"
+                      dangerouslySetInnerHTML={{ __html: step.d }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Personal Record */}
+          {detailTab === 'pr' && (
+            <div className="el-pr-panel">
+              {pr != null ? (
+                <div className="el-pr-card">
+                  <div className="el-pr-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </div>
+                  <div className="el-pr-weight">{pr}<span>lbs</span></div>
+                  <div className="el-pr-label">Personal Record</div>
+                  <div className="el-pr-sub">{exercise.name}</div>
+                </div>
+              ) : (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-icon">🏆</div>
+                  <div className="el-panel-empty-text">No personal record yet</div>
+                  <div className="el-panel-empty-sub">Log this exercise to set your first PR</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Exercise History */}
+          {detailTab === 'history' && (
+            <div className="el-history-panel">
+              {historyLoading ? (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-text">Loading history…</div>
+                </div>
+              ) : exerciseHistory.length === 0 ? (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-icon">📋</div>
+                  <div className="el-panel-empty-text">No history yet</div>
+                  <div className="el-panel-empty-sub">Complete a workout containing {exercise.name} to see it here</div>
+                </div>
+              ) : (
+                exerciseHistory.map((entry, idx) => (
+                  <div className="el-hist-item" key={idx}>
+                    <div className="el-hist-date-col">
+                      <div className="el-hist-day-num">{entry.date.getDate()}</div>
+                      <div className="el-hist-month">{MONTHS_SHORT[entry.date.getMonth()]}</div>
+                      <div className="el-hist-weekday">{DAYS_SHORT_EL[entry.date.getDay()]}</div>
+                    </div>
+                    <div className="el-hist-divider" />
+                    <div className="el-hist-content">
+                      <div className="el-hist-day-title">{entry.dayTitle}</div>
+                      <div className="el-hist-sets">
+                        {Array.from({ length: entry.setCount }, (_, j) => {
+                          if (!entry.completedSets?.[j]) return null
+                          const w = entry.actualWeights?.[j]
+                          const r = entry.actualReps?.[j] ?? entry.getReps(j)
+                          return (
+                            <div className="el-hist-set-row" key={j}>
+                              <div className="el-hist-set-num">{j + 1}</div>
+                              <div className="el-hist-set-val"><span>{r ?? '—'}</span> reps</div>
+                              <div className="el-hist-set-val"><span>{w ?? '—'}</span> lbs</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
 
         <div>
@@ -393,7 +531,7 @@ function DetailView({ exercise, onBack }) {
               </div>
             </div>
             <div className="el-tips">
-              <h4>Coaching Cues</h4>
+              <h4>Exercise Tips</h4>
               <ul>
                 {exercise.tips.map((tip, i) => (
                   <li key={i}>{tip}</li>

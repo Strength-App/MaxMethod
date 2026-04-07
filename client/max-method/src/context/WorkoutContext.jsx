@@ -89,6 +89,7 @@ export function WorkoutProvider({ children }) {
               initialLog[wi][di][si] = {
                 actualWeights: slot.actualWeights ?? [],
                 actualReps: slot.actualReps ?? [],
+                completedSets: slot.completedSets ?? [],
                 notes: slot.notes ?? ''
               };
             });
@@ -128,6 +129,8 @@ export function WorkoutProvider({ children }) {
         ? { ...prevSlot, actualWeights: { ...prevSlot.actualWeights, [setIdx]: Number(value) } }
         : field === 'actualReps'
         ? { ...prevSlot, actualReps: { ...prevSlot.actualReps, [setIdx]: value } }
+        : field === 'setDone'
+        ? { ...prevSlot, completedSets: { ...prevSlot.completedSets, [setIdx]: value } }
         : { ...prevSlot, [field]: value };
 
       return {
