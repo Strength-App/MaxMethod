@@ -176,7 +176,8 @@ function Day() {
           const savedWeight = log[wi]?.[di]?.[si]?.actualWeights?.[j] ?? '';
           const savedActualReps = log[wi]?.[di]?.[si]?.actualReps?.[j] ?? '';
           if (!seeded[key]) {
-            seeded[key] = { actual: savedWeight, actualReps: savedActualReps, done: false };
+            const savedDone = log[wi]?.[di]?.[si]?.completedSets?.[j] ?? false;
+            seeded[key] = { actual: savedWeight, actualReps: savedActualReps, done: savedDone };
           }
         }
       });
@@ -689,6 +690,7 @@ function Day() {
                                 if (isViewingPast) return;
                                 const markingDone = !s.done;
                                 updateSet(si, j, { done: markingDone });
+                                updateLog(wi, di, si, j, 'setDone', markingDone);
                                 handleSetComplete(exercise, s.actual, markingDone);
                                 if (markingDone) {
                                   recordPRIfBeaten(exercise, s.actual, s.actualReps);

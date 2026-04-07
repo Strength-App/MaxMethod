@@ -403,14 +403,72 @@
   align-items: start;
 }
 
+/* ── Steps Container ────────────────────────────────────────────── */
+.el-steps-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.el-steps-header {
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
 .el-steps-title {
   font-family: var(--font-heading);
   font-size: 26px;
   letter-spacing: 1px;
-  margin-bottom: 14px;
+  margin-bottom: 4px;
   color: var(--text);
 }
 
+.el-steps-subtitle {
+  font-size: 11px;
+  font-family: var(--font-sub);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--muted);
+}
+
+/* ── Detail Tabs ────────────────────────────────────────────────── */
+.el-detail-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 18px;
+}
+
+.el-detail-tab {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-sub);
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.el-detail-tab:hover { color: var(--text); }
+
+.el-detail-tab.active {
+  background: var(--surface-hover);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* ── Step List ──────────────────────────────────────────────────── */
 .el-step-list {
   display: flex;
   flex-direction: column;
@@ -572,6 +630,215 @@
   font-family: var(--font-sub);
   font-size: 13px;
   letter-spacing: 0.06em;
+}
+
+/* ── Personal Record Panel ──────────────────────────────────────── */
+.el-pr-panel {
+  display: flex;
+  justify-content: center;
+  padding: 12px 0 4px;
+}
+
+.el-pr-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface-deep);
+  border: 1px solid rgba(204, 4, 4, 0.25);
+  border-radius: 16px;
+  padding: 32px 48px;
+  width: 100%;
+}
+
+.el-pr-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(204, 4, 4, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.el-pr-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke: var(--el-accent2);
+}
+
+.el-pr-weight {
+  font-family: var(--font-heading);
+  font-size: 52px;
+  line-height: 1;
+  color: var(--text);
+  letter-spacing: -1px;
+}
+
+.el-pr-weight span {
+  font-size: 20px;
+  color: var(--muted);
+  margin-left: 4px;
+  font-family: var(--font-sub);
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.el-pr-label {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--el-accent2);
+  margin-top: 4px;
+}
+
+.el-pr-sub {
+  font-size: 12px;
+  color: var(--muted);
+  font-family: var(--font-body);
+}
+
+/* ── Empty Panel State ──────────────────────────────────────────── */
+.el-panel-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.el-panel-empty-icon {
+  font-size: 32px;
+  margin-bottom: 4px;
+  opacity: 0.6;
+}
+
+.el-panel-empty-text {
+  font-family: var(--font-sub);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.el-panel-empty-sub {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+/* ── Exercise History Panel ─────────────────────────────────────── */
+.el-history-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.el-hist-item {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: var(--surface-deep);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: border-color 150ms ease;
+}
+
+.el-hist-item:hover { border-color: var(--border-strong); }
+
+.el-hist-date-col {
+  flex-shrink: 0;
+  width: 44px;
+  text-align: center;
+}
+
+.el-hist-day-num {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  line-height: 1;
+  color: var(--text);
+}
+
+.el-hist-month {
+  font-family: var(--font-sub);
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--el-accent2);
+  margin-top: 2px;
+}
+
+.el-hist-weekday {
+  font-family: var(--font-sub);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 1px;
+}
+
+.el-hist-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.el-hist-content { flex: 1; min-width: 0; }
+
+.el-hist-day-title {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.el-hist-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.el-hist-set-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 1fr;
+  gap: 8px;
+  font-size: 11px;
+  align-items: center;
+}
+
+.el-hist-set-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--el-accent);
+  color: #fff;
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.el-hist-set-val {
+  color: var(--muted);
+  font-family: var(--font-sub);
+}
+
+.el-hist-set-val span {
+  color: var(--text);
+  font-weight: 600;
 }
 
 /* ── Responsive ─────────────────────────────────────────────────── */
