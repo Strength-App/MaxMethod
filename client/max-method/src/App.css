@@ -1935,7 +1935,7 @@ input::placeholder {
   background: rgba(0, 0, 0, .7);
   z-index: 400;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   backdrop-filter: blur(4px);
 }
@@ -1943,8 +1943,8 @@ input::placeholder {
 .post-workout-modal {
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: 20px 20px 0 0;
-  width: 100%;
+  border-radius: 20px;
+  width: 90%;
   max-width: 560px;
   max-height: 85vh;
   overflow-y: auto;
@@ -1979,6 +1979,22 @@ input::placeholder {
   text-transform: uppercase;
   letter-spacing: .08em;
   margin-top: 4px;
+}
+
+.post-workout-stats-row {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.post-workout-stats-row .post-workout-volume-block {
+  flex: 1;
+  padding: 28px 16px 20px;
+}
+
+.post-workout-stats-row .post-workout-volume-block + .post-workout-volume-block {
+  border-left: 1px solid var(--border);
 }
 
 .post-workout-volume-block {
@@ -2032,6 +2048,15 @@ input::placeholder {
   font-family: var(--font-body);
   font-size: 0.875rem;
   color: var(--text);
+  flex: 1;
+}
+
+.post-workout-breakdown-sets {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-right: 12px;
 }
 
 .post-workout-breakdown-vol {
@@ -2039,6 +2064,17 @@ input::placeholder {
   font-size: 12px;
   font-weight: 700;
   color: var(--accent);
+}
+
+.post-workout-prs {
+  border-top-color: var(--accent);
+}
+
+.post-workout-pr-detail {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffd700;
 }
 
 .post-workout-btn {

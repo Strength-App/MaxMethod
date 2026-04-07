@@ -88,6 +88,7 @@ export function WorkoutProvider({ children }) {
             (day.slots ?? []).forEach((slot, si) => {
               initialLog[wi][di][si] = {
                 actualWeights: slot.actualWeights ?? [],
+                actualReps: slot.actualReps ?? [],
                 notes: slot.notes ?? ''
               };
             });
@@ -124,14 +125,10 @@ export function WorkoutProvider({ children }) {
     setLog(prev => {
       const prevSlot = prev[weekIdx]?.[dayIdx]?.[slotIdx] ?? {};
       const updatedSlot = field === 'actualWeight'
-      ? {
-            ...prevSlot,
-            actualWeights: {
-              ...prevSlot.actualWeights,
-              [setIdx]: Number(value)
-            }
-          }
-          : { ...prevSlot, [field]: value};
+        ? { ...prevSlot, actualWeights: { ...prevSlot.actualWeights, [setIdx]: Number(value) } }
+        : field === 'actualReps'
+        ? { ...prevSlot, actualReps: { ...prevSlot.actualReps, [setIdx]: value } }
+        : { ...prevSlot, [field]: value };
 
       return {
         ...prev,
