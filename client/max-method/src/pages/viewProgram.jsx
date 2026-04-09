@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 
@@ -14,6 +14,9 @@ function ViewProgram() {
   const [error, setError] = useState(null);
   const [settingActive, setSettingActive] = useState(false);
   const [isEditing, setIsEditing] = useState(location.state?.isEditing ?? false);
+  const [confirmDelete, setConfirmDelete] = useState(null); // { type: 'week'|'day', wi, di? }
+  const [editTitle, setEditTitle] = useState('');
+  const titleTimer = useRef(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -33,6 +36,7 @@ function ViewProgram() {
         if (!res.ok) throw new Error('Failed to fetch workout data');
         const data = await res.json();
         setWorkoutData(data);
+        setEditTitle(data.title ?? '');
       } catch (err) {
         setError(err.message);
       } finally {
@@ -41,6 +45,23 @@ function ViewProgram() {
     };
     loadData();
   }, [programLogId]);
+
+  useEffect(() => {
+    if (!program?.workoutLogId || !editTitle || editTitle === workoutData?.title) return;
+    clearTimeout(titleTimer.current);
+    titleTimer.current = setTimeout(async () => {
+      try {
+        await fetch(`http://localhost:5050/api/users/workout-log/${program.workoutLogId}/title`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: editTitle })
+        });
+      } catch (err) {
+        console.error('Failed to update title:', err);
+      }
+    }, 500);
+    return () => clearTimeout(titleTimer.current);
+  }, [editTitle]);
 
   const handleSetActive = async () => {
     const userId = localStorage.getItem('userId');
@@ -85,13 +106,29 @@ function ViewProgram() {
     saveWeeks(newWeeks);
   };
 
+  const deleteWeek = (wi) => {
+    const newWeeks = workoutData.weeks.filter((_, i) => i !== wi);
+    setWorkoutData({ ...workoutData, weeks: newWeeks });
+    saveWeeks(newWeeks);
+  };
+
+  const deleteDay = (wi, di) => {
+    const newWeeks = workoutData.weeks.map((w, i) =>
+      i === wi ? { ...w, days: w.days.filter((_, j) => j !== di) } : w
+    );
+    setWorkoutData({ ...workoutData, weeks: newWeeks });
+    saveWeeks(newWeeks);
+  };
+
   const handleDayClick = (weekNum, di) => {
     if (isEditing && isCustom) {
       navigate(`/customDay/${weekNum}/${di + 1}`, {
         state: {
           workoutLogId: program?.workoutLogId,
           exercises: workoutData.weeks[weekNum - 1]?.days[di]?.exercises ?? [],
-          programLogId: programLogId
+          programLogId: programLogId,
+          totalWeeks: workoutData.weeks.length,
+          weekDayCounts: workoutData.weeks.map(w => w.days.filter(d => d?.title != null).length)
         }
       });
     } else {
@@ -133,7 +170,6 @@ function ViewProgram() {
   return (
     <div className="home-page-container">
       <div className="viewing-past-banner">
-        <span>Viewing: <strong>{program?.title ?? programTitle}</strong></span>
         {isCustom && (
           <button
             className={isEditing ? 'btn-complete' : 'btn-back'}
@@ -162,27 +198,49 @@ function ViewProgram() {
         </button>
       </div>
 
-      <h1>{programTitle || 'Program'}</h1>
+      {isEditing && isCustom ? (
+        <input
+          value={editTitle}
+          onChange={e => setEditTitle(e.target.value)}
+          placeholder="Workout name..."
+          style={{
+            background: 'transparent',
+            border: 'none',
+            borderBottom: '2px solid var(--accent)',
+            outline: 'none',
+            color: 'var(--text)',
+            fontFamily: "'Permanent Marker', cursive",
+            fontSize: '2rem',
+            fontWeight: 700,
+            width: '100%',
+            marginBottom: '16px',
+          }}
+        />
+      ) : (
+        <h1>{editTitle || programTitle || 'Program'}</h1>
+      )}
       {!isCustom && (
         <div className="fitness-level-container">
           <h2>Fitness Level: {workoutData.classification}</h2>
         </div>
       )}
 
-      <div className="workout-summary-bar" style={{ marginBottom: '40px' }}>
-        <div className="summary-pill">
-          <div className="summary-pill-val">{completedDays}</div>
-          <div className="summary-pill-lbl">Days Done</div>
+      {!(isEditing && isCustom) && (
+        <div className="workout-summary-bar" style={{ marginBottom: '40px' }}>
+          <div className="summary-pill">
+            <div className="summary-pill-val">{completedDays}</div>
+            <div className="summary-pill-lbl">Days Done</div>
+          </div>
+          <div className="summary-pill">
+            <div className="summary-pill-val summary-pill-val--accent">{totalDays}</div>
+            <div className="summary-pill-lbl">Total Days</div>
+          </div>
+          <div className="summary-pill">
+            <div className="summary-pill-val summary-pill-val--green">{overallPct}%</div>
+            <div className="summary-pill-lbl">Complete</div>
+          </div>
         </div>
-        <div className="summary-pill">
-          <div className="summary-pill-val summary-pill-val--accent">{totalDays}</div>
-          <div className="summary-pill-lbl">Total Days</div>
-        </div>
-        <div className="summary-pill">
-          <div className="summary-pill-val summary-pill-val--green">{overallPct}%</div>
-          <div className="summary-pill-lbl">Complete</div>
-        </div>
-      </div>
+      )}
 
       <div className="schedule-table">
         {workoutData.weeks.map((week, wi) => {
@@ -204,18 +262,46 @@ function ViewProgram() {
                     />
                   </div>
                 </div>
+                {isEditing && isCustom && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete({ type: 'week', wi })}
+                    title="Delete week"
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', padding: '4px', lineHeight: 1 }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                      <path d="M10 11v6M14 11v6"/>
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+                    </svg>
+                  </button>
+                )}
               </div>
               <div className="week-days">
                 {week.days.filter(d => d?.title != null).map((day, di) => (
-                  <button
-                    key={di}
-                    type="button"
-                    className={`day-cell ${day.completed ? 'day-cell--completed' : ''}`}
-                    onClick={() => handleDayClick(weekNum, di)}
-                  >
-                    {day.title ?? `Day ${di + 1}`}
-                    {day.completed && <span className="completed-badge">✓</span>}
-                  </button>
+                  <div key={di} style={{ position: 'relative', display: 'inline-flex' }}>
+                    <button
+                      type="button"
+                      className={`day-cell ${day.completed ? 'day-cell--completed' : ''}`}
+                      onClick={() => handleDayClick(weekNum, di)}
+                    >
+                      {day.title ?? `Day ${di + 1}`}
+                      {day.completed && <span className="completed-badge">✓</span>}
+                    </button>
+                    {isEditing && isCustom && (
+                      <button
+                        type="button"
+                        onClick={() => setConfirmDelete({ type: 'day', wi, di })}
+                        title="Delete day"
+                        style={{ position: 'absolute', top: '4px', right: '4px', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', padding: '2px', lineHeight: 1 }}
+                      >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 ))}
                 {isEditing && isCustom && week.days.length < 7 && (
                   <button
@@ -236,6 +322,37 @@ function ViewProgram() {
           </div>
         )}
       </div>
+
+      {confirmDelete && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '12px', padding: '28px 32px', maxWidth: '360px', width: '90%', textAlign: 'center' }}>
+            <h3 style={{ margin: '0 0 10px', color: 'var(--text)' }}>
+              Delete {confirmDelete.type === 'week' ? `Week ${confirmDelete.wi + 1}` : `Day ${confirmDelete.di + 1}`}?
+            </h3>
+            <p style={{ margin: '0 0 24px', color: 'var(--text-muted, #888)', fontSize: '14px', lineHeight: 1.5 }}>
+              All exercise data in this {confirmDelete.type} will be permanently lost.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button type="button" className="btn-back" onClick={() => setConfirmDelete(null)}>Cancel</button>
+              <button
+                type="button"
+                className="btn-complete"
+                style={{ background: 'var(--accent)' }}
+                onClick={() => {
+                  if (confirmDelete.type === 'week') {
+                    deleteWeek(confirmDelete.wi);
+                  } else {
+                    deleteDay(confirmDelete.wi, confirmDelete.di);
+                  }
+                  setConfirmDelete(null);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

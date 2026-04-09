@@ -95,7 +95,7 @@ function Day() {
   const wi = parseInt(weekNum, 10) - 1;
   const di = parseInt(dayNum, 10) - 1;
 
-  const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error } = useWorkout();
+  const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error, personalBests } = useWorkout();
   const viewWorkout = location.state?.viewWorkout ?? null;
   const editMode = location.state?.editMode ?? false;
   const workoutLogId = location.state?.workoutLogId ?? null;
@@ -110,6 +110,7 @@ function Day() {
   const [userOneRMs, setUserOneRMs] = useState(null);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
   const [postWorkoutData, setPostWorkoutData] = useState(null); // { totalVolume, breakdown }
+  const [sessionPRs, setSessionPRs] = useState([]);
 
   useEffect(() => {
     const uid = localStorage.getItem('userId');
@@ -170,11 +171,13 @@ function Day() {
       (day.slots ?? []).forEach((slot, si) => {
         const setsVal = resolveWeekValue(slot.sets, wi);
         const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
-        const savedWeight = log[wi]?.[di]?.[si]?.actualWeight ?? '';
         for (let j = 0; j < count; j++) {
           const key = `${si}-${j}`;
+          const savedWeight = log[wi]?.[di]?.[si]?.actualWeights?.[j] ?? '';
+          const savedActualReps = log[wi]?.[di]?.[si]?.actualReps?.[j] ?? '';
           if (!seeded[key]) {
-            seeded[key] = { actual: savedWeight, done: false };
+            const savedDone = log[wi]?.[di]?.[si]?.completedSets?.[j] ?? false;
+            seeded[key] = { actual: savedWeight, actualReps: savedActualReps, done: savedDone };
           }
         }
       });
@@ -192,7 +195,7 @@ function Day() {
     </div>
   );
 
-  const getSet = (si, j) => setData[`${si}-${j}`] ?? { actual: '', done: false };
+  const getSet = (si, j) => setData[`${si}-${j}`] ?? { actual: '', actualReps: '', done: false };
 
   const updateSet = (si, j, patch) =>
     setSetData(prev => ({
@@ -207,6 +210,33 @@ function Day() {
     setCustomExercises(prev => prev.map((ex, i) =>
       i === ei ? { ...ex, sets: ex.sets.map((s, j) => j === si ? { ...s, ...patch } : s) } : ex
     ));
+
+  const handleSetComplete = (exercise, actual, markingDone) => {
+    if (markingDone && actual) {
+      fetch('http://localhost:5050/api/users/workout/pb-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: localStorage.getItem('userId'),
+          exercise,
+          actualWeight: Number(actual)
+        })
+      }).catch(err => console.error('Failed to check PB:', err));
+    }
+  };
+
+  const recordPRIfBeaten = (exercise, weight, reps) => {
+    const w = parseFloat(weight) || 0;
+    if (!w || !exercise) return;
+    const currentPB = personalBests?.[exercise] ?? 0;
+    if (w > currentPB) {
+      setSessionPRs(prev => {
+        const existing = prev.find(p => p.exercise === exercise);
+        if (existing && existing.weight >= w) return prev;
+        return [...prev.filter(p => p.exercise !== exercise), { exercise, weight: w, reps: reps || '' }];
+      });
+    }
+  };
 
   // Summary counts
   let totalSets = 0, doneSets = 0;
@@ -235,16 +265,20 @@ function Day() {
     if (isCustom) {
       customExercises.forEach(ex => {
         let vol = 0;
+        let sets = 0;
         ex.sets.forEach(s => {
-          const reps = parseInt(s.reps) || 0;
+          if (!s.done) return;
+          const reps = parseInt(s.actualReps || s.reps) || 0;
           const weight = parseFloat(s.actual) || 0;
           vol += reps * weight;
+          sets++;
         });
-        if (vol > 0) breakdown.push({ name: ex.name, volume: vol });
+        if (sets > 0) breakdown.push({ name: ex.name, volume: vol, sets });
       });
     } else {
       groupedSlots.forEach(({ exercise, items }) => {
         let vol = 0;
+        let sets = 0;
         items.forEach(({ slot, si }) => {
           const setsVal = resolveWeekValue(slot.sets, wi);
           const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
@@ -256,17 +290,20 @@ function Day() {
               : null;
           for (let j = 0; j < count; j++) {
             const s = getSet(si, j);
+            if (!s.done) continue;
             const weight = parseFloat(s.actual) || 0;
-            const repsVal = repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
-            const reps = parseInt(repsVal) || 0;
+            const targetRepsVal = repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
+            const reps = parseInt(s.actualReps || targetRepsVal) || 0;
             vol += reps * weight;
+            sets++;
           }
         });
-        if (vol > 0) breakdown.push({ name: exercise, volume: vol });
+        if (sets > 0) breakdown.push({ name: exercise, volume: vol, sets });
       });
     }
     const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
-    setPostWorkoutData({ totalVolume, breakdown });
+    const totalSetsCompleted = breakdown.reduce((sum, e) => sum + e.sets, 0);
+    setPostWorkoutData({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs });
   };
 
   // Group consecutive slots with the same exercise into one card
@@ -349,7 +386,8 @@ function Day() {
                 <div className="ex-sets-panel">
                   <div className="ex-sets-col-header">
                     <span className="ex-col-lbl">Set</span>
-                    <span className="ex-col-lbl">Reps</span>
+                    <span className="ex-col-lbl">Target Reps</span>
+                    <span className="ex-col-lbl">Actual Reps</span>
                     <span className="ex-col-lbl">Target</span>
                     <span className="ex-col-lbl">Actual (lbs)</span>
                     <span className="ex-col-lbl">✓</span>
@@ -358,6 +396,27 @@ function Day() {
                     <div key={si} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
                       <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{si + 1}</div>
                       <div className="set-reps">{s.reps || '—'}</div>
+                      <div className="stepper-wrap">
+                        <button
+                          type="button"
+                          className="stepper-btn stepper-btn--dec"
+                          onClick={() => updateCustomSet(ei, si, { actualReps: Math.max(0, (Number(s.actualReps) || 0) - 1) })}
+                        >−</button>
+                        <input
+                          className="actual-input"
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="0"
+                          value={s.actualReps ?? ''}
+                          onChange={e => updateCustomSet(ei, si, { actualReps: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          className="stepper-btn stepper-btn--inc"
+                          onClick={() => updateCustomSet(ei, si, { actualReps: (Number(s.actualReps) || 0) + 1 })}
+                        >+</button>
+                      </div>
                       <div className="set-target">
                         {s.target ? <><span className="target-wt">{s.target}</span><span className="target-unit"> lbs</span></> : <span className="target-dash">—</span>}
                       </div>
@@ -372,9 +431,12 @@ function Day() {
                         onClick={() => {
                           const markingDone = !s.done;
                           updateCustomSet(ei, si, { done: markingDone });
-                          if (markingDone && doneCount + 1 < ex.sets.length
-                            && localStorage.getItem('restTimerEnabled') !== 'false') {
-                            setTimerState(prev => ({ cardKey: `c-${ei}`, id: (prev?.id ?? 0) + 1 }));
+                          if (markingDone) {
+                            recordPRIfBeaten(ex.name, s.actual, s.actualReps);
+                            if (doneCount + 1 < ex.sets.length
+                              && localStorage.getItem('restTimerEnabled') !== 'false') {
+                              setTimerState(prev => ({ cardKey: `c-${ei}`, id: (prev?.id ?? 0) + 1 }));
+                            }
                           }
                         }}
                         title="Mark set done"
@@ -412,6 +474,15 @@ function Day() {
           const isOpen = openCards[gi] ?? false;
           const isEditing = editingSlot === firstSi;
           const options = firstSlot.label ? (movementPatterns[firstSlot.label] ?? [exercise]) : [exercise];
+
+          const pb = personalBests?.[exercise];
+          const maxActual = Math.max(
+              ...items.flatMap(({ si }) =>
+                  Array.from({ length: groupSetCount }, (_, j) => Number(getSet(si, j).actual) || 0)
+              )
+          );
+          const displayPb = maxActual > Number(pb ?? 0) ? maxActual : pb;
+          const isNewPbThisSession = maxActual > Number(pb ?? 0);
 
           return (
             <div
@@ -474,6 +545,18 @@ function Day() {
                   </div>
                 </div>
 
+                {displayPb ? (
+                    <div className={`stat-chip stat-chip--pb${isNewPbThisSession ? ' stat-chip--pb-new' : ''}`}>
+                      <div className="stat-chip-val">🏆 {displayPb}</div>
+                      <div className="stat-chip-lbl">{isNewPbThisSession ? 'New PR!' : 'Current PR'}</div>
+                    </div>
+                ) : (
+                    <div className="stat-chip stat-chip--pb">
+                      <div className="stat-chip-val">—</div>
+                      <div className="stat-chip-lbl">No PR yet</div>
+                    </div>
+                )}
+
                 <div className="ex-card-chevron" aria-hidden="true">▼</div>
               </div>
 
@@ -490,7 +573,8 @@ function Day() {
                 <div className="ex-sets-panel">
                   <div className="ex-sets-col-header">
                     <span className="ex-col-lbl">Set</span>
-                    <span className="ex-col-lbl">Reps</span>
+                    <span className="ex-col-lbl">Target Reps</span>
+                    <span className="ex-col-lbl">Actual Reps</span>
                     <span className="ex-col-lbl">Target</span>
                     <span className="ex-col-lbl">Actual (lbs)</span>
                     <span className="ex-col-lbl">✓</span>
@@ -516,7 +600,7 @@ function Day() {
                           ? weightNoteRaw.split(',').map(w => w.trim())
                           : null;
                       const getWeightNote = (j) => weightNoteArray ? (weightNoteArray[j] ?? weightNoteArray[weightNoteArray.length - 1]) : weightNoteRaw;
-                      const projectedWeight = slot.projectedWeight ?? null;
+                      const projectedWeight = slot.projectedWeight ?? 0;
 
                       if (items.length > 1 && slot.label) {
                         rows.push(
@@ -545,6 +629,42 @@ function Day() {
                           <div key={`${si}-${j}`} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
                             <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{globalSetNum}</div>
                             <div className="set-reps">{getReps(j) ?? '—'}</div>
+                            <div className="stepper-wrap">
+                              <button
+                                type="button"
+                                className="stepper-btn stepper-btn--dec"
+                                disabled={isViewingPast}
+                                onClick={() => {
+                                  const next = Math.max(0, (Number(s.actualReps) || 0) - 1);
+                                  updateSet(si, j, { actualReps: next });
+                                  updateLog(wi, di, si, j,'actualReps', next);
+                                }}
+                              >−</button>
+                              <input
+                                className="actual-input"
+                                type="number"
+                                min="0"
+                                step="1"
+                                placeholder="0"
+                                value={s.actualReps ?? ''}
+                                disabled={isViewingPast}
+                                onChange={e => {
+                                  const next = e.target.value;
+                                  updateSet(si, j, { actualReps: next });
+                                  updateLog(wi, di, si, j, 'actualReps', next);
+                                }}
+                              />
+                              <button
+                                type="button"
+                                className="stepper-btn stepper-btn--inc"
+                                disabled={isViewingPast}
+                                onClick={() => {
+                                  const next = (Number(s.actualReps) || 0) + 1;
+                                  updateSet(si, j, { actualReps: next });
+                                  updateLog(wi, di, si, j, 'actualReps', next);
+                                }}
+                              >+</button>
+                            </div>
                             <div className="set-target">
                               {hasTarget
                                 ? <><span className="target-wt">{target}</span><span className="target-unit"> lbs</span></>
@@ -561,7 +681,7 @@ function Day() {
                               disabled={isViewingPast}
                               onChange={e => {
                                 updateSet(si, j, { actual: e.target.value });
-                                updateLog(wi, di, si, 'actualWeight', e.target.value);
+                                updateLog(wi, di, si,j, 'actualWeight', e.target.value);
                               }}
                             />
                             <button
@@ -570,9 +690,14 @@ function Day() {
                                 if (isViewingPast) return;
                                 const markingDone = !s.done;
                                 updateSet(si, j, { done: markingDone });
-                                if (markingDone && groupDoneCount + 1 < groupSetCount
-                                  && localStorage.getItem('restTimerEnabled') !== 'false') {
-                                  setTimerState(prev => ({ cardKey: `g-${gi}`, id: (prev?.id ?? 0) + 1 }));
+                                updateLog(wi, di, si, j, 'setDone', markingDone);
+                                handleSetComplete(exercise, s.actual, markingDone);
+                                if (markingDone) {
+                                  recordPRIfBeaten(exercise, s.actual, s.actualReps);
+                                  if (groupDoneCount + 1 < groupSetCount
+                                    && localStorage.getItem('restTimerEnabled') !== 'false') {
+                                    setTimerState(prev => ({ cardKey: `g-${gi}`, id: (prev?.id ?? 0) + 1 }));
+                                  }
                                 }
                               }}
                               disabled={isViewingPast}
@@ -606,7 +731,7 @@ function Day() {
                       className="notes-input"
                       placeholder="notes..."
                       value={(log[wi]?.[di]?.[firstSi] ?? {}).notes ?? ''}
-                      onChange={e => updateLog(wi, di, firstSi, 'notes', e.target.value)}
+                      onChange={e => updateLog(wi, di, firstSi, null, 'notes', e.target.value)}
                     />
                   </div>
                 </div>
@@ -625,13 +750,21 @@ function Day() {
               <div className="post-workout-title">Workout Complete</div>
               <div className="post-workout-subtitle">{day.title ?? `Day ${dayNum}`}</div>
             </div>
-            <div className="post-workout-volume-block">
-              <div className="post-workout-volume-val">
-                {postWorkoutData.totalVolume > 0
-                  ? postWorkoutData.totalVolume.toLocaleString()
-                  : '—'}
+            <div className="post-workout-stats-row">
+              <div className="post-workout-volume-block">
+                <div className="post-workout-volume-val">
+                  {postWorkoutData.totalVolume > 0
+                    ? postWorkoutData.totalVolume.toLocaleString()
+                    : '—'}
+                </div>
+                <div className="post-workout-volume-lbl">Total Volume (lbs)</div>
               </div>
-              <div className="post-workout-volume-lbl">Total Volume (lbs)</div>
+              <div className="post-workout-volume-block">
+                <div className="post-workout-volume-val">
+                  {postWorkoutData.totalSets ?? '—'}
+                </div>
+                <div className="post-workout-volume-lbl">Total Sets</div>
+              </div>
             </div>
             {postWorkoutData.breakdown.length > 0 && (
               <div className="post-workout-breakdown">
@@ -639,7 +772,21 @@ function Day() {
                 {postWorkoutData.breakdown.map((e, i) => (
                   <div key={i} className="post-workout-breakdown-row">
                     <span className="post-workout-breakdown-name">{e.name}</span>
-                    <span className="post-workout-breakdown-vol">{e.volume.toLocaleString()} lbs</span>
+                    <span className="post-workout-breakdown-sets">{e.sets} {e.sets === 1 ? 'set' : 'sets'}</span>
+                    <span className="post-workout-breakdown-vol">{e.volume > 0 ? `${e.volume.toLocaleString()} lbs` : '—'}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {postWorkoutData.prs?.length > 0 && (
+              <div className="post-workout-breakdown post-workout-prs">
+                <div className="post-workout-breakdown-title">Personal Records</div>
+                {postWorkoutData.prs.map((pr, i) => (
+                  <div key={i} className="post-workout-breakdown-row">
+                    <span className="post-workout-breakdown-name">{pr.exercise}</span>
+                    <span className="post-workout-pr-detail">
+                      {pr.weight.toLocaleString()} lbs{pr.reps ? ` x ${pr.reps} reps` : ''}
+                    </span>
                   </div>
                 ))}
               </div>
