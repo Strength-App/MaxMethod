@@ -62,6 +62,10 @@ function Navigation() {
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"} aria-current={location.pathname === '/history' ? 'page' : undefined}>History</Link>
       <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"} aria-current={location.pathname === '/exerciseLibrary' ? 'page' : undefined}>Exercise Library</Link>
       <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"} aria-current={location.pathname === '/settings' ? 'page' : undefined}>Settings</Link>
+      {/* TEMPORARY LINK TO CLASSIFICATION FOR TESTING */}
+      <Link to="/classification" className={location.pathname === '/classification' ? "selected" : "nav-link"} aria-current={location.pathname === '/classification' ? 'page' : undefined}>
+        Classification
+      </Link>
 
       <button onClick={handleLogout} className="logout-btn">
         Logout
