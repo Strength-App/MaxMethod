@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import Classification from "./classification";
 
 function Onboarding() {
   const navigate = useNavigate();
@@ -90,55 +91,9 @@ function Onboarding() {
 
       <form className="onboarding-card" onSubmit={handleSubmit}>
 
-        {/* ── GENDER ── */}
-        <div className="ob-section">
-          <div className="ob-section-label">Gender</div>
-          <div className="ob-btn-group">
-            {["male", "female", "other"].map((g) => (
-              <button
-                key={g}
-                type="button"
-                className={`ob-toggle-btn${formData.gender === g ? " active" : ""}`}
-                onClick={() => set("gender", g)}
-              >
-                {g.charAt(0).toUpperCase() + g.slice(1)}
-              </button>
-            ))}
-          </div>
-        </div>
+        <Classification/>
 
-        <div className="ob-divider" />
-
-        {/* ── BODY STATS & 1RMs ── */}
-        <div className="ob-section">
-          <div className="ob-section-label">Body Stats &amp; 1-Rep Maxes</div>
-          <div className="ob-input-grid">
-            {[
-              { id: "bodyWeight",  label: "Body Weight" },
-              { id: "benchPress", label: "Bench Press 1RM" },
-              { id: "squat",      label: "Squat 1RM" },
-              { id: "deadlift",   label: "Deadlift 1RM" },
-            ].map(({ id, label }) => (
-              <div key={id} className="ob-input-group">
-                <label htmlFor={id}>{label}</label>
-                <div className="ob-input-wrap">
-                  <input
-                    type="number"
-                    id={id}
-                    name={id}
-                    value={formData[id]}
-                    onChange={handleInput}
-                    placeholder="Enter weight"
-                    min="0"
-                  />
-                  <span className="ob-input-unit">LBS</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="ob-divider" />
+        <div className="ob-divider" /> 
 
         {/* ── DAYS PER WEEK ── */}
         <div className="ob-section">

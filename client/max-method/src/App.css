@@ -691,14 +691,14 @@ input::placeholder {
   display: grid;
   /*grid-template-columns: 1fr 1fr;*/
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 
 .classification-data,
 .pick-new-program-data-row {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 14px;
   margin-top: 0;
 }
 
@@ -714,6 +714,7 @@ input::placeholder {
 }
 
 .lift-row {
+  width: 14px;
   display: flex;
   gap: 14px;
 }
@@ -2772,7 +2773,7 @@ button,
 .ob-section {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 8px;
   opacity: 0;
   transform: translateY(16px);
   animation: obFadeUp 0.4s forwards;

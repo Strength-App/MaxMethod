@@ -36,7 +36,7 @@ function Classification() {
       const data = await response.json();
 
       // Navigate to goals page with classification data
-      navigate("/goals", { state: data });
+      navigate("/onboarding", { state: data });
     } catch (error) {
       console.error("Error saving data:", error);
     }
