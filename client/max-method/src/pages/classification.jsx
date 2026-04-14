@@ -267,126 +267,136 @@ function Classification() {
           </div>
 
           <div className="classification-data-grid">
-            <div className="classification-data">
-              <p>Bench Press Weight</p>
-              <div className="input-unit">
-                <input
-                  type="number"
-                  name="benchPress"
-                  value={formData.benchPress}
-                  onChange={handleChange}
-                  placeholder="Enter weight"
-                  min="0"
-                  required
-                />
-                <span>lbs</span>
+            <div className="lift-row">
+
+              <div className="classification-data">
+                <p>Bench Press Weight</p>
+                <div className="input-unit">
+                  <input
+                    type="number"
+                    name="benchPress"
+                    value={formData.benchPress}
+                    onChange={handleChange}
+                    placeholder="Enter weight"
+                    min="0"
+                    required
+                  />
+                  <span>lbs</span>
+                </div>
+              </div>
+
+              <div className="classification-data">
+                <p>Bench Press Reps</p>
+                <div className="input-unit">
+                  <input
+                    type="number"
+                    name="benchRep"
+                    value={formData.benchRep}
+                    onChange={handleChange}
+                    placeholder="Enter reps"
+                    min="0"
+                    max="15"
+                    required
+                  />
+                  <span>reps</span>
+                </div>
+              </div>
+
+              <div className="classification-data">
+                <p>Estimated Bench Press One Rep Max</p>
+                <div className="input-unit">
+                  <input type="text" value={formData.benchMax} readOnly />
+                  <span>lbs</span>
+                </div>
+              </div>
+
+            </div>
+            
+
+            <div className="lift-row">
+
+              <div className="classification-data">
+                <p>Deadlift Weight</p>
+                <div className="input-unit">
+                  <input
+                    type="number"
+                    name="deadlift"
+                    value={formData.deadlift}
+                    onChange={handleChange}
+                    placeholder="Enter weight"
+                    min="0"
+                    required
+                  />
+                  <span>lbs</span>
+                </div>
+              </div>
+
+              <div className="classification-data">
+                <p>Deadlift Reps</p>
+                <div className="input-unit">
+                  <input
+                    type="number"
+                    name="deadliftRep"
+                    value={formData.deadliftRep}
+                    onChange={handleChange}
+                    placeholder="Enter reps"
+                    min="0"
+                    max="15"
+                    required
+                  />
+                  <span>reps</span>
+                </div>
+              </div>
+
+              <div className="classification-data">
+                <p>Estimated Deadlift One Rep Max</p>
+                <div className="input-unit">
+                  <input type="text" value={formData.deadliftMax} readOnly />
+                  <span>lbs</span>
+                </div>
               </div>
             </div>
 
-            <div className="classification-data">
-              <p>Bench Press Reps</p>
-              <div className="input-unit">
-                <input
-                  type="number"
-                  name="benchRep"
-                  value={formData.benchRep}
-                  onChange={handleChange}
-                  placeholder="Enter reps"
-                  min="0"
-                  max="15"
-                  required
-                />
-                <span>reps</span>
+            <div className="lift-row"> 
+              <div className="classification-data">
+                <p>Squat Weight</p>
+                <div className="input-unit">
+                  <input
+                    type="number"
+                    name="squat"
+                    value={formData.squat}
+                    onChange={handleChange}
+                    placeholder="Enter weight"
+                    min="0"
+                    required
+                  />
+                  <span>lbs</span>
+                </div>
               </div>
-            </div>
 
-            <div className="classification-data">
-              <p>Estimated Bench Press One Rep Max</p>
-              <div className="input-unit">
-                <input type="text" value={formData.benchMax} readOnly />
-                <span>lbs</span>
+              <div className="classification-data">
+                <p>Squat Reps</p>
+                <div className="input-unit">
+                  <input
+                    type="number"
+                    name="squatRep"
+                    value={formData.squatRep}
+                    onChange={handleChange}
+                    placeholder="Enter reps"
+                    min="0"
+                    max="15"
+                    required
+                  />
+                  <span>reps</span>
+                </div>
               </div>
-            </div>
 
-            <div className="classification-data">
-              <p>Deadlift Weight</p>
-              <div className="input-unit">
-                <input
-                  type="number"
-                  name="deadlift"
-                  value={formData.deadlift}
-                  onChange={handleChange}
-                  placeholder="Enter weight"
-                  min="0"
-                  required
-                />
-                <span>lbs</span>
-              </div>
-            </div>
-
-            <div className="classification-data">
-              <p>Deadlift Reps</p>
-              <div className="input-unit">
-                <input
-                  type="number"
-                  name="deadliftRep"
-                  value={formData.deadliftRep}
-                  onChange={handleChange}
-                  placeholder="Enter reps"
-                  min="0"
-                  max="15"
-                  required
-                />
-                <span>reps</span>
-              </div>
-            </div>
-
-            <div className="classification-data">
-              <p>Estimated Deadlift One Rep Max</p>
-              <div className="input-unit">
-                <input type="text" value={formData.deadliftMax} readOnly />
-                <span>lbs</span>
-              </div>
-            </div>
-
-            <div className="classification-data">
-              <p>Squat Weight</p>
-              <div className="input-unit">
-                <input
-                  type="number"
-                  name="squat"
-                  value={formData.squat}
-                  onChange={handleChange}
-                  placeholder="Enter weight"
-                  min="0"
-                  required
-                />
-                <span>lbs</span>
-              </div>
-            </div>
-
-            <div className="classification-data">
-              <p>Squat Reps</p>
-              <div className="input-unit">
-                <input
-                  type="number"
-                  name="squatRep"
-                  value={formData.squatRep}
-                  onChange={handleChange}
-                  placeholder="Enter reps"
-                  min="0"
-                  max="15"
-                  required
-                />
-                <span>reps</span>
-              </div>
-            </div>
-
-            <div className="classification-data">
-              <p>Estimated Squat One Rep Max</p>
-              <div className="input-unit">
-                <input type="text" value={formData.squatMax} readOnly />
-                <span>lbs</span>
+              <div className="classification-data">
+                <p>Estimated Squat One Rep Max</p>
+                <div className="input-unit">
+                  <input type="text" value={formData.squatMax} readOnly />
+                  <span>lbs</span>
+                </div>
               </div>
             </div>
 

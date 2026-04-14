@@ -689,7 +689,8 @@ input::placeholder {
 .classification-data-grid,
 .pick-new-program-data-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  /*grid-template-columns: 1fr 1fr;*/
+  flex-direction: column;
   gap: 14px;
 }
 
@@ -710,6 +711,15 @@ input::placeholder {
   text-transform: uppercase;
   color: var(--muted);
   margin: 0;
+}
+
+.lift-row {
+  display: flex;
+  gap: 14px;
+}
+
+.classification-data {
+  flex: 1;
 }
 
 /* ── Input + unit group ─────────────────────────────── */
