@@ -90,6 +90,9 @@ export function WorkoutProvider({ children }) {
                 actualWeights: slot.actualWeights ?? [],
                 actualReps: slot.actualReps ?? [],
                 completedSets: slot.completedSets ?? [],
+                cardioTimes: slot.cardioTimes ?? [],
+                cardioIntensities: slot.cardioIntensities ?? [],
+                cardioDistances: slot.cardioDistances ?? [],
                 notes: slot.notes ?? ''
               };
             });
@@ -131,6 +134,12 @@ export function WorkoutProvider({ children }) {
         ? { ...prevSlot, actualReps: { ...prevSlot.actualReps, [setIdx]: value } }
         : field === 'setDone'
         ? { ...prevSlot, completedSets: { ...prevSlot.completedSets, [setIdx]: value } }
+        : field === 'cardioTime'
+        ? { ...prevSlot, cardioTimes: { ...prevSlot.cardioTimes, [setIdx]: value } }
+        : field === 'cardioIntensity'
+        ? { ...prevSlot, cardioIntensities: { ...prevSlot.cardioIntensities, [setIdx]: value } }
+        : field === 'cardioDistance'
+        ? { ...prevSlot, cardioDistances: { ...prevSlot.cardioDistances, [setIdx]: value } }
         : { ...prevSlot, [field]: value };
 
       return {

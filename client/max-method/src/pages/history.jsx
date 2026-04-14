@@ -1,5 +1,4 @@
-import { useState, useMemo } from 'react';
-import { useWorkout } from '../context/WorkoutContext';
+import { useState, useEffect, useMemo } from 'react';
 
 function resolveWeekValue(value, wi) {
   if (Array.isArray(value)) return value[wi] ?? null;
@@ -24,28 +23,31 @@ function typeFromTitle(title = '') {
 function dateKey(d) { return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 
 export default function History() {
-  const { workout, log } = useWorkout();
   const [view, setView] = useState('timeline');
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [modal, setModal] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Collect all completed days with their date + slots
-  const sessions = useMemo(() => {
-    if (!workout) return [];
-    const result = [];
-    workout.weeks.forEach((week, wi) => {
-      week.days.forEach((day, di) => {
-        if (day.completed && day.completedAt) {
-          const date = new Date(day.completedAt);
-          date.setHours(0, 0, 0, 0);
-          const { type, color } = typeFromTitle(day.title);
-          result.push({ date, title: day.title ?? `Day ${di + 1}`, type, color, slots: day.slots ?? [], wi, di });
-        }
-      });
-    });
-    return result.sort((a, b) => b.date - a.date);
-  }, [workout]);
+  useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) { setLoading(false); return; }
+    fetch(`http://localhost:5050/api/users/workout/${userId}/all-history`)
+      .then(r => r.ok ? r.json() : { sessions: [] })
+      .then(data => {
+        setSessions(
+          (data.sessions ?? []).map(s => {
+            const date = new Date(s.date);
+            date.setHours(0, 0, 0, 0);
+            const { type, color } = typeFromTitle(s.dayTitle);
+            return { ...s, date, type, color };
+          })
+        );
+      })
+      .catch(() => setSessions([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   // Build date lookup for calendar
   const sessionMap = useMemo(() => {
@@ -56,11 +58,16 @@ export default function History() {
 
   // Stats
   const totalSessions = sessions.length;
+  const totalWeeks = useMemo(() =>
+    new Set(sessions.map(s => `${s.programTitle ?? 'default'}-${s.weekNumber}`)).size,
+  [sessions]);
+  const today = new Date(); today.setHours(0,0,0,0);
+  const thisMonth = sessions.filter(s => s.date >= new Date(today.getFullYear(), today.getMonth(), 1)).length;
+
   const streak = useMemo(() => {
     if (!sessions.length) return 0;
     let count = 0;
-    const today = new Date(); today.setHours(0,0,0,0);
-    let check = new Date(today);
+    const check = new Date(today);
     const keys = new Set(sessions.map(s => dateKey(s.date)));
     while (keys.has(dateKey(check))) {
       count++;
@@ -83,8 +90,6 @@ export default function History() {
   const calPrev = () => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); } else setCalMonth(m => m-1); };
   const calNext = () => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y+1); } else setCalMonth(m => m+1); };
 
-  const today = new Date(); today.setHours(0,0,0,0);
-
   return (
     <div className="hist-page">
       {/* Header */}
@@ -100,11 +105,11 @@ export default function History() {
           <div className="hist-stat-lbl">Total Sessions</div>
         </div>
         <div className="hist-stat-card">
-          <div className="hist-stat-val"><span>{workout?.weeks?.length ?? 0}</span></div>
+          <div className="hist-stat-val"><span>{totalWeeks}</span></div>
           <div className="hist-stat-lbl">Weeks Logged</div>
         </div>
         <div className="hist-stat-card">
-          <div className="hist-stat-val"><span>{sessions.filter(s => s.date >= new Date(today.getFullYear(), today.getMonth(), 1)).length}</span></div>
+          <div className="hist-stat-val"><span>{thisMonth}</span></div>
           <div className="hist-stat-lbl">This Month</div>
         </div>
         <div className="hist-stat-card">
@@ -125,8 +130,10 @@ export default function History() {
         </button>
       </div>
 
+      {loading && <div className="hist-empty">Loading history…</div>}
+
       {/* Timeline View */}
-      {view === 'timeline' && (
+      {!loading && view === 'timeline' && (
         <div className="hist-timeline-view">
           {grouped.length === 0 && (
             <div className="hist-empty">No completed workouts yet — finish a day to see it here.</div>
@@ -148,11 +155,11 @@ export default function History() {
                     <div className="hist-tl-divider" />
                     <div className="hist-tl-content">
                       <div className="hist-tl-name">
-                        <span className={`hist-type-tag hist-type-${s.type}`}>{s.title}</span>
+                        <span className={`hist-type-tag hist-type-${s.type}`}>{s.dayTitle}</span>
                       </div>
                       <div className="hist-tl-chips">
                         {s.slots.slice(0, 3).map((slot, si) => (
-                          <span key={si} className="hist-ex-chip">{slot.exercise ?? slot.label ?? `Exercise ${si+1}`}</span>
+                          <span key={si} className="hist-ex-chip">{slot.exercise ?? `Exercise ${si+1}`}</span>
                         ))}
                         {s.slots.length > 3 && <span className="hist-ex-chip">+{s.slots.length - 3} more</span>}
                       </div>
@@ -168,7 +175,7 @@ export default function History() {
       )}
 
       {/* Calendar View */}
-      {view === 'calendar' && (
+      {!loading && view === 'calendar' && (
         <div className="hist-calendar-view">
           <div className="hist-cal-nav">
             <button className="hist-cal-arrow" onClick={calPrev}>←</button>
@@ -201,7 +208,7 @@ export default function History() {
                   >
                     <div className="hist-cal-num">{d}</div>
                     {session && <div className="hist-cal-dot" style={{ background: session.color }} />}
-                    {session && <div className="hist-cal-label">{session.title}</div>}
+                    {session && <div className="hist-cal-label">{session.dayTitle}</div>}
                   </div>
                 );
               }
@@ -224,7 +231,12 @@ export default function History() {
             <div className="hist-modal-handle" />
             <div className="hist-modal-header">
               <div className="hist-modal-date">{DAYS_SHORT[modal.date.getDay()]}, {MONTHS[modal.date.getMonth()]} {modal.date.getDate()}, {modal.date.getFullYear()}</div>
-              <div className="hist-modal-title">{modal.title}</div>
+              <div className="hist-modal-title">{modal.dayTitle}</div>
+              {modal.programTitle && (
+                <div style={{ fontSize: '0.75rem', color: 'var(--muted, #888)', marginTop: '2px' }}>
+                  {modal.programTitle} · Week {modal.weekNumber}
+                </div>
+              )}
               <div className="hist-modal-stats">
                 <div className="hist-modal-stat">
                   <div className="hist-modal-stat-val">{modal.slots.length}</div>
@@ -236,29 +248,47 @@ export default function History() {
               <div className="hist-modal-section-title">Exercise Log</div>
               <div className="hist-exercise-log">
                 {modal.slots.map((slot, si) => {
-                  const entry = log?.[modal.wi]?.[modal.di]?.[si];
-                  const setsVal = resolveWeekValue(slot.sets, modal.wi);
+                  const wi = modal.weekIndex ?? 0;
+                  const setsVal = resolveWeekValue(slot.sets, wi);
                   const setCount = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
-                  const repsRaw = resolveWeekValue(slot.reps, modal.wi);
+                  const repsRaw = resolveWeekValue(slot.reps, wi);
                   const repsArray = Array.isArray(repsRaw)
                     ? repsRaw
                     : (typeof repsRaw === 'string' && repsRaw.includes(','))
                       ? repsRaw.split(',').map(r => r.trim())
                       : null;
                   const getReps = (j) => repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
-                  const weightNote = resolveWeekValue(slot.weightNote, modal.wi);
 
                   return (
                     <div key={si} className="hist-log-item">
-                      <div className="hist-log-name">{slot.exercise ?? slot.label ?? `Exercise ${si+1}`}</div>
+                      <div className="hist-log-name">
+                        {slot.exercise ?? `Exercise ${si+1}`}
+                        {slot.prHit && (
+                          <span className="hist-pr-badge">PR · {slot.prWeight} lbs</span>
+                        )}
+                      </div>
                       <div className="hist-log-sets">
-                        {Array.from({ length: setCount }, (_, j) => (
-                          <div key={j} className="hist-log-set-row">
-                            <div className="hist-log-set-num">{j+1}</div>
-                            <div className="hist-log-set-val"><span>{getReps(j) ?? '—'}</span> reps</div>
-                            <div className="hist-log-set-val"><span>{entry?.actualWeight || weightNote || '—'}</span> lbs</div>
-                          </div>
-                        ))}
+                        {Array.from({ length: setCount }, (_, j) => {
+                          if (!slot.completedSets?.[j]) return null;
+                          const isCardioSlot = slot.label === 'Cardio';
+                          return (
+                            <div key={j} className="hist-log-set-row">
+                              <div className="hist-log-set-num">{j+1}</div>
+                              {isCardioSlot ? (
+                                <>
+                                  <div className="hist-log-set-val"><span>{slot.cardioTimes?.[j] ?? '—'}</span> time</div>
+                                  <div className="hist-log-set-val"><span>{slot.cardioIntensities?.[j] ?? '—'}</span> intensity</div>
+                                  <div className="hist-log-set-val"><span>{slot.cardioDistances?.[j] ?? '—'}</span> dist</div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="hist-log-set-val"><span>{slot.actualReps?.[j] ?? getReps(j) ?? '—'}</span> reps</div>
+                                  <div className="hist-log-set-val"><span>{slot.actualWeights?.[j] ?? slot.weightNote ?? '—'}</span> lbs</div>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   );

@@ -490,7 +490,12 @@ function DetailView({ exercise, onBack }) {
                     </div>
                     <div className="el-hist-divider" />
                     <div className="el-hist-content">
-                      <div className="el-hist-day-title">{entry.dayTitle}</div>
+                      <div className="el-hist-day-title">
+                        {entry.weekNumber != null && (
+                          <span className="el-hist-week-tag">Week {entry.weekNumber}</span>
+                        )}
+                        {entry.dayTitle}
+                      </div>
                       <div className="el-hist-sets">
                         {Array.from({ length: entry.setCount }, (_, j) => {
                           if (!entry.completedSets?.[j]) return null
