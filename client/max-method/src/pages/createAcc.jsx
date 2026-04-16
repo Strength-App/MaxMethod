@@ -33,7 +33,7 @@ function CreateAcc() {
       setPassword('');
 
       alert('Account created successfully');
-      navigate('/classification');
+      navigate('/onboarding');
     } catch (error) {
       console.error('Error creating account:', error);
       alert('Error creating account');

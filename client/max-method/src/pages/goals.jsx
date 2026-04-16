@@ -1,12 +1,10 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useWorkout } from "../context/WorkoutContext";
 
 function Goals() {
   const navigate = useNavigate();
   const location = useLocation();
   const classificationData = location.state;
-  const { setUserId, fetchWorkout } = useWorkout();
 
   const [formData, setFormData] = useState({
     daysPerWeek: "",
@@ -20,46 +18,25 @@ function Goals() {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     const userId = localStorage.getItem('userId');
-
     if (!userId) {
-      console.error("No userId found in localStorage");
       alert("Session error — please sign in again.");
       navigate('/');
       return;
     }
 
-    console.log(classificationData.classification, formData.daysPerWeek, formData.goalSelection);
-
-    const response = await fetch("http://localhost:5050/api/users/goals", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    navigate('/loading', {
+      state: {
+        source: 'goals',
         userId,
         classification: classificationData.classification,
         daysPerWeek: formData.daysPerWeek,
-        goalSelection: formData.goalSelection
-      })
+        goalSelection: formData.goalSelection,
+      }
     });
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("Server error:", text);
-      return;
-    }
-
-    const data = await response.json();
-    console.log("Workout generated:", data);
-
-    // Make sure userId is set in context, then fetch the
-    // newly created/replaced workout so Home.jsx has it ready
-    setUserId(userId);
-    await fetchWorkout(userId);
-
-    navigate("/home");
   };
 
   return (

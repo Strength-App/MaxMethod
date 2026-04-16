@@ -1,42 +1,275 @@
-import {useState} from 'react'
-import Calendar from 'react-calendar'
-import Day from "./day.jsx";
+import { useState, useMemo } from 'react';
+import { useWorkout } from '../context/WorkoutContext';
 
-// Use this import for custom styling of the react-calendar.
-// import 'react-calendar/dist/Calendar.css'
+function resolveWeekValue(value, wi) {
+  if (Array.isArray(value)) return value[wi] ?? null;
+  return value ?? null;
+}
 
-function History () {
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-     const [date, setDate] = useState(new Date());
+function typeFromTitle(title = '') {
+  const t = title.toLowerCase();
+  if (t.includes('push'))  return { type: 'push',  color: '#f97316' };
+  if (t.includes('pull'))  return { type: 'pull',  color: '#38bdf8' };
+  if (t.includes('leg'))   return { type: 'legs',  color: '#4ade80' };
+  if (t.includes('arm'))   return { type: 'arms',  color: '#e879f9' };
+  if (t.includes('upper')) return { type: 'upper', color: '#60a5fa' };
+  if (t.includes('lower')) return { type: 'lower', color: '#4ade80' };
+  if (t.includes('core'))  return { type: 'core',  color: '#c084fc' };
+  return { type: 'full', color: '#cc0404' };
+}
 
-      return (
-        <div className="history-page">
-        <div>
-          <h1 className="history-heading">History</h1>
+function dateKey(d) { return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
+
+export default function History() {
+  const { workout, log } = useWorkout();
+  const [view, setView] = useState('timeline');
+  const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const [calMonth, setCalMonth] = useState(new Date().getMonth());
+  const [modal, setModal] = useState(null);
+
+  // Collect all completed days with their date + slots
+  const sessions = useMemo(() => {
+    if (!workout) return [];
+    const result = [];
+    workout.weeks.forEach((week, wi) => {
+      week.days.forEach((day, di) => {
+        if (day.completed && day.completedAt) {
+          const date = new Date(day.completedAt);
+          date.setHours(0, 0, 0, 0);
+          const { type, color } = typeFromTitle(day.title);
+          result.push({ date, title: day.title ?? `Day ${di + 1}`, type, color, slots: day.slots ?? [], wi, di });
+        }
+      });
+    });
+    return result.sort((a, b) => b.date - a.date);
+  }, [workout]);
+
+  // Build date lookup for calendar
+  const sessionMap = useMemo(() => {
+    const map = {};
+    sessions.forEach(s => { map[dateKey(s.date)] = s; });
+    return map;
+  }, [sessions]);
+
+  // Stats
+  const totalSessions = sessions.length;
+  const streak = useMemo(() => {
+    if (!sessions.length) return 0;
+    let count = 0;
+    const today = new Date(); today.setHours(0,0,0,0);
+    let check = new Date(today);
+    const keys = new Set(sessions.map(s => dateKey(s.date)));
+    while (keys.has(dateKey(check))) {
+      count++;
+      check.setDate(check.getDate() - 1);
+    }
+    return count;
+  }, [sessions]);
+
+  // Group sessions by month for timeline
+  const grouped = useMemo(() => {
+    const groups = {};
+    sessions.forEach(s => {
+      const key = `${s.date.getFullYear()}-${s.date.getMonth()}`;
+      if (!groups[key]) groups[key] = { label: `${MONTHS[s.date.getMonth()]} ${s.date.getFullYear()}`, items: [] };
+      groups[key].items.push(s);
+    });
+    return Object.values(groups);
+  }, [sessions]);
+
+  const calPrev = () => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y-1); } else setCalMonth(m => m-1); };
+  const calNext = () => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y+1); } else setCalMonth(m => m+1); };
+
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  return (
+    <div className="hist-page">
+      {/* Header */}
+      <div className="hist-header">
+        <h1 className="hist-title">Workout <span>History</span></h1>
+        <p className="hist-sub">Every session logged — tap any day to review</p>
+      </div>
+
+      {/* Stats */}
+      <div className="hist-stats-row">
+        <div className="hist-stat-card">
+          <div className="hist-stat-val"><span>{totalSessions}</span></div>
+          <div className="hist-stat-lbl">Total Sessions</div>
         </div>
-
-        <div className="react-calendar calendar-container">
-          <Calendar className="calendar " onChange={setDate} value={date} tileEnabled={({date}) => date.getDay() === 1} />
-
+        <div className="hist-stat-card">
+          <div className="hist-stat-val"><span>{workout?.weeks?.length ?? 0}</span></div>
+          <div className="hist-stat-lbl">Weeks Logged</div>
         </div>
-            <div >
-                <button className="history-button" onClick={() => {setDate(new Date())}}>
-                    <DaySelect/>
-                </button>
+        <div className="hist-stat-card">
+          <div className="hist-stat-val"><span>{sessions.filter(s => s.date >= new Date(today.getFullYear(), today.getMonth(), 1)).length}</span></div>
+          <div className="hist-stat-lbl">This Month</div>
+        </div>
+        <div className="hist-stat-card">
+          <div className="hist-stat-val"><span>{streak}</span></div>
+          <div className="hist-stat-lbl">Day Streak</div>
+        </div>
+      </div>
+
+      {/* View toggle */}
+      <div className="hist-toggle-row">
+        <button className={`hist-toggle-btn${view === 'timeline' ? ' hist-toggle-btn--active' : ''}`} onClick={() => setView('timeline')}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/></svg>
+          Timeline
+        </button>
+        <button className={`hist-toggle-btn${view === 'calendar' ? ' hist-toggle-btn--active' : ''}`} onClick={() => setView('calendar')}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Calendar
+        </button>
+      </div>
+
+      {/* Timeline View */}
+      {view === 'timeline' && (
+        <div className="hist-timeline-view">
+          {grouped.length === 0 && (
+            <div className="hist-empty">No completed workouts yet — finish a day to see it here.</div>
+          )}
+          {grouped.map(group => (
+            <div key={group.label} className="hist-month-block">
+              <div className="hist-month-heading">
+                {group.label}
+                <span className="hist-month-count">{group.items.length} session{group.items.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="hist-timeline">
+                {group.items.map((s, i) => (
+                  <div key={i} className="hist-tl-item" onClick={() => setModal(s)}>
+                    <div className="hist-tl-dot" style={{ background: s.color }} />
+                    <div className="hist-tl-date">
+                      <div className="hist-tl-day-num">{s.date.getDate()}</div>
+                      <div className="hist-tl-day-name">{DAYS_SHORT[s.date.getDay()]}</div>
+                    </div>
+                    <div className="hist-tl-divider" />
+                    <div className="hist-tl-content">
+                      <div className="hist-tl-name">
+                        <span className={`hist-type-tag hist-type-${s.type}`}>{s.title}</span>
+                      </div>
+                      <div className="hist-tl-chips">
+                        {s.slots.slice(0, 3).map((slot, si) => (
+                          <span key={si} className="hist-ex-chip">{slot.exercise ?? slot.label ?? `Exercise ${si+1}`}</span>
+                        ))}
+                        {s.slots.length > 3 && <span className="hist-ex-chip">+{s.slots.length - 3} more</span>}
+                      </div>
+                    </div>
+                    <div className="hist-tl-sets">{s.slots.length} exercises</div>
+                    <div className="hist-tl-arrow">›</div>
+                  </div>
+                ))}
+              </div>
             </div>
-
+          ))}
         </div>
-      );
-}
+      )}
 
-// use this function for the logic.
-function DaySelect(){
-    return(
-        <div>
-            <h2>Show History</h2>
+      {/* Calendar View */}
+      {view === 'calendar' && (
+        <div className="hist-calendar-view">
+          <div className="hist-cal-nav">
+            <button className="hist-cal-arrow" onClick={calPrev}>←</button>
+            <div className="hist-cal-month-title">{MONTHS[calMonth]} {calYear}</div>
+            <button className="hist-cal-arrow" onClick={calNext}>→</button>
+          </div>
+          <div className="hist-cal-dow-row">
+            {DAYS_SHORT.map(d => <div key={d} className="hist-cal-dow">{d}</div>)}
+          </div>
+          <div className="hist-cal-grid">
+            {(() => {
+              const firstDay = new Date(calYear, calMonth, 1).getDay();
+              const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+              const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+              const cells = [];
+
+              for (let i = firstDay - 1; i >= 0; i--)
+                cells.push(<div key={`prev-${i}`} className="hist-cal-day hist-cal-day--other">{daysInPrev - i}</div>);
+
+              for (let d = 1; d <= daysInMonth; d++) {
+                const date = new Date(calYear, calMonth, d);
+                const key = dateKey(date);
+                const session = sessionMap[key];
+                const isToday = dateKey(date) === dateKey(today);
+                cells.push(
+                  <div
+                    key={d}
+                    className={`hist-cal-day${session ? ' hist-cal-day--workout' : ''}${isToday ? ' hist-cal-day--today' : ''}`}
+                    onClick={() => session && setModal(session)}
+                  >
+                    <div className="hist-cal-num">{d}</div>
+                    {session && <div className="hist-cal-dot" style={{ background: session.color }} />}
+                    {session && <div className="hist-cal-label">{session.title}</div>}
+                  </div>
+                );
+              }
+
+              const totalCells = firstDay + daysInMonth;
+              const remainder = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+              for (let i = 1; i <= remainder; i++)
+                cells.push(<div key={`next-${i}`} className="hist-cal-day hist-cal-day--other">{i}</div>);
+
+              return cells;
+            })()}
+          </div>
         </div>
-    )
+      )}
+
+      {/* Modal */}
+      {modal && (
+        <div className="hist-modal-overlay" onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div className="hist-modal">
+            <div className="hist-modal-handle" />
+            <div className="hist-modal-header">
+              <div className="hist-modal-date">{DAYS_SHORT[modal.date.getDay()]}, {MONTHS[modal.date.getMonth()]} {modal.date.getDate()}, {modal.date.getFullYear()}</div>
+              <div className="hist-modal-title">{modal.title}</div>
+              <div className="hist-modal-stats">
+                <div className="hist-modal-stat">
+                  <div className="hist-modal-stat-val">{modal.slots.length}</div>
+                  <div className="hist-modal-stat-lbl">Exercises</div>
+                </div>
+              </div>
+            </div>
+            <div className="hist-modal-body">
+              <div className="hist-modal-section-title">Exercise Log</div>
+              <div className="hist-exercise-log">
+                {modal.slots.map((slot, si) => {
+                  const entry = log?.[modal.wi]?.[modal.di]?.[si];
+                  const setsVal = resolveWeekValue(slot.sets, modal.wi);
+                  const setCount = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
+                  const repsRaw = resolveWeekValue(slot.reps, modal.wi);
+                  const repsArray = Array.isArray(repsRaw)
+                    ? repsRaw
+                    : (typeof repsRaw === 'string' && repsRaw.includes(','))
+                      ? repsRaw.split(',').map(r => r.trim())
+                      : null;
+                  const getReps = (j) => repsArray ? (repsArray[j] ?? repsArray[repsArray.length - 1]) : repsRaw;
+                  const weightNote = resolveWeekValue(slot.weightNote, modal.wi);
+
+                  return (
+                    <div key={si} className="hist-log-item">
+                      <div className="hist-log-name">{slot.exercise ?? slot.label ?? `Exercise ${si+1}`}</div>
+                      <div className="hist-log-sets">
+                        {Array.from({ length: setCount }, (_, j) => (
+                          <div key={j} className="hist-log-set-row">
+                            <div className="hist-log-set-num">{j+1}</div>
+                            <div className="hist-log-set-val"><span>{getReps(j) ?? '—'}</span> reps</div>
+                            <div className="hist-log-set-val"><span>{entry?.actualWeight || weightNote || '—'}</span> lbs</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {modal.slots.length === 0 && <p className="hist-empty">No exercises logged.</p>}
+              </div>
+            </div>
+            <button className="hist-modal-close" onClick={() => setModal(null)}>Close</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
-
-
-export default History

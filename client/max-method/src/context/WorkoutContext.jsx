@@ -9,80 +9,112 @@ export function WorkoutProvider({ children }) {
   const [log, setLog] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [activeProgram, setActiveProgramState] = useState(null);
+  const [personalBests, setPersonalBests] = useState({});
 
-  // Holds the debounce timer for updateLog
+  const setActiveProgram = useCallback((program) => {
+    setActiveProgramState(program);
+  }, []);
+
+  // displayWorkout always uses live fetched data — no more localStorage snapshot
+  const displayWorkout = workout;
+
   const updateLogTimer = useRef(null);
 
-  // Saves userId to both localStorage and state
   const setUserId = useCallback((id) => {
     localStorage.setItem('userId', id);
     setUserIdState(id);
   }, []);
 
-  // Explicitly fetch the workout — called by goals.jsx after workout is generated,
-  // and on app load if a userId already exists in localStorage
-  const fetchWorkout = useCallback(async (id) => {
+  const logoutWorkout = useCallback(() => {
+    localStorage.removeItem('userId');
+    setUserIdState(null);
+    setWorkout(null);
+    setLog({});
+    setAssignments({});
+    setActiveProgramState(null);
+  }, []);
+
+  const fetchWorkout = useCallback(async (id, preloadedData = null) => {
     const resolvedId = id ?? userId;
-    if (!resolvedId) return;
+    console.log('fetchWorkout called with:', resolvedId);
+    if (!resolvedId && !preloadedData) return;
 
     setLoading(true);
     setError(null);
 
-    try {
-      const res = await fetch(`http://localhost:5050/api/users/workout/${resolvedId}`);
+      try {
+        let data;
+        if (preloadedData) {
+          data = preloadedData;
+        } else {
+            const [res, pbRes] = await Promise.all([
+            fetch(`http://localhost:5050/api/users/workout/${resolvedId}`),
+            fetch(`http://localhost:5050/api/users/workout/${resolvedId}/personal-bests`)
+          ])
 
-      // No workout yet — not an error, user just hasn't completed onboarding
-      if (res.status === 404) {
-        setWorkout(null);
-        return;
-      }
+          if (res.status === 404) {
+            return;
+          }
 
-      if (!res.ok) throw new Error('Failed to fetch workout');
+          if (!res.ok) throw new Error('Failed to fetch workout');
 
-      const data = await res.json();
-      setWorkout(data);
+          data = await res.json();
+          if (pbRes.ok) {
+            const pbData = await pbRes.json();
+            setPersonalBests(pbData.personal_bests ?? {});
+          }
+        }
 
-      // Seed assignments from week 1's resolved exercises
-      const initialAssignments = {};
-      data.weeks[0].days.forEach((day, di) => {
-        initialAssignments[di] = {};
-        day.slots.forEach((slot, si) => {
-          initialAssignments[di][si] = slot.exercise ?? '';
-        });
-      });
-      setAssignments(initialAssignments);
+        console.log('fetchWorkout got data, weeks:', data.weeks?.length);
+        setWorkout(data);
 
-      // Seed log from all weeks
-      const initialLog = {};
-      data.weeks.forEach((week, wi) => {
-        initialLog[wi] = {};
-        week.days.forEach((day, di) => {
-          initialLog[wi][di] = {};
-          day.slots.forEach((slot, si) => {
-            initialLog[wi][di][si] = {
-              actualWeight: slot.actualWeight ?? '',
-              notes: slot.notes ?? ''
-            };
+        // Seed assignments from week 1's resolved exercises
+        const initialAssignments = {};
+        data.weeks[0].days.forEach((day, di) => {
+          initialAssignments[di] = {};
+          (day.slots ?? []).forEach((slot, si) => {
+            initialAssignments[di][si] = slot.exercise ?? '';
           });
         });
-      });
-      setLog(initialLog);
+        setAssignments(initialAssignments);
 
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [userId]);
+        // Seed log from all weeks
+        const initialLog = {};
+        data.weeks.forEach((week, wi) => {
+          initialLog[wi] = {};
+          week.days.forEach((day, di) => {
+            initialLog[wi][di] = {};
+            (day.slots ?? []).forEach((slot, si) => {
+              initialLog[wi][di][si] = {
+                actualWeights: slot.actualWeights ?? [],
+                actualReps: slot.actualReps ?? [],
+                completedSets: slot.completedSets ?? [],
+                notes: slot.notes ?? ''
+              };
+            });
+          });
+        });
+        console.log('fetchWorkout seeded log sample (w0,d0,s0):', initialLog[0]?.[0]?.[0]);
+        setLog(initialLog);
 
-  // On app load, if a userId is already in localStorage, fetch their workout
+        return data;
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    },  [userId]);
+
+  // Re-fetch whenever userId changes (covers both app load and login)
   useEffect(() => {
+    console.log('userId effect fired, userId is:', userId);
     if (userId) {
       fetchWorkout(userId);
     }
-  }, []); // intentionally runs once on mount only
+  }, [userId]);
 
-  // Change exercise choice for a day/slot (shared across all weeks)
   const setExercise = useCallback((dayIdx, slotIdx, exerciseName) => {
     setAssignments(prev => ({
       ...prev,
@@ -90,25 +122,33 @@ export function WorkoutProvider({ children }) {
     }));
   }, []);
 
-  // Update logged weight or notes — optimistic local update + debounced DB write
-  const updateLog = useCallback(async (weekIdx, dayIdx, slotIdx, field, value) => {
-    // Optimistic local update so the UI feels instant
-    setLog(prev => ({
-      ...prev,
-      [weekIdx]: {
-        ...prev[weekIdx],
-        [dayIdx]: {
-          ...prev[weekIdx]?.[dayIdx],
-          [slotIdx]: { ...prev[weekIdx]?.[dayIdx]?.[slotIdx], [field]: value },
-        },
-      },
-    }));
+  const updateLog = useCallback(async (weekIdx, dayIdx, slotIdx, setIdx, field, value) => {
+    setLog(prev => {
+      const prevSlot = prev[weekIdx]?.[dayIdx]?.[slotIdx] ?? {};
+      const updatedSlot = field === 'actualWeight'
+        ? { ...prevSlot, actualWeights: { ...prevSlot.actualWeights, [setIdx]: Number(value) } }
+        : field === 'actualReps'
+        ? { ...prevSlot, actualReps: { ...prevSlot.actualReps, [setIdx]: value } }
+        : field === 'setDone'
+        ? { ...prevSlot, completedSets: { ...prevSlot.completedSets, [setIdx]: value } }
+        : { ...prevSlot, [field]: value };
 
-    // Debounce the DB write — wait 500ms after the last keystroke before saving
+      return {
+        ...prev,
+        [weekIdx]: {
+          ...prev[weekIdx],
+          [dayIdx]: {
+            ...prev[weekIdx]?.[dayIdx],
+            [slotIdx]: updatedSlot,
+          }
+        }
+      };
+    });
+
     clearTimeout(updateLogTimer.current);
     updateLogTimer.current = setTimeout(async () => {
       try {
-        await fetch('http://localhost:5050/api/users/workout/log', {
+        const res = await fetch('http://localhost:5050/api/users/workout/log', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -116,18 +156,28 @@ export function WorkoutProvider({ children }) {
             weekNum: weekIdx + 1,
             dayNum: dayIdx + 1,
             slotIdx,
-            [field]: value
+            setIdx,
+            [field]: field === 'actualWeight' ? Number(value) : value
           })
         });
+
+        const data = await res.json();
+
+
+        if (data.pbUpdate?.isPersonalBest) {
+          setPersonalBests(prev => ({
+            ...prev,
+            [data.pbUpdate.exercise]: data.pbUpdate.newPersonalBest
+          }));
+        }
+
       } catch (err) {
         console.error('Failed to save log entry:', err);
       }
     }, 500);
   }, [userId]);
 
-  // Mark a day complete
   const completeDay = useCallback(async (weekIdx, dayIdx) => {
-    // Optimistic local update
     setWorkout(prev => {
       const updated = structuredClone(prev);
       updated.weeks[weekIdx].days[dayIdx].completed = true;
@@ -145,23 +195,31 @@ export function WorkoutProvider({ children }) {
           dayNum: dayIdx + 1
         })
       });
+      await fetchWorkout();
+
     } catch (err) {
       console.error('Failed to mark day complete:', err);
     }
-  }, [userId]);
+  }, [userId, fetchWorkout]);
 
   return (
     <WorkoutContext.Provider value={{
       workout,
+      displayWorkout,
+      activeProgram,
+      setActiveProgram,
       assignments,
       log,
       loading,
       error,
+      personalBests,
+      setPersonalBests,
       setUserId,
       fetchWorkout,
       setExercise,
       updateLog,
-      completeDay
+      completeDay,
+      logoutWorkout
     }}>
       {children}
     </WorkoutContext.Provider>
