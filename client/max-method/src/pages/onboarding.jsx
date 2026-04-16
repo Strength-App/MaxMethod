@@ -10,9 +10,19 @@ function Onboarding() {
   const [formData, setFormData] = useState({
     gender: "",
     bodyWeight: "",
+
+    benchPressWeight: "",
+    benchRep: "",
     benchPress: "",
-    squat: "",
+
+    deadliftWeight: "",
+    deadliftRep: "",
     deadlift: "",
+
+    squatWeight: "",
+    squatRep: "",
+    squat: "",
+
     daysPerWeek: "",
     goalSelection: "",
   });
@@ -91,7 +101,10 @@ function Onboarding() {
 
       <form className="onboarding-card" onSubmit={handleSubmit}>
 
-        <Classification/>
+        <Classification
+          formData={formData}
+          setFormData={setFormData}
+        />
 
         <div className="ob-divider" /> 
 
