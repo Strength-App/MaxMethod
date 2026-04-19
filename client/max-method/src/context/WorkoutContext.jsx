@@ -204,7 +204,7 @@ export function WorkoutProvider({ children }) {
           dayNum: dayIdx + 1
         })
       });
-      await fetchWorkout();
+      await fetchWorkout(userId);
 
     } catch (err) {
       console.error('Failed to mark day complete:', err);
