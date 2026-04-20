@@ -503,8 +503,8 @@ function Day() {
               {isCardio ? (
                 <>
                   <span className="ex-col-lbl">Time</span>
+                  <span className="ex-col-lbl">Recovery</span>
                   <span className="ex-col-lbl">Intensity</span>
-                  <span className="ex-col-lbl">Distance</span>
                 </>
               ) : (
                 <>
@@ -539,7 +539,7 @@ function Day() {
                     ? weightNoteRaw.split(',').map(w => w.trim())
                     : null;
                 const getWeightNote = (j) => weightNoteArray ? (weightNoteArray[j] ?? weightNoteArray[weightNoteArray.length - 1]) : weightNoteRaw;
-                const projectedWeight = slot.projectedWeight ?? 0;
+                const projectedWeight = slot.projectedWeight ?? null;
 
                 if (items.length > 1 && slot.label) {
                   rows.push(
@@ -550,7 +550,7 @@ function Day() {
                 for (let j = 0; j < setCount; j++) {
                   globalSetNum++;
                   const s = getSet(si, j);
-                  let target = projectedWeight ?? getWeightNote(j);
+                  let target = projectedWeight != null ? projectedWeight : getWeightNote(j);
                   if (typeof target === 'string' && /^\d+(\.\d+)?%/.test(target)) {
                     const pct = parseFloat(target) / 100;
                     const refKey = PERCENT_REF_1RM[slot.label]
@@ -569,19 +569,9 @@ function Day() {
                       <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{globalSetNum}</div>
                       {isCardio ? (
                         <>
-                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.time ?? '—'}</div>
-                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.intensity ?? '—'}</div>
-                          <input
-                            className="actual-input"
-                            type="text"
-                            placeholder="0.0"
-                            value={s.cardioDistance ?? ''}
-                            disabled={isViewingPast}
-                            onChange={e => {
-                              updateSet(si, j, { cardioDistance: e.target.value });
-                              updateLog(wi, di, si, j, 'cardioDistance', e.target.value);
-                            }}
-                          />
+                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.maxEffort ?? slot.cardioSets?.[j]?.time ?? '—'}</div>
+                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.recovery ?? (slot.cardioSets?.[j]?.intensity === 'Max Effort' ? slot.cardioSets?.[j]?.time : '—')}</div>
+                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.intensity ?? (slot.cardioSets?.[j]?.maxEffort ? 'Max Effort' : '—')}</div>
                         </>
                       ) : (
                         <>
