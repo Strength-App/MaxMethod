@@ -25,22 +25,11 @@ const MOVEMENT_PATTERNS = {
   'Core':                        ['Plank','Ab Wheel Rollouts','Hanging Leg Raises','Cable Crunches','Decline Crunches','Pallof Press','Dead Bugs','Suitcase Carries','Farmer Carries'],
 };
 
-function formatReps(reps) {
-  if (!reps) return '';
-  if (Array.isArray(reps)) return reps[0];
-  if (typeof reps === 'string' && reps.includes(',')) return reps.split(',')[0].trim();
-  return reps;
-}
-
-
 // slot here is a deduplicated slot — it has `slotIdxs: number[]` instead of `slotIdx`
 function SlotRow({ slot, dayIdx, onSwap }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(slot.exercise);
   const isFixed = !!slot.fixed;
-  const sets = Array.isArray(slot.sets) ? slot.sets[0] : slot.sets;
-  const reps = formatReps(slot.reps);
-  const weight = slot.projectedWeight;
 
   // Find alternatives: try exact label match first, then scan all patterns for
   // the current exercise name as a fallback (handles pattern vs label mismatch)
@@ -70,14 +59,6 @@ function SlotRow({ slot, dayIdx, onSwap }) {
           {slot.label && <span className="rp-slot-pattern">{slot.label}</span>}
         </div>
         <div className="rp-slot-meta">
-          {sets && reps && (
-            <span className="rp-sets-reps">{sets} × {reps}</span>
-          )}
-          {weight != null && weight !== '' && (
-            <span className="rp-weight-pill">
-              {typeof weight === 'number' ? `${weight} lbs` : weight}
-            </span>
-          )}
           {isFixed ? (
             <span className="rp-fixed-tag">Fixed</span>
           ) : alternatives.length > 0 ? (

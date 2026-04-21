@@ -1650,6 +1650,54 @@ input::placeholder {
   background: rgba(255,255,255,0.02);
 }
 
+/* ── Superset Block ──────────────────────────────────── */
+.superset-block {
+  border: 1px solid rgba(232, 160, 32, 0.38);
+  border-radius: 12px;
+  background: rgba(232, 160, 32, 0.03);
+  overflow: hidden;
+}
+
+.superset-block-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px 6px;
+  background: rgba(232, 160, 32, 0.06);
+  border-bottom: 1px solid rgba(232, 160, 32, 0.18);
+}
+
+.superset-tag {
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+  color: #e8a020;
+  background: rgba(232, 160, 32, 0.12);
+  border: 1px solid rgba(232, 160, 32, 0.30);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+/* Cards inside a superset block lose their individual outer borders */
+.superset-block .ex-card {
+  border-radius: 0;
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+}
+
+.superset-block .ex-card:first-child {
+  border-top: none;
+}
+
+/* Suppress the individual open/done accent border inside a superset */
+.superset-block .ex-card--open,
+.superset-block .ex-card--done {
+  border-color: transparent;
+}
+
 .rest-timer {
   display: flex;
   flex-direction: column;
@@ -1735,6 +1783,73 @@ input::placeholder {
   text-transform: uppercase;
   color: var(--muted);
   flex-shrink: 0;
+}
+
+/* ── Cardio grid overrides ───────────────────────────── */
+.ex-sets-col-header--cardio,
+.ex-set-row--cardio {
+  grid-template-columns: 36px repeat(3, 1fr) 40px;
+}
+
+.cardio-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 0.78rem;
+}
+
+.cardio-type {
+  background: var(--accent, #4f8ef7);
+  color: #fff;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.cardio-note {
+  color: var(--text-secondary, #aaa);
+  font-style: italic;
+}
+
+.cardio-prescribed {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  opacity: 0.75;
+}
+
+/* ── Cardio inline section (sits in normal slot order) ── */
+.cardio-inline-section {
+  margin-top: 8px;
+}
+
+.cardio-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 4px 10px;
+}
+
+.cardio-section-header::before,
+.cardio-section-header::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border, rgba(255,255,255,0.12));
+}
+
+.cardio-section-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-secondary, #aaa);
+  white-space: nowrap;
 }
 
 /* ── Week heading with progress ──────────────────────── */
@@ -2380,7 +2495,7 @@ input::placeholder {
   background: rgba(20, 4, 4, .75);
   z-index: 300;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   backdrop-filter: blur(4px);
 }
@@ -2388,14 +2503,14 @@ input::placeholder {
 .hist-modal {
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: 20px 20px 0 0;
-  width: 100%;
+  border-radius: 20px;
+  width: 90%;
   max-width: 560px;
   max-height: 85vh;
   overflow-y: auto;
-  animation: histSlideUp .25s ease;
+  animation: histFadeIn .2s ease;
 }
-@keyframes histSlideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes histFadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 
 .hist-modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 12px auto 0; }
 
@@ -2415,7 +2530,8 @@ input::placeholder {
 
 .hist-exercise-log { display: flex; flex-direction: column; gap: 8px; }
 .hist-log-item { background: var(--surface-deep); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
-.hist-log-name { font-family: var(--font-sub); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+.hist-log-name { font-family: var(--font-sub); font-size: 13px; font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hist-pr-badge { background: linear-gradient(135deg, #f59e0b, #f97316); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.4px; white-space: nowrap; }
 .hist-log-sets { display: flex; flex-direction: column; gap: 4px; }
 .hist-log-set-row { display: grid; grid-template-columns: 28px 1fr 1fr; gap: 8px; font-size: 11px; align-items: center; }
 .hist-log-set-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-family: var(--font-sub); font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; }

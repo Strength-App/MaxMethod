@@ -1,9 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { useEffect } from 'react';
 
 function Home() {
   const navigate = useNavigate();
-  const { displayWorkout, loading, error } = useWorkout();
+  const { displayWorkout, loading, error, fetchWorkout } = useWorkout();
+  const userId = localStorage.getItem('userId');
+  
+  // Re-fetch every time the home page is visited so title/data is always fresh
+  useEffect(() => {
+    if (userId) fetchWorkout(userId);
+  }, []);
 
   if (loading) return <p className="status-msg">Loading your program...</p>;
   if (error) return <p className="status-msg status-msg--error">Error loading workout: {error}</p>;

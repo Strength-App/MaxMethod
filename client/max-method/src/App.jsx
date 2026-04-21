@@ -117,6 +117,7 @@ function App() {
             <Route path="/settings" element={protectedRoute(<Settings />)} />
             <Route path="/pickNewProgram" element={protectedRoute(<PickNewProgram />)} />
             <Route path="/customWorkout" element={protectedRoute(<CustomWorkout />)} />
+            <Route path="/customWorkout/:workoutLogId" element={protectedRoute(<CustomWorkout />)} />
             <Route path="/customDay/:weekNum/:dayNum" element={protectedRoute(<CustomDay />)} />
             <Route path="/view-program/:programLogId" element={protectedRoute(<ViewProgram />)} />
             <Route path="/review-program" element={user ? <ReviewProgram /> : <Navigate to="/welcomepage" replace />} />

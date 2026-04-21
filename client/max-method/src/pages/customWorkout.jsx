@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 
 function CustomWorkout() {
+  // At the top of CustomWorkout(), read the existing workoutLogId if editing
+  const { workoutLogId } = useParams(); // add this if editing routes use /:workoutLogId
   const navigate = useNavigate();
   const { fetchWorkout, setActiveProgram } = useWorkout();
   const [title, setTitle] = useState(() => localStorage.getItem('customWorkoutTitle') || '');
@@ -32,10 +34,7 @@ function CustomWorkout() {
 
   const finishWorkout = async () => {
     const userId = localStorage.getItem('userId');
-    if (!userId) {
-      navigate('/home');
-      return;
-    }
+    if (!userId) { navigate('/home'); return; }
 
     const weeksWithExercises = weeks.map((week, wi) => ({
       ...week,
@@ -48,19 +47,38 @@ function CustomWorkout() {
     }));
 
     try {
-      const res = await fetch('http://localhost:5050/api/users/custom-workout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, title: title || 'Custom Workout', weeks: weeksWithExercises })
-      });
+      if (workoutLogId) {
+        // ── EDITING an existing workout ──────────────────────────────
+        // 1. Update the weeks
+        await fetch(`http://localhost:5050/api/users/workout-log/${workoutLogId}/weeks`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ weeks: weeksWithExercises })
+        });
 
-      if (!res.ok) throw new Error('Failed to save custom workout');
+        // 2. Update the title
+        await fetch(`http://localhost:5050/api/users/workout-log/${workoutLogId}/title`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: title || 'Custom Workout' })
+        });
+
+      } else {
+        // ── CREATING a new workout ───────────────────────────────────
+        const res = await fetch('http://localhost:5050/api/users/custom-workout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, title: title || 'Custom Workout', weeks: weeksWithExercises })
+        });
+        if (!res.ok) throw new Error('Failed to save custom workout');
+        await fetchWorkout(userId);
+        setActiveProgram(null); // Only clear this on fresh create
+      }
 
       localStorage.removeItem('customWorkout');
       localStorage.removeItem('customWorkoutTitle');
-
-      await fetchWorkout(userId);
-      setActiveProgram(null);
+      // await fetchWorkout(userId);
+      // setActiveProgram(null);
     } catch (err) {
       console.error('Error saving custom workout:', err);
     }
