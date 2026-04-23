@@ -1794,6 +1794,30 @@ input::placeholder {
   grid-template-columns: 36px repeat(3, 1fr) 40px;
 }
 
+/* ── Circuit block note ──────────────────────────────── */
+.circuit-block-note {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #aaa);
+  font-style: italic;
+  padding: 4px 12px 8px;
+}
+
+/* ── AMRAP Circuit ───────────────────────────────────── */
+.amrap-rounds-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--surface-raised, rgba(255,255,255,0.03));
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.amrap-rounds-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex: 1;
+}
+
 .cardio-meta {
   display: flex;
   align-items: center;
@@ -3254,6 +3278,34 @@ button,
 }
 
 .rp-slot-row:last-child {
+  border-bottom: none;
+}
+
+/* Circuit group in review page */
+.rp-circuit-group {
+  border-bottom: 1px solid var(--border);
+}
+
+.rp-circuit-group:last-child {
+  border-bottom: none;
+}
+
+.rp-circuit-header {
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e07b39;
+  padding: 8px 14px 4px;
+}
+
+.rp-slot-row--circuit-ex {
+  border-bottom: 1px solid var(--border);
+  padding-left: 22px;
+}
+
+.rp-slot-row--circuit-ex:last-child {
   border-bottom: none;
 }
 

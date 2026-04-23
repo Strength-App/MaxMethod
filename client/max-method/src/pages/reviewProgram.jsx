@@ -25,6 +25,31 @@ const MOVEMENT_PATTERNS = {
   'Core':                        ['Plank','Ab Wheel Rollouts','Hanging Leg Raises','Cable Crunches','Decline Crunches','Pallof Press','Dead Bugs','Suitcase Carries','Farmer Carries'],
 };
 
+function CircuitGroup({ slot }) {
+  const parts = [slot.label];
+  if (slot.circuitType) parts.push(slot.circuitType);
+  if (slot.totalTime) parts.push(slot.totalTime);
+
+  return (
+    <div className="rp-circuit-group">
+      <div className="rp-circuit-header">{parts.join(' · ')}</div>
+      {(slot.exercises ?? []).map((ex, i) => {
+        const exName = ex.exercise ?? ex.fixed ?? ex.label;
+        return (
+          <div key={i} className="rp-slot-row rp-slot-row--circuit-ex">
+            <div className="rp-slot-main">
+              <div className="rp-slot-info">
+                <span className="rp-exercise-name">{exName}</span>
+                {ex.label && <span className="rp-slot-pattern">{ex.label}</span>}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // slot here is a deduplicated slot — it has `slotIdxs: number[]` instead of `slotIdx`
 function SlotRow({ slot, dayIdx, onSwap }) {
   const [open, setOpen] = useState(false);
@@ -107,15 +132,28 @@ function ReviewProgram() {
   // them into one row per unique exercise, collecting all their slotIdxs for swapping.
   const processedDays = useMemo(() =>
     days.map(day => {
-      const seen = new Map(); // exercise name → deduplicated slot
+      const seen = new Map();
+      const ordered = [];
       (day.slots ?? []).forEach(slot => {
+        if (Array.isArray(slot.exercises) && slot.exercises.length > 0) {
+          // Circuit slot — keep as-is with a unique key
+          const key = `__circuit__${slot.slotIdx}`;
+          if (!seen.has(key)) {
+            const entry = { ...slot, isCircuit: true, slotIdxs: [slot.slotIdx] };
+            seen.set(key, entry);
+            ordered.push(entry);
+          }
+          return;
+        }
         if (!seen.has(slot.exercise)) {
-          seen.set(slot.exercise, { ...slot, slotIdxs: [slot.slotIdx] });
+          const entry = { ...slot, slotIdxs: [slot.slotIdx] };
+          seen.set(slot.exercise, entry);
+          ordered.push(entry);
         } else {
           seen.get(slot.exercise).slotIdxs.push(slot.slotIdx);
         }
       });
-      return { ...day, uniqueSlots: [...seen.values()] };
+      return { ...day, uniqueSlots: ordered };
     }),
   [days]);
 
@@ -190,14 +228,13 @@ function ReviewProgram() {
           <div key={di} className="rp-day-card">
             <div className="rp-day-title">{day.title}</div>
             <div className="rp-slots-list">
-              {(day.uniqueSlots ?? []).map((slot, si) => (
-                <SlotRow
-                  key={si}
-                  slot={slot}
-                  dayIdx={di}
-                  onSwap={handleSwap}
-                />
-              ))}
+              {(day.uniqueSlots ?? []).map((slot, si) =>
+                slot.isCircuit ? (
+                  <CircuitGroup key={si} slot={slot} />
+                ) : (
+                  <SlotRow key={si} slot={slot} dayIdx={di} onSwap={handleSwap} />
+                )
+              )}
             </div>
           </div>
         ))}
