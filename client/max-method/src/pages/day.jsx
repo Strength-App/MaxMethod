@@ -88,6 +88,8 @@ const FIXED_EXERCISE_1RM = {
   "Deadlift":    "deadlift",
 };
 
+const isCardioSlot = (slot) => slot.pattern === 'Cardio' || slot.label === 'Cardio';
+
 function Day() {
   const { weekNum, dayNum } = useParams();
   const navigate = useNavigate();
@@ -169,8 +171,23 @@ function Day() {
     setSetData(prev => {
       const seeded = { ...prev };
       (day.slots ?? []).forEach((slot, si) => {
+        if (slot.exercises?.length) {
+          if (slot.circuitType === 'AMRAP') {
+            const key = `${si}-circuit`;
+            if (!seeded[key]) seeded[key] = { done: false, rounds: '' };
+          } else {
+            slot.exercises.forEach((ex, ei) => {
+              const setCount = typeof ex.sets === 'number' ? ex.sets : (parseInt(ex.sets) || 0);
+              for (let j = 0; j < setCount; j++) {
+                const key = `${si}-${ei}-${j}`;
+                if (!seeded[key]) seeded[key] = { done: false, actual: '', actualReps: '' };
+              }
+            });
+          }
+          return;
+        }
         const setsVal = resolveWeekValue(slot.sets, wi);
-        const count = slot.label === 'Cardio'
+        const count = isCardioSlot(slot)
           ? (slot.cardioSets?.length ?? 0)
           : (typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0));
         for (let j = 0; j < count; j++) {
@@ -256,8 +273,23 @@ function Day() {
     });
   } else {
     (day.slots ?? []).forEach((slot, si) => {
+      if (slot.exercises?.length) {
+        if (slot.circuitType === 'AMRAP') {
+          totalSets += 1;
+          if (setData[`${si}-circuit`]?.done) doneSets++;
+        } else {
+          slot.exercises.forEach((ex, ei) => {
+            const setCount = typeof ex.sets === 'number' ? ex.sets : (parseInt(ex.sets) || 0);
+            totalSets += setCount;
+            for (let j = 0; j < setCount; j++) {
+              if (setData[`${si}-${ei}-${j}`]?.done) doneSets++;
+            }
+          });
+        }
+        return;
+      }
       const setsVal = resolveWeekValue(slot.sets, wi);
-      const count = slot.label === 'Cardio'
+      const count = isCardioSlot(slot)
         ? (slot.cardioSets?.length ?? 0)
         : (typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0));
       totalSets += count;
@@ -322,8 +354,13 @@ function Day() {
     if (isCustom) return [];
     const groups = [];
     (day.slots ?? []).forEach((slot, si) => {
+      if (slot.exercises?.length) {
+        // Circuit slot — always standalone
+        groups.push({ circuit: true, slot, si, items: [] });
+        return;
+      }
       const exercise = assignments[di]?.[si] ?? slot.exercise ?? '';
-      if (slot.label === 'Cardio') {
+      if (isCardioSlot(slot)) {
         // Cardio slots are always standalone — never merge with adjacent slots
         groups.push({ exercise, items: [{ slot, si }], superset: false, supersetGroup: null });
       } else {
@@ -344,7 +381,12 @@ function Day() {
     let i = 0;
     while (i < groupedSlots.length) {
       const g = groupedSlots[i];
-      if (g.items[0]?.slot?.label === 'Cardio') {
+      if (g.circuit) {
+        result.push({ type: 'circuit', slot: g.slot, si: g.si, gi: i });
+        i++;
+        continue;
+      }
+      if (isCardioSlot(g.items[0]?.slot ?? {})) {
         result.push({ type: 'cardio', group: g, gi: i });
         i++;
         continue;
@@ -381,7 +423,7 @@ function Day() {
     let groupDoneCount = 0;
     items.forEach(({ slot, si }) => {
       const setsVal = resolveWeekValue(slot.sets, wi);
-      const count = slot.label === 'Cardio'
+      const count = isCardioSlot(slot)
         ? (slot.cardioSets?.length ?? 0)
         : (typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0));
       groupSetCount += count;
@@ -394,7 +436,7 @@ function Day() {
     const isOpen = openCards[gi] ?? false;
     const isEditing = editingSlot === firstSi;
     const options = firstSlot.label ? (movementPatterns[firstSlot.label] ?? [exercise]) : [exercise];
-    const isCardio = firstSlot.label === 'Cardio';
+    const isCardio = isCardioSlot(firstSlot);
 
     const pb = personalBests?.[exercise];
     const maxActual = Math.max(
@@ -502,7 +544,7 @@ function Day() {
               <span className="ex-col-lbl">Set</span>
               {isCardio ? (
                 <>
-                  <span className="ex-col-lbl">Time</span>
+                  <span className="ex-col-lbl">Time/Distance</span>
                   <span className="ex-col-lbl">Recovery</span>
                   <span className="ex-col-lbl">Intensity</span>
                 </>
@@ -522,7 +564,7 @@ function Day() {
               let globalSetNum = 0;
               items.forEach(({ slot, si }) => {
                 const setsVal = resolveWeekValue(slot.sets, wi);
-                const setCount = slot.label === 'Cardio'
+                const setCount = isCardioSlot(slot)
                   ? (slot.cardioSets?.length ?? 0)
                   : (typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0));
                 const repsRaw = resolveWeekValue(slot.reps, wi);
@@ -569,7 +611,7 @@ function Day() {
                       <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{globalSetNum}</div>
                       {isCardio ? (
                         <>
-                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.maxEffort ?? slot.cardioSets?.[j]?.time ?? '—'}</div>
+                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.distance ?? slot.cardioSets?.[j]?.maxEffort ?? slot.cardioSets?.[j]?.time ?? '—'}</div>
                           <div className="cardio-prescribed">{slot.cardioSets?.[j]?.recovery ?? (slot.cardioSets?.[j]?.intensity === 'Max Effort' ? slot.cardioSets?.[j]?.time : '—')}</div>
                           <div className="cardio-prescribed">{slot.cardioSets?.[j]?.intensity ?? (slot.cardioSets?.[j]?.maxEffort ? 'Max Effort' : '—')}</div>
                         </>
@@ -685,6 +727,351 @@ function Day() {
             </div>
           </div>
         )}
+      </div>
+    );
+  };
+
+  const renderCircuitCard = (slot, si, gi) => {
+    const exercises = slot.exercises ?? [];
+
+    const badgeParts = [slot.label];
+    if (slot.circuitType) badgeParts.push(slot.circuitType);
+    if (slot.totalTime) badgeParts.push(slot.totalTime);
+
+    // AMRAP circuits: no discrete sets — rounds tracked at circuit level, per-exercise cards for reference
+    if (slot.circuitType === 'AMRAP') {
+      const circuitState = setData[`${si}-circuit`] ?? { done: false, rounds: '' };
+
+      return (
+        <div key={gi} className="superset-block">
+          <div className="superset-block-label">
+            <span className="superset-tag">{badgeParts.join(' · ')}</span>
+          </div>
+          {slot.circuitNote && (
+            <div className="circuit-block-note">{slot.circuitNote}</div>
+          )}
+
+          {/* Rounds completed tracker */}
+          <div className="amrap-rounds-row">
+            <span className="amrap-rounds-label">Rounds Completed</span>
+            <div className="stepper-wrap">
+              <button
+                type="button"
+                className="stepper-btn stepper-btn--dec"
+                disabled={isViewingPast}
+                onClick={() => {
+                  const next = Math.max(0, (Number(circuitState.rounds) || 0) - 1);
+                  setSetData(prev => ({ ...prev, [`${si}-circuit`]: { ...(prev[`${si}-circuit`] ?? {}), rounds: next } }));
+                }}
+              >−</button>
+              <input
+                className="actual-input"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="0"
+                value={circuitState.rounds ?? ''}
+                disabled={isViewingPast}
+                onChange={e => setSetData(prev => ({ ...prev, [`${si}-circuit`]: { ...(prev[`${si}-circuit`] ?? {}), rounds: e.target.value } }))}
+              />
+              <button
+                type="button"
+                className="stepper-btn stepper-btn--inc"
+                disabled={isViewingPast}
+                onClick={() => {
+                  const next = (Number(circuitState.rounds) || 0) + 1;
+                  setSetData(prev => ({ ...prev, [`${si}-circuit`]: { ...(prev[`${si}-circuit`] ?? {}), rounds: next } }));
+                }}
+              >+</button>
+            </div>
+            <button
+              className={`check-btn${circuitState.done ? ' check-btn--checked' : ''}`}
+              disabled={isViewingPast}
+              onClick={() => {
+                if (isViewingPast) return;
+                setSetData(prev => ({ ...prev, [`${si}-circuit`]: { ...(prev[`${si}-circuit`] ?? {}), done: !circuitState.done } }));
+              }}
+              title="Mark circuit done"
+            >
+              {circuitState.done ? '✓' : ''}
+            </button>
+          </div>
+
+          {/* Per-exercise cards (same pattern as EMOM) */}
+          {exercises.map((ex, ei) => {
+            const cardKey = `${si}-amrap-${ei}`;
+            const exName = ex.exercise ?? ex.fixed ?? ex.label;
+            const isOpen = openCards[cardKey] ?? false;
+            const exState = setData[`${si}-amrap-${ei}`] ?? { actual: '', actualReps: '' };
+            const weightNote = ex.weightNote || null;
+            const hasTarget = weightNote != null && weightNote !== '';
+            const matched = exState.actual !== '' && hasTarget && parseInt(exState.actual) >= parseInt(weightNote);
+            const updateExState = (patch) =>
+              setSetData(prev => ({ ...prev, [`${si}-amrap-${ei}`]: { ...(prev[`${si}-amrap-${ei}`] ?? {}), ...patch } }));
+
+            return (
+              <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${circuitState.done ? ' ex-card--done' : ''}`}>
+                <div className="ex-card-header" onClick={() => toggleCard(cardKey)}>
+                  <div className="ex-card-title-block">
+                    <div className="ex-card-name ex-card-name--fixed">{exName}</div>
+                  </div>
+                  <div className="ex-card-chevron" aria-hidden="true">▼</div>
+                </div>
+
+                <div className="ex-progress-bar">
+                  <div
+                    className={`ex-progress-fill${circuitState.done ? ' ex-progress-fill--full' : ''}`}
+                    style={{ width: circuitState.done ? '100%' : '0%' }}
+                  />
+                </div>
+
+                {isOpen && (
+                  <div className="ex-sets-panel">
+                    <div className="ex-sets-col-header">
+                      <span className="ex-col-lbl">Set</span>
+                      <span className="ex-col-lbl">Target Reps</span>
+                      <span className="ex-col-lbl">Actual Reps</span>
+                      <span className="ex-col-lbl">Target</span>
+                      <span className="ex-col-lbl">Actual (lbs)</span>
+                      <span className="ex-col-lbl">✓</span>
+                    </div>
+                    <div className="ex-set-row">
+                      <div className="set-num">1</div>
+                      <div className="set-reps">{ex.reps}{ex.note ? ` (${ex.note})` : ''}</div>
+                      <div className="stepper-wrap">
+                        <button
+                          type="button"
+                          className="stepper-btn stepper-btn--dec"
+                          disabled={isViewingPast}
+                          onClick={() => updateExState({ actualReps: Math.max(0, (Number(exState.actualReps) || 0) - 1) })}
+                        >−</button>
+                        <input
+                          className="actual-input"
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="0"
+                          value={exState.actualReps ?? ''}
+                          disabled={isViewingPast}
+                          onChange={e => updateExState({ actualReps: e.target.value })}
+                        />
+                        <button
+                          type="button"
+                          className="stepper-btn stepper-btn--inc"
+                          disabled={isViewingPast}
+                          onClick={() => updateExState({ actualReps: (Number(exState.actualReps) || 0) + 1 })}
+                        >+</button>
+                      </div>
+                      <div className="set-target">
+                        {hasTarget
+                          ? <><span className="target-wt">{weightNote}</span><span className="target-unit"> lbs</span></>
+                          : <span className="target-dash">—</span>
+                        }
+                      </div>
+                      <input
+                        className={`actual-input${matched ? ' actual-input--matched' : ''}`}
+                        type="number"
+                        min="0"
+                        step="5"
+                        placeholder="0"
+                        value={exState.actual ?? ''}
+                        disabled={isViewingPast}
+                        onChange={e => updateExState({ actual: e.target.value })}
+                      />
+                      <div />
+                    </div>
+                    {circuitState.done && (
+                      <div className="ex-complete-banner"><span>✓</span> Circuit complete — nice work!</div>
+                    )}
+                    <div className="ex-notes-row">
+                      <span className="ex-notes-label">Notes</span>
+                      <input
+                        className="notes-input"
+                        placeholder="notes..."
+                        value={exState.notes ?? ''}
+                        disabled={isViewingPast}
+                        onChange={e => updateExState({ notes: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    return (
+      <div key={gi} className="superset-block">
+        <div className="superset-block-label">
+          <span className="superset-tag">{badgeParts.join(' · ')}</span>
+        </div>
+        {slot.circuitNote && (
+          <div className="circuit-block-note">{slot.circuitNote}</div>
+        )}
+
+        {exercises.map((ex, ei) => {
+          const cardKey = `${gi}-${ei}`;
+          const exName = ex.exercise ?? ex.fixed ?? ex.label;
+          const setCount = typeof ex.sets === 'number' ? ex.sets : (parseInt(ex.sets) || 0);
+
+          let doneCount = 0;
+          for (let j = 0; j < setCount; j++) {
+            if (setData[`${si}-${ei}-${j}`]?.done) doneCount++;
+          }
+          const allDone = setCount > 0 && doneCount === setCount;
+          const progPct = setCount > 0 ? Math.round((doneCount / setCount) * 100) : 0;
+          const isOpen = openCards[cardKey] ?? false;
+
+          const pb = personalBests?.[exName];
+          const maxActual = Math.max(
+            ...Array.from({ length: setCount }, (_, j) => Number(setData[`${si}-${ei}-${j}`]?.actual) || 0)
+          );
+          const displayPb = maxActual > Number(pb ?? 0) ? maxActual : pb;
+          const isNewPb = maxActual > Number(pb ?? 0);
+
+          return (
+            <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
+              <div className="ex-card-header" onClick={() => toggleCard(cardKey)}>
+                <div className="ex-card-title-block">
+                  <div className="ex-card-name ex-card-name--fixed">{exName}</div>
+                </div>
+                <div className="ex-card-stats">
+                  <div className="stat-chip">
+                    <div className="stat-chip-val">{setCount}</div>
+                    <div className="stat-chip-lbl">Sets</div>
+                  </div>
+                  <div className="stat-chip stat-chip--done">
+                    <div className="stat-chip-val">{doneCount}/{setCount}</div>
+                    <div className="stat-chip-lbl">Done</div>
+                  </div>
+                </div>
+                {displayPb ? (
+                  <div className={`stat-chip stat-chip--pb${isNewPb ? ' stat-chip--pb-new' : ''}`}>
+                    <div className="stat-chip-val">🏆 {displayPb}</div>
+                    <div className="stat-chip-lbl">{isNewPb ? 'New PR!' : 'Current PR'}</div>
+                  </div>
+                ) : (
+                  <div className="stat-chip stat-chip--pb">
+                    <div className="stat-chip-val">—</div>
+                    <div className="stat-chip-lbl">No PR yet</div>
+                  </div>
+                )}
+                <div className="ex-card-chevron" aria-hidden="true">▼</div>
+              </div>
+
+              <div className="ex-progress-bar">
+                <div
+                  className={`ex-progress-fill${allDone ? ' ex-progress-fill--full' : ''}`}
+                  style={{ width: `${progPct}%` }}
+                />
+              </div>
+
+              {isOpen && (
+                <div className="ex-sets-panel">
+                  <div className="ex-sets-col-header">
+                    <span className="ex-col-lbl">Set</span>
+                    <span className="ex-col-lbl">Target Reps</span>
+                    <span className="ex-col-lbl">Actual Reps</span>
+                    <span className="ex-col-lbl">Target</span>
+                    <span className="ex-col-lbl">Actual (lbs)</span>
+                    <span className="ex-col-lbl">✓</span>
+                  </div>
+
+                  {Array.from({ length: setCount }, (_, j) => {
+                    const s = setData[`${si}-${ei}-${j}`] ?? { done: false, actual: '', actualReps: '' };
+                    const weightNote = ex.weightNote || null;
+                    const hasTarget = weightNote != null && weightNote !== '';
+                    const matched = s.actual !== '' && hasTarget && parseInt(s.actual) >= parseInt(weightNote);
+
+                    return (
+                      <div key={j} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
+                        <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{j + 1}</div>
+                        <div className="set-reps">{(() => { const parts = typeof ex.reps === 'string' && ex.reps.includes(',') ? ex.reps.split(',').map(r => r.trim()) : null; return parts ? (parts[j] ?? parts[parts.length - 1]) : (ex.reps ?? '—'); })()}</div>
+                        <div className="stepper-wrap">
+                          <button
+                            type="button"
+                            className="stepper-btn stepper-btn--dec"
+                            disabled={isViewingPast}
+                            onClick={() => {
+                              const next = Math.max(0, (Number(s.actualReps) || 0) - 1);
+                              setSetData(prev => ({ ...prev, [`${si}-${ei}-${j}`]: { ...(prev[`${si}-${ei}-${j}`] ?? {}), actualReps: next } }));
+                            }}
+                          >−</button>
+                          <input
+                            className="actual-input"
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="0"
+                            value={s.actualReps ?? ''}
+                            disabled={isViewingPast}
+                            onChange={e => setSetData(prev => ({ ...prev, [`${si}-${ei}-${j}`]: { ...(prev[`${si}-${ei}-${j}`] ?? {}), actualReps: e.target.value } }))}
+                          />
+                          <button
+                            type="button"
+                            className="stepper-btn stepper-btn--inc"
+                            disabled={isViewingPast}
+                            onClick={() => {
+                              const next = (Number(s.actualReps) || 0) + 1;
+                              setSetData(prev => ({ ...prev, [`${si}-${ei}-${j}`]: { ...(prev[`${si}-${ei}-${j}`] ?? {}), actualReps: next } }));
+                            }}
+                          >+</button>
+                        </div>
+                        <div className="set-target">
+                          {hasTarget
+                            ? <><span className="target-wt">{weightNote}</span><span className="target-unit"> lbs</span></>
+                            : <span className="target-dash">—</span>
+                          }
+                        </div>
+                        <input
+                          className={`actual-input${matched ? ' actual-input--matched' : ''}`}
+                          type="number"
+                          min="0"
+                          step="5"
+                          placeholder="0"
+                          value={s.actual ?? ''}
+                          disabled={isViewingPast}
+                          onChange={e => setSetData(prev => ({ ...prev, [`${si}-${ei}-${j}`]: { ...(prev[`${si}-${ei}-${j}`] ?? {}), actual: e.target.value } }))}
+                        />
+                        <button
+                          className={`check-btn${s.done ? ' check-btn--checked' : ''}`}
+                          disabled={isViewingPast}
+                          onClick={() => {
+                            if (isViewingPast) return;
+                            const marking = !s.done;
+                            setSetData(prev => ({ ...prev, [`${si}-${ei}-${j}`]: { ...(prev[`${si}-${ei}-${j}`] ?? {}), done: marking } }));
+                            if (marking) recordPRIfBeaten(exName, s.actual, s.actualReps);
+                          }}
+                          title="Mark set done"
+                        >
+                          {s.done ? '✓' : ''}
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  {allDone && (
+                    <div className="ex-complete-banner">
+                      <span>✓</span> All sets complete — nice work!
+                    </div>
+                  )}
+                  <div className="ex-notes-row">
+                    <span className="ex-notes-label">Notes</span>
+                    <input
+                      className="notes-input"
+                      placeholder="notes..."
+                      value={setData[`${si}-${ei}-notes`] ?? ''}
+                      disabled={isViewingPast}
+                      onChange={e => setSetData(prev => ({ ...prev, [`${si}-${ei}-notes`]: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -823,6 +1210,9 @@ function Day() {
             </div>
           );
         }) : renderGroups.map((renderItem) => {
+          if (renderItem.type === 'circuit') {
+            return renderCircuitCard(renderItem.slot, renderItem.si, renderItem.gi);
+          }
           if (renderItem.type === 'superset') {
             const { label, items: ssItems } = renderItem;
             return (
