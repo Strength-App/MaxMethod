@@ -13,7 +13,7 @@ function Welcomepage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    const request = await fetch('http://localhost:5050/api/users/login', {
+    const request = await fetch('${import.meta.env.VITE_API_URL}/api/users/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),

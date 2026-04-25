@@ -23,7 +23,7 @@ function PickNewProgram() {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
 
-    fetch(`http://localhost:5050/api/users/program-logs/${userId}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/users/program-logs/${userId}`)
       .then(res => res.json())
       .then(data => {
         setMyPrograms(data);
@@ -40,7 +40,7 @@ function PickNewProgram() {
     const userId = localStorage.getItem('userId');
 
     try {
-      await fetch(`http://localhost:5050/api/users/program-logs/${programLogId}`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/users/program-logs/${programLogId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })
@@ -65,7 +65,7 @@ function PickNewProgram() {
     }
 
     try {
-      const response = await fetch("http://localhost:5050/api/users/classification", {
+      const response = await fetch("${import.meta.env.VITE_API_URL}/api/users/classification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -25,8 +25,8 @@ export default function RestaurantList() {
       // Determines which endpoint to call based on current route
       const endpoint =
         location.pathname === "/browse"
-          ? "http://localhost:5050/restaurant/browse"
-          : "http://localhost:5050/restaurant/";
+          ? "${import.meta.env.VITE_API_URL}/restaurant/browse"
+          : "${import.meta.env.VITE_API_URL}/restaurant/";
 
       const response = await fetch(endpoint);
       if (!response.ok) {

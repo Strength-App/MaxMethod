@@ -348,7 +348,7 @@ function DetailView({ exercise, onBack }) {
     const userId = localStorage.getItem('userId')
     if (!userId) return
     setHistoryLoading(true)
-    fetch(`http://localhost:5050/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(exercise.name)}`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(exercise.name)}`)
       .then(r => r.ok ? r.json() : { history: [] })
       .then(data => {
         setExerciseHistory(

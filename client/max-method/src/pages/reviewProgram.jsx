@@ -187,7 +187,7 @@ function ReviewProgram() {
       const swapEntries = Object.entries(swaps);
       await Promise.all(swapEntries.map(([key, newExercise]) => {
         const [dayIdx, slotIdx] = key.split('-').map(Number);
-        return fetch(`http://localhost:5050/api/users/workout-log/${workoutLogId}/swap-exercise-all-weeks`, {
+        return fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${workoutLogId}/swap-exercise-all-weeks`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ dayIdx, slotIdx, newExercise })
