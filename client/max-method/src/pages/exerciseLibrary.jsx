@@ -8,22 +8,23 @@ const MOVEMENT_PATTERNS = {
   'Horizontal Push':             ['Bench Press','Incline Bench Press','Decline Bench Press','Floor Press'],
   'Vertical Push':               ['Military Press','Seated Military Press','Push Press'],
   'Unilateral Push':             ['DB Incline Bench','DB Flat Bench','DB Shoulder Press','Arnold Press','DB Floor Press'],
-  'Tricep Accessory':            ['Dips','Skullcrushers','Tricep Pushdowns','Tricep Extensions','Dip Machine','Overhead Tricep Extensions','One Arm Extensions','Close Grip Bench Press'],
+  'Tricep Accessory':            ['Dips','Weighted Dips','Skullcrushers','Tricep Pushdowns','Tricep Extensions','Dip Machine','Overhead Tricep Extensions','One Arm Extensions','Close Grip Bench Press'],
   'Shoulder Accessory':          ['Front Raises','Lateral Raises','Cable Lateral Raises','Upright Rows','Face Pulls','Band Pull Aparts'],
   'Chest Accessory':             ['Chest Fly Machine','DB Chest Flys','Pushups','Weighted Pushups','Floor Chest Flys','Incline Chest Flys','Cable Chest Flys','Low to High Cable Flys'],
   'Push Machine':                ['Chest Press Machine','Shoulder Press Machine','Decline Press Machine','Incline Press Machine'],
-  'Vertical Pull':               ['Neutral Grip Pullups','Pullups','Chin Ups','Lat Pulldowns','Close Grip Lat Pulldowns','Wide Grip Lat Pulldowns','Single Arm Pulldowns'],
-  'Horizontal Pull':             ['Barbell Row','Underhand Barbell Row','Cable Row','T Bar Rows','Single Arm Cable Rows','Single Arm Dumbbell Rows','Chest Supported Row','Meadows Row','Seal Row','Pendlay Row'],
+  'Vertical Pull':               ['Neutral Grip Pullups','Weighted Neutral Grip Pullups','Pullups','Weighted Pull Ups','Chin Ups','Weighted Chin Ups','Lat Pulldowns','Close Grip Lat Pulldowns','Wide Grip Lat Pulldowns','Single Arm Pulldowns'],
+  'Horizontal Pull':             ['Barbell Row','Underhand Barbell Row','Cable Row','T Bar Rows','Single Arm Cable Rows','Single Arm Dumbbell Rows','Chest Supported Row','Seal Row','Pendlay Row'],
   'Posterior Upper Accessory':   ['Scarecrows','Rear Delt Flys','Machine Rear Delt Flys','Pullovers','Cable Pullovers','Shrugs','DB Shrugs','Trap Bar Shrugs','YTWLs'],
   'Bicep Accessory':             ['DB Curls','Barbell Curls','Ez Bar Curls','Hammer Curls','Preacher Curls','Cable Curls','Rope Curls','Incline DB Curls','Concentration Curls','Cross Body Hammer Curls'],
-  'Hinge':                       ['Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
-  'Squat Pattern':               ['Front Squat','SSB Squats','Hack Squat Machine','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
-  'Posterior Chain Accessory':   ['Back Extensions','Nordics','Reverse Hypers','GHD Raises','Single Leg Hip Thrusts'],
-  'Unilateral Lower':            ['Bulgarians','Walking Lunges','ATG Lunges','Reverse Lunges','Step Ups'],
+  'Hinge':                       ['Hip Thrusts','Bodyweight Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Bodyweight Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
+  'Squat Pattern':               ['Front Squat','SSB Squats','Squats','Back Squat','Box Squats','Bodyweight Squat','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
+  'Posterior Chain Accessory':   ['Back Extensions','Bodyweight Back Extensions','Nordics','Reverse Hypers','GHD Raises','Single Leg Hip Thrusts'],
+  'Unilateral Lower':            ['Bulgarians','Bodyweight Bulgarians','Walking Lunges','Bodyweight Lunges','ATG Lunges','Bodyweight ATG Lunges','Reverse Lunges','Step Ups'],
   'Isolation Lower':             ['Leg Extensions','Single Leg Extensions','Seated Leg Curls','Lying Leg Curls','Abductor Machine','Adductor Machine'],
   'Calves & Shins':              ['Single Leg Calf Raises','Calf Raise Machine','Seated Calf Raises','Bodyweight Calf Raises','Weighted Calf Raises','Donkey Calf Raises','Tibia Raises','Tibia Curls','Banded Tibia Curls'],
-  'Machine Lower':               ['Leg Press','Hack Squat','Pendulum Squat','Reverse Hack Squat'],
+  'Machine Lower':               ['Leg Press','Hack Squat','Hack Squat Machine','Pendulum Squat','Reverse Hack Squat'],
   'Core':                        ['Plank','Ab Wheel Rollouts','Hanging Leg Raises','Cable Crunches','Decline Crunches','Pallof Press','Dead Bugs','Suitcase Carries','Farmer Carries'],
+  'Cardio':                      ['Treadmill','Curved Treadmill','Assault Bike','Bike','Recumbent Bike','Elliptical','Stairmaster','Rowing Machine','Ski Erg'],
 }
 
 const UPPER_PATTERNS = ['Horizontal Push','Vertical Push','Unilateral Push','Tricep Accessory','Shoulder Accessory','Chest Accessory','Push Machine','Vertical Pull','Horizontal Pull','Posterior Upper Accessory','Bicep Accessory']
@@ -32,6 +33,7 @@ const LOWER_PATTERNS = ['Hinge','Squat Pattern','Posterior Chain Accessory','Uni
 function bodyOf(p) {
   if (UPPER_PATTERNS.includes(p)) return 'upper'
   if (LOWER_PATTERNS.includes(p)) return 'lower'
+  if (p === 'Cardio') return 'cardio'
   return 'core'
 }
 
@@ -55,6 +57,7 @@ const PATTERN_MUSCLES = {
   'Calves & Shins':            { calves: '#cc0404' },
   'Machine Lower':             { quads: '#cc0404', glutes: 'rgba(204,4,4,0.4)' },
   'Core':                      { abs: '#cc0404', lats: 'rgba(204,4,4,0.15)' },
+  'Cardio':                    { quads: 'rgba(204,4,4,0.25)', hamstrings: 'rgba(204,4,4,0.2)', calves: 'rgba(204,4,4,0.2)' },
 }
 
 const PATTERN_PRIMARY = {
@@ -77,6 +80,7 @@ const PATTERN_PRIMARY = {
   'Calves & Shins':            'Calves',
   'Machine Lower':             'Quads',
   'Core':                      'Core',
+  'Cardio':                    'Cardiovascular System',
 }
 
 const PATTERN_STEPS = {
@@ -213,6 +217,13 @@ const PATTERN_STEPS = {
     { t: 'Full range',     d: '<strong>Complete the full movement</strong>. Core exercises are often cut short, limiting effectiveness.' },
     { t: 'Breathe',        d: '<strong>Exhale on the effort</strong>. Holding breath during core work creates unnecessary tension.' },
   ],
+  'Cardio': [
+    { t: 'Setup',     d: 'Set your machine to a comfortable starting resistance or speed. <strong>Begin at a warm-up pace</strong> — don\'t start at full intensity.' },
+    { t: 'Warm Up',   d: '<strong>Gradually increase intensity</strong> over the first 2–3 minutes. Let heart rate rise before hitting your target zone.' },
+    { t: 'Effort',    d: 'Maintain your <strong>target intensity</strong>. Steady state: conversational pace, RPE 5–6. Intervals: push RPE 7–9 then recover fully.' },
+    { t: 'Breathe',   d: '<strong>Rhythmic, controlled breathing</strong> throughout. Never hold your breath — exhale on the hardest effort phase.' },
+    { t: 'Cool Down', d: 'Reduce intensity for the <strong>final 2–3 minutes</strong>. Let heart rate come down gradually — don\'t stop abruptly.' },
+  ],
 }
 
 const PATTERN_TIPS = {
@@ -235,6 +246,7 @@ const PATTERN_TIPS = {
   'Calves & Shins':            ['Full range is non-negotiable — no partial reps','Pause at the top for full engagement','Slightly bent knee hits soleus more','Calves need high volume — 15–25 reps works best'],
   'Machine Lower':             ['Never fully lock knees out — takes load off the joint','Control the negative — growth happens here','Foot position changes muscle emphasis significantly','Don\'t let lower back lift off the pad'],
   'Core':                      ['Quality over quantity — 5 perfect reps beats 20 sloppy','Full body tension during every core movement','Exhale on the exertion phase','Core strength transfers directly to your big lifts'],
+  'Cardio':                    ['Keep heart rate in your target zone for your goal','Steady state: conversational pace — RPE 5–6','Intervals: push hard then recover fully before repeating','Hydrate before, during, and after every session','Consistency and frequency matter more than any single session'],
 }
 
 // ─── Build Exercise List ──────────────────────────────────────────────────────
@@ -307,7 +319,7 @@ function BodyDiagram({ muscles = {} }) {
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 
 function ExerciseCard({ exercise, onSelect }) {
-  const bodyLabel = exercise.body === 'upper' ? 'Upper' : exercise.body === 'lower' ? 'Lower' : 'Core'
+  const bodyLabel = exercise.body === 'upper' ? 'Upper' : exercise.body === 'lower' ? 'Lower' : exercise.body === 'cardio' ? 'Cardio' : 'Core'
   return (
     <div className="el-card" onClick={() => onSelect(exercise)}>
       <div className="el-card-body">
@@ -341,7 +353,7 @@ function DetailView({ exercise, onBack }) {
   const [exerciseHistory, setExerciseHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
 
-  const bodyLabel = exercise.body === 'upper' ? 'Upper Body' : exercise.body === 'lower' ? 'Lower Body' : 'Core'
+  const bodyLabel = exercise.body === 'upper' ? 'Upper Body' : exercise.body === 'lower' ? 'Lower Body' : exercise.body === 'cardio' ? 'Cardio' : 'Core'
 
   // Fetch all-time exercise history across every program
   useEffect(() => {
@@ -554,26 +566,29 @@ function DetailView({ exercise, onBack }) {
 
 function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange, onSelect }) {
   const grouped = useMemo(() => {
-    const upper = {}
-    const lower = {}
-    const core  = {}
+    const upper  = {}
+    const lower  = {}
+    const core   = {}
+    const cardio = {}
     for (const ex of exercises) {
-      const bucket = ex.body === 'upper' ? upper : ex.body === 'lower' ? lower : core
+      const bucket = ex.body === 'upper' ? upper : ex.body === 'lower' ? lower : ex.body === 'cardio' ? cardio : core
       if (!bucket[ex.pattern]) bucket[ex.pattern] = []
       bucket[ex.pattern].push(ex)
     }
-    return { upper, lower, core }
+    return { upper, lower, core, cardio }
   }, [exercises])
 
-  const showUpper = activeTab === 'all' || activeTab === 'upper'
-  const showLower = activeTab === 'all' || activeTab === 'lower'
-  const showCore  = activeTab === 'all' || activeTab === 'core'
+  const showUpper  = activeTab === 'all' || activeTab === 'upper'
+  const showLower  = activeTab === 'all' || activeTab === 'lower'
+  const showCore   = activeTab === 'all' || activeTab === 'core'
+  const showCardio = activeTab === 'all' || activeTab === 'cardio'
 
   const tabs = [
-    { key: 'all',   label: 'All' },
-    { key: 'upper', label: 'Upper Body' },
-    { key: 'lower', label: 'Lower Body' },
-    { key: 'core',  label: 'Core' },
+    { key: 'all',    label: 'All' },
+    { key: 'upper',  label: 'Upper Body' },
+    { key: 'lower',  label: 'Lower Body' },
+    { key: 'core',   label: 'Core' },
+    { key: 'cardio', label: 'Cardio' },
   ]
 
   function PatternSection({ patterns, visible }) {
@@ -655,6 +670,12 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
             <div className="el-section">
               <div className="el-section-label">Core</div>
               <PatternSection patterns={grouped.core} visible />
+            </div>
+          )}
+          {showCardio && Object.keys(grouped.cardio).length > 0 && (
+            <div className="el-section">
+              <div className="el-section-label">Cardio</div>
+              <PatternSection patterns={grouped.cardio} visible />
             </div>
           )}
         </>
