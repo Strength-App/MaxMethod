@@ -3015,6 +3015,12 @@ button,
   to { opacity: 1; transform: translateY(0); }
 }
 
+.ob-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
 .ob-section-label {
   font-family: var(--font-sub);
   font-size: 10px;
@@ -3022,6 +3028,29 @@ button,
   letter-spacing: 0.20em;
   color: var(--muted);
   text-transform: uppercase;
+}
+
+.ob-beginner-btn {
+  background: var(--surface-deep);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-family: var(--font-sub);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all var(--transition-md);
+  margin-top: -4px;
+}
+
+.ob-beginner-btn:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  box-shadow: var(--accent-glow-sm);
+  color: var(--text);
 }
 .ob-section-label::after {
   content: '';

@@ -22,6 +22,16 @@ function Onboarding() {
   const handleInput = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
+  const handleFillDefaults = () => {
+    setFormData((prev) => ({
+      ...prev,
+      bodyWeight: "100",
+      benchPress: "50",
+      squat: "100",
+      deadlift: "100",
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
 
@@ -111,7 +121,12 @@ function Onboarding() {
 
         {/* ── BODY STATS & 1RMs ── */}
         <div className="ob-section">
-          <div className="ob-section-label">Body Stats &amp; 1-Rep Maxes</div>
+          <div className="ob-section-header">
+            <div className="ob-section-label">Body Stats &amp; 1-Rep Maxes</div>
+            <button type="button" className="ob-beginner-btn" onClick={handleFillDefaults}>
+              Beginner? (Fill Defaults)
+            </button>
+          </div>
           <div className="ob-input-grid">
             {[
               { id: "bodyWeight",  label: "Body Weight" },
