@@ -249,6 +249,83 @@ const PATTERN_TIPS = {
   'Cardio':                    ['Keep heart rate in your target zone for your goal','Steady state: conversational pace — RPE 5–6','Intervals: push hard then recover fully before repeating','Hydrate before, during, and after every session','Consistency and frequency matter more than any single session'],
 }
 
+// ─── Equipment Map ────────────────────────────────────────────────────────────
+
+const EXERCISE_EQUIPMENT = {
+  // Horizontal Push
+  'Bench Press': 'Barbell', 'Incline Bench Press': 'Barbell', 'Decline Bench Press': 'Barbell', 'Floor Press': 'Barbell',
+  // Vertical Push
+  'Military Press': 'Barbell', 'Seated Military Press': 'Barbell', 'Push Press': 'Barbell',
+  // Unilateral Push
+  'DB Incline Bench': 'Dumbbell', 'DB Flat Bench': 'Dumbbell', 'DB Shoulder Press': 'Dumbbell', 'Arnold Press': 'Dumbbell', 'DB Floor Press': 'Dumbbell',
+  // Tricep Accessory
+  'Dips': 'Bodyweight', 'Weighted Dips': 'Dumbbell', 'Skullcrushers': 'Barbell', 'Tricep Pushdowns': 'Cable',
+  'Tricep Extensions': 'Cable', 'Dip Machine': 'Machine', 'Overhead Tricep Extensions': 'Cable',
+  'One Arm Extensions': 'Dumbbell', 'Close Grip Bench Press': 'Barbell',
+  // Shoulder Accessory
+  'Front Raises': 'Dumbbell', 'Lateral Raises': 'Dumbbell', 'Cable Lateral Raises': 'Cable',
+  'Upright Rows': 'Barbell', 'Face Pulls': 'Cable', 'Band Pull Aparts': 'Dumbbell',
+  // Chest Accessory
+  'Chest Fly Machine': 'Machine', 'DB Chest Flys': 'Dumbbell', 'Pushups': 'Bodyweight', 'Weighted Pushups': 'Dumbbell',
+  'Floor Chest Flys': 'Dumbbell', 'Incline Chest Flys': 'Dumbbell', 'Cable Chest Flys': 'Cable', 'Low to High Cable Flys': 'Cable',
+  // Push Machine
+  'Chest Press Machine': 'Machine', 'Shoulder Press Machine': 'Machine', 'Decline Press Machine': 'Machine', 'Incline Press Machine': 'Machine',
+  // Vertical Pull
+  'Neutral Grip Pullups': 'Bodyweight', 'Weighted Neutral Grip Pullups': 'Dumbbell', 'Pullups': 'Bodyweight', 'Weighted Pull Ups': 'Dumbbell',
+  'Chin Ups': 'Bodyweight', 'Weighted Chin Ups': 'Dumbbell', 'Lat Pulldowns': 'Cable', 'Close Grip Lat Pulldowns': 'Cable',
+  'Wide Grip Lat Pulldowns': 'Cable', 'Single Arm Pulldowns': 'Cable',
+  // Horizontal Pull
+  'Barbell Row': 'Barbell', 'Underhand Barbell Row': 'Barbell', 'Cable Row': 'Cable', 'T Bar Rows': 'Barbell',
+  'Single Arm Cable Rows': 'Cable', 'Single Arm Dumbbell Rows': 'Dumbbell', 'Chest Supported Row': 'Machine',
+  'Seal Row': 'Barbell', 'Pendlay Row': 'Barbell',
+  // Posterior Upper Accessory
+  'Scarecrows': 'Dumbbell', 'Rear Delt Flys': 'Dumbbell', 'Machine Rear Delt Flys': 'Machine', 'Pullovers': 'Dumbbell',
+  'Cable Pullovers': 'Cable', 'Shrugs': 'Barbell', 'DB Shrugs': 'Dumbbell', 'Trap Bar Shrugs': 'Barbell', 'YTWLs': 'Dumbbell',
+  // Bicep Accessory
+  'DB Curls': 'Dumbbell', 'Barbell Curls': 'Barbell', 'Ez Bar Curls': 'Barbell', 'Hammer Curls': 'Dumbbell',
+  'Preacher Curls': 'Barbell', 'Cable Curls': 'Cable', 'Rope Curls': 'Cable', 'Incline DB Curls': 'Dumbbell',
+  'Concentration Curls': 'Dumbbell', 'Cross Body Hammer Curls': 'Dumbbell',
+  // Hinge
+  'Hip Thrusts': 'Barbell', 'Bodyweight Hip Thrusts': 'Bodyweight', 'RDLs': 'Barbell', 'Trap Bar Deadlifts': 'Barbell',
+  'Barbell Glute Bridges': 'Barbell', 'Bodyweight Glute Bridges': 'Bodyweight', 'Single Leg RDLs': 'Dumbbell',
+  'Sumo Deadlift': 'Barbell', 'Good Mornings': 'Barbell',
+  // Squat Pattern
+  'Front Squat': 'Barbell', 'SSB Squats': 'Barbell', 'Squats': 'Barbell', 'Back Squat': 'Barbell', 'Box Squats': 'Barbell',
+  'Bodyweight Squat': 'Bodyweight', 'Pendulum Squat': 'Machine', 'Leg Press': 'Machine', 'Goblet Squat': 'Dumbbell', 'Zercher Squat': 'Barbell',
+  // Posterior Chain Accessory
+  'Back Extensions': 'Machine', 'Bodyweight Back Extensions': 'Bodyweight', 'Nordics': 'Bodyweight', 'Reverse Hypers': 'Machine',
+  'GHD Raises': 'Bodyweight', 'Single Leg Hip Thrusts': 'Barbell',
+  // Unilateral Lower
+  'Bulgarians': 'Dumbbell', 'Bodyweight Bulgarians': 'Bodyweight', 'Walking Lunges': 'Dumbbell', 'Bodyweight Lunges': 'Bodyweight',
+  'ATG Lunges': 'Dumbbell', 'Bodyweight ATG Lunges': 'Bodyweight', 'Reverse Lunges': 'Dumbbell', 'Step Ups': 'Dumbbell',
+  // Isolation Lower
+  'Leg Extensions': 'Machine', 'Single Leg Extensions': 'Machine', 'Seated Leg Curls': 'Machine', 'Lying Leg Curls': 'Machine',
+  'Abductor Machine': 'Machine', 'Adductor Machine': 'Machine',
+  // Calves & Shins
+  'Single Leg Calf Raises': 'Dumbbell', 'Calf Raise Machine': 'Machine', 'Seated Calf Raises': 'Machine', 'Bodyweight Calf Raises': 'Bodyweight',
+  'Weighted Calf Raises': 'Dumbbell', 'Donkey Calf Raises': 'Machine', 'Tibia Raises': 'Bodyweight', 'Tibia Curls': 'Machine', 'Banded Tibia Curls': 'Bodyweight',
+  // Machine Lower
+  'Hack Squat': 'Machine', 'Hack Squat Machine': 'Machine', 'Reverse Hack Squat': 'Machine',
+  // Core
+  'Plank': 'Bodyweight', 'Ab Wheel Rollouts': 'Bodyweight', 'Hanging Leg Raises': 'Bodyweight', 'Cable Crunches': 'Cable',
+  'Decline Crunches': 'Bodyweight', 'Pallof Press': 'Cable', 'Dead Bugs': 'Bodyweight', 'Suitcase Carries': 'Dumbbell', 'Farmer Carries': 'Dumbbell',
+  // Cardio
+  'Treadmill': 'Cardio Machine', 'Curved Treadmill': 'Cardio Machine', 'Assault Bike': 'Cardio Machine', 'Bike': 'Cardio Machine',
+  'Recumbent Bike': 'Cardio Machine', 'Elliptical': 'Cardio Machine', 'Stairmaster': 'Cardio Machine', 'Rowing Machine': 'Cardio Machine', 'Ski Erg': 'Cardio Machine',
+  // Fixed template exercises
+  'Squat': 'Barbell', 'Back Squat': 'Barbell', 'Deadlift': 'Barbell',
+  // Bodyweight exercises
+  'Pullups': 'Bodyweight', 'Chin Ups': 'Bodyweight', 'Neutral Grip Pullups': 'Bodyweight',
+  'Dips': 'Bodyweight', 'Pushups': 'Bodyweight',
+  'Nordics': 'Bodyweight', 'Bodyweight Back Extensions': 'Bodyweight', 'GHD Raises': 'Bodyweight',
+  'Bodyweight Calf Raises': 'Bodyweight', 'Tibia Raises': 'Bodyweight', 'Banded Tibia Raises': 'Bodyweight', 'Banded Tibia Curls': 'Bodyweight',
+  'Plank': 'Bodyweight', 'Ab Wheel Rollouts': 'Bodyweight', 'Hanging Leg Raises': 'Bodyweight', 'Decline Crunches': 'Bodyweight', 'Dead Bugs': 'Bodyweight',
+  'Bodyweight Squat': 'Bodyweight', 'Bodyweight Lunges': 'Bodyweight', 'Bodyweight ATG Lunges': 'Bodyweight',
+  'Bodyweight Bulgarians': 'Bodyweight', 'Bodyweight Hip Thrusts': 'Bodyweight', 'Bodyweight Glute Bridges': 'Bodyweight',
+  'Incline Pushups': 'Bodyweight', 'Diamond Pushups': 'Bodyweight', 'Wide Pushups': 'Bodyweight',
+  'Inverted Bodyweight Row': 'Bodyweight', 'Burpees': 'Bodyweight',
+}
+
 // ─── Build Exercise List ──────────────────────────────────────────────────────
 
 function buildExerciseList() {
@@ -259,14 +336,15 @@ function buildExerciseList() {
       if (seen.has(name)) continue
       seen.add(name)
       list.push({
-        id:      name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        id:        name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
         name,
         pattern,
-        body:    bodyOf(pattern),
-        primary: PATTERN_PRIMARY[pattern] || pattern,
-        muscles: PATTERN_MUSCLES[pattern] || {},
-        steps:   PATTERN_STEPS[pattern]   || [],
-        tips:    PATTERN_TIPS[pattern]     || [],
+        body:      bodyOf(pattern),
+        primary:   PATTERN_PRIMARY[pattern] || pattern,
+        muscles:   PATTERN_MUSCLES[pattern] || {},
+        steps:     PATTERN_STEPS[pattern]   || [],
+        tips:      PATTERN_TIPS[pattern]    || [],
+        equipment: EXERCISE_EQUIPMENT[name] || null,
       })
     }
   }
@@ -331,6 +409,9 @@ function ExerciseCard({ exercise, onSelect }) {
           <div className="el-card-tags">
             <span className={`el-tag ${exercise.body}`}>{bodyLabel}</span>
             <span className="el-tag pattern">{exercise.pattern}</span>
+            {exercise.equipment && (
+              <span className={`el-tag equipment equipment--${exercise.equipment.toLowerCase().replace(' ', '-')}`}>{exercise.equipment}</span>
+            )}
           </div>
         </div>
       </div>
@@ -405,6 +486,9 @@ function DetailView({ exercise, onBack }) {
           <span className="el-badge primary">{exercise.primary}</span>
           <span className={`el-badge ${exercise.body}`}>{bodyLabel}</span>
           <span className="el-badge">{exercise.pattern}</span>
+          {exercise.equipment && (
+            <span className={`el-badge equipment equipment--${exercise.equipment.toLowerCase().replace(' ', '-')}`}>{exercise.equipment}</span>
+          )}
         </div>
       </div>
 

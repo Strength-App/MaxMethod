@@ -3320,11 +3320,35 @@ button,
   text-overflow: ellipsis;
 }
 
+.rp-slot-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .rp-slot-pattern {
   font-size: 10px;
   color: var(--muted);
   font-family: var(--font-sub);
 }
+
+.rp-equipment-tag {
+  font-size: 9px;
+  font-weight: 600;
+  font-family: var(--font-sub);
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.rp-equipment-tag--barbell        { background: rgba(245, 158, 11, 0.12); color: #fcd34d; }
+.rp-equipment-tag--dumbbell       { background: rgba(56, 189, 248, 0.12); color: #7dd3fc; }
+.rp-equipment-tag--machine        { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; }
+.rp-equipment-tag--cable          { background: rgba(45, 212, 191, 0.12); color: #5eead4; }
+.rp-equipment-tag--cardio-machine { background: rgba(251, 146, 60, 0.12); color: #fdba74; }
+.rp-equipment-tag--bodyweight     { background: rgba(163, 230, 53, 0.12); color: #bef264; }
 
 .rp-slot-meta {
   display: flex;
