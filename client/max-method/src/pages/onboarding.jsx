@@ -6,6 +6,7 @@ function Onboarding() {
   const navigate = useNavigate();
   const { user } = useUser();
 
+  // add isBeginner
   const [formData, setFormData] = useState({
     gender: "",
     bodyWeight: "",
@@ -14,22 +15,42 @@ function Onboarding() {
     deadlift: "",
     daysPerWeek: "",
     goalSelection: "",
+    isBeginner: false,
   });
 
   const set = (field, value) =>
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-  const handleInput = (e) =>
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleInput = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => {
+      const next = { ...prev, [name]: value };
+      if (prev.isBeginner && name === "bodyWeight") {
+        const bw = Number(value) || 0;
+        next.benchPress = Math.round(bw * 0.30).toString();
+        next.squat = Math.round(bw * 0.50).toString();
+        next.deadlift = Math.round(bw * 0.75).toString();
+      }
+      return next;
+    });
+  };
 
   const handleFillDefaults = () => {
-    setFormData((prev) => ({
-      ...prev,
-      bodyWeight: "100",
-      benchPress: "50",
-      squat: "100",
-      deadlift: "100",
-    }));
+    setFormData((prev) => {
+      if (prev.isBeginner) {
+        return { ...prev, isBeginner: false };
+      }
+      const bw = prev.bodyWeight || "100";
+      const bwNum = Number(bw);
+      return {
+        ...prev,
+        isBeginner: true,
+        bodyWeight: bw,
+        benchPress: Math.round(bwNum * 0.30).toString(),
+        squat: Math.round(bwNum * 0.50).toString(),
+        deadlift: Math.round(bwNum * 0.75).toString(),
+      };
+    });
   };
 
   const handleSubmit = (e) => {
@@ -68,6 +89,7 @@ function Onboarding() {
         bodyWeight: Number(formData.bodyWeight),
         daysPerWeek: formData.daysPerWeek,
         goalSelection: formData.goalSelection,
+        isBeginner: formData.isBeginner,
       }
     });
   };
@@ -123,8 +145,13 @@ function Onboarding() {
         <div className="ob-section">
           <div className="ob-section-header">
             <div className="ob-section-label">Body Stats &amp; 1-Rep Maxes</div>
-            <button type="button" className="ob-beginner-btn" onClick={handleFillDefaults}>
-              Beginner? (Fill Defaults)
+            <button 
+              type="button" 
+              className={`ob-beginner-btn${formData.isBeginner ? " active" : ""}`} 
+              onClick={handleFillDefaults}
+            >
+              {formData.isBeginner ? "Deactivate Beginner Mode" : "Beginner? Enter Body Weight. (Fill Defaults)"}
+              {formData.isBeginner && formData.bodyWeight ? " (Body Weight: " + formData.bodyWeight + " lbs)" : ""}
             </button>
           </div>
           <div className="ob-input-grid">
@@ -145,6 +172,7 @@ function Onboarding() {
                     onChange={handleInput}
                     placeholder="Enter weight"
                     min="0"
+                    readOnly={formData.isBeginner && (id === "benchPress" || id === "squat" || id === "deadlift")}
                   />
                   <span className="ob-input-unit">LBS</span>
                 </div>

@@ -40,12 +40,12 @@ function LoadingPage() {
         const { source } = state;
 
         if (source === 'onboarding') {
-          const { userId, email, gender, benchPress, squat, deadlift, bodyWeight, daysPerWeek, goalSelection } = state;
+          const { userId, email, gender, benchPress, squat, deadlift, bodyWeight, daysPerWeek, goalSelection, isBeginner } = state;
 
           const classRes = await fetch('http://localhost:5050/api/users/classification', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, gender, benchPress, deadlift, squat, bodyWeight }),
+            body: JSON.stringify({ email, gender, benchPress, deadlift, squat, bodyWeight, isBeginner }),
           });
           if (!classRes.ok) throw new Error('Classification failed');
           const classData = await classRes.json();
@@ -53,7 +53,7 @@ function LoadingPage() {
           const goalsRes = await fetch('http://localhost:5050/api/users/goals', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, classification: classData.classification, daysPerWeek, goalSelection }),
+            body: JSON.stringify({ userId, classification: classData.classification, daysPerWeek, goalSelection, isBeginner }),
           });
           if (!goalsRes.ok) throw new Error('Goals failed');
           const goalsData = await goalsRes.json();

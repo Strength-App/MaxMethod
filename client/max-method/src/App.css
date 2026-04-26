@@ -3052,6 +3052,12 @@ button,
   box-shadow: var(--accent-glow-sm);
   color: var(--text);
 }
+.ob-beginner-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: var(--accent-glow-sm);
+}
 .ob-section-label::after {
   content: '';
   display: block;
@@ -3145,6 +3151,11 @@ button,
 }
 .ob-input-wrap input::placeholder {
   color: var(--muted);
+}
+.ob-input-wrap input[readonly] {
+  color: var(--accent);
+  background: var(--accent-dim);
+  cursor: default;
 }
 .ob-input-unit {
   padding: 0 12px;
