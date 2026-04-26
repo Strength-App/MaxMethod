@@ -17,6 +17,7 @@
     "react-calendar": "^6.0.0",
     "react-dom": "^19.2.0",
     "react-player": "^3.4.0",
+    "recharts": "^3.8.1",
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {

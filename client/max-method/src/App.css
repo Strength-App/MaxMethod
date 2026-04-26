@@ -2664,6 +2664,104 @@ input::placeholder {
   background: var(--accent-dim);
 }
 
+.collapsible-section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.collapsible-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sub);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  min-height: unset;
+}
+
+.collapsible-header:hover {
+  background: var(--card-bg-hover, rgba(255,255,255,0.04));
+  border-color: transparent;
+  color: var(--text);
+}
+
+.collapsible-chevron {
+  font-size: 16px;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.collapsible-chevron.open {
+  transform: rotate(180deg);
+}
+
+.collapsible-body {
+  border-top: 1px solid var(--border);
+}
+
+.collapsible-body .user-setting {
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+}
+
+.collapsible-body .user-setting:last-child {
+  border-bottom: none;
+}
+
+.profile-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.profile-stat-row:last-child {
+  border-bottom: none;
+}
+
+.profile-stat-row--current {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.profile-stat-label {
+  font-family: var(--font-sub);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.profile-stat-value {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text);
+}
+
+.profile-empty {
+  padding: 16px;
+  font-family: var(--font-sub);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.profile-chart {
+  padding: 16px 8px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
 .toggle-btn {
   position: relative;
   width: 44px;

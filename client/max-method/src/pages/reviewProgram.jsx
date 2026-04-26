@@ -64,8 +64,8 @@ const MOVEMENT_PATTERNS = {
   'Horizontal Pull':             ['Barbell Row','Underhand Barbell Row','Cable Row','T Bar Rows','Single Arm Cable Rows','Single Arm Dumbbell Rows','Chest Supported Row','Seal Row','Pendlay Row'],
   'Posterior Upper Accessory':   ['Scarecrows','Rear Delt Flys','Machine Rear Delt Flys','Pullovers','Cable Pullovers','Shrugs','DB Shrugs','Trap Bar Shrugs','YTWLs'],
   'Bicep Accessory':             ['DB Curls','Barbell Curls','Ez Bar Curls','Hammer Curls','Preacher Curls','Cable Curls','Rope Curls','Incline DB Curls','Concentration Curls','Cross Body Hammer Curls'],
-  'Hinge':                       ['Hip Thrusts','Bodyweight Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Bodyweight Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
-  'Squat Pattern':               ['Front Squat','SSB Squats','Squats','Back Squat','Box Squats','Bodyweight Squat','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
+  'Hinge':                       ['Deadlift','Hip Thrusts','Bodyweight Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Bodyweight Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
+  'Squat Pattern':               ['Squat','Front Squat','SSB Squats','Squats','Back Squat','Box Squats','Bodyweight Squat','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
   'Posterior Chain Accessory':   ['Back Extensions','Bodyweight Back Extensions','Nordics','Reverse Hypers','GHD Raises','Single Leg Hip Thrusts'],
   'Unilateral Lower':            ['Bulgarians','Bodyweight Bulgarians','Walking Lunges','Bodyweight Lunges','ATG Lunges','Bodyweight ATG Lunges','Reverse Lunges','Step Ups'],
   'Isolation Lower':             ['Leg Extensions','Single Leg Extensions','Seated Leg Curls','Lying Leg Curls','Abductor Machine','Adductor Machine'],
@@ -106,14 +106,19 @@ function SlotRow({ slot, dayIdx, onSwap }) {
   const [selected, setSelected] = useState(slot.exercise);
   const isFixed = !!slot.fixed;
 
-  // Find alternatives: try exact label match first, then scan all patterns for
-  // the current exercise name as a fallback (handles pattern vs label mismatch)
+  // Find alternatives: try label match, then scan all patterns for the exercise name.
+  // Fixed exercises may have slot.label set to the exercise name rather than the
+  // pattern name, so we also try resolving via FIXED_EXERCISE_PATTERN as a fallback.
   const alternatives = useMemo(() => {
     if (slot.label && MOVEMENT_PATTERNS[slot.label]) {
       return MOVEMENT_PATTERNS[slot.label];
     }
     for (const exercises of Object.values(MOVEMENT_PATTERNS)) {
       if (exercises.includes(slot.exercise)) return exercises;
+    }
+    // Last resort: fixed exercises whose label equals the exercise name
+    for (const exercises of Object.values(MOVEMENT_PATTERNS)) {
+      if (exercises.includes(slot.label)) return exercises;
     }
     return [];
   }, [slot.label, slot.exercise]);
