@@ -12,7 +12,7 @@ const FEATURED = [
 function PickNewProgram() {
   const navigate = useNavigate();
   const { user } = useUser();
-  const { workout } = useWorkout();
+  const { workout, deselectProgram } = useWorkout();
 
   const [formData, setFormData] = useState({ benchPress: '', deadlift: '', squat: '', bodyWeight: '' });
   const [myPrograms, setMyPrograms] = useState([]);
@@ -101,63 +101,56 @@ const handleSelectProgram = (p) => {
     <div className="programs-page">
       <h1 className="programs-page-title">Programs</h1>
 
-      <div className="programs-top-row">
-
-        <div className="programs-left-col">
-          {workout?.classification && (
-            <div className="programs-classification-banner">
-              <span className="programs-classification-label">Current Strength Classification</span>
-              <span className="programs-classification-value">{workout.classification}</span>
-            </div>
-          )}
-
-          <div className="programs-section-card programs-section-card--top">
-            <div className="programs-section-title">Generate New Program</div>
-
-            <form onSubmit={handleSubmit}>
-              <div className="programs-inputs-grid">
-                {[
-                  { label: 'Bench Press', name: 'benchPress' },
-                  { label: 'Deadlift',    name: 'deadlift' },
-                  { label: 'Squat',       name: 'squat' },
-                  { label: 'Body Weight', name: 'bodyWeight' },
-                ].map(({ label, name }) => (
-                  <div key={name} className="programs-input-group">
-                    <div className="programs-field-label">{label}</div>
-                    <div className="programs-input-wrap">
-                      <input
-                        type="number"
-                        name={name}
-                        value={formData[name]}
-                        onChange={handleChange}
-                        placeholder="Enter weight"
-                        min="0"
-                        required
-                      />
-                      <span className="programs-unit-tag">LBS</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button type="submit" className="programs-btn-primary">Submit</button>
-            </form>
-          </div>
+      {/* Deselect banner — shown above generate form when a program is active */}
+      {workout && (
+        <div className="programs-deselect-bar">
+          <span className="programs-deselect-label">
+            Active: <strong>{workout.title ?? 'Current Program'}</strong>
+          </span>
+          <button className="programs-btn-outline" onClick={deselectProgram}>
+            Deselect Program
+          </button>
         </div>
+      )}
 
-        <div className="programs-section-card programs-section-card--top">
-          <div className="programs-section-title">Featured Programs</div>
-          <div className="programs-grid programs-grid--col1">
-            {FEATURED.map(p => (
-              <div key={p.name} className="programs-program-card">
-                <div className="programs-program-tag">{p.tag}</div>
-                <div className="programs-program-name">{p.name}</div>
-                <div className="programs-program-meta">{p.meta}</div>
+      {/* Generate New Program */}
+      <div className="programs-section-card">
+        {workout?.classification && (
+          <div className="programs-classification-banner" style={{ marginBottom: '20px' }}>
+            <span className="programs-classification-label">Current Strength Classification</span>
+            <span className="programs-classification-value">{workout.classification}</span>
+          </div>
+        )}
+        <div className="programs-section-title">Generate New Program</div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="programs-inputs-grid">
+            {[
+              { label: 'Bench Press', name: 'benchPress' },
+              { label: 'Deadlift',    name: 'deadlift' },
+              { label: 'Squat',       name: 'squat' },
+              { label: 'Body Weight', name: 'bodyWeight' },
+            ].map(({ label, name }) => (
+              <div key={name} className="programs-input-group">
+                <div className="programs-field-label">{label}</div>
+                <div className="programs-input-wrap">
+                  <input
+                    type="number"
+                    name={name}
+                    value={formData[name]}
+                    onChange={handleChange}
+                    placeholder="Enter weight"
+                    min="0"
+                    required
+                  />
+                  <span className="programs-unit-tag">LBS</span>
+                </div>
               </div>
             ))}
           </div>
-        </div>
 
+          <button type="submit" className="programs-btn-primary">Submit</button>
+        </form>
       </div>
 
       {/* My Programs */}
@@ -227,6 +220,20 @@ const handleSelectProgram = (p) => {
             })}
           </div>
         )}
+      </div>
+
+      {/* Featured Programs — moved below My Programs */}
+      <div className="programs-section-card">
+        <div className="programs-section-title">Featured Programs</div>
+        <div className="programs-grid">
+          {FEATURED.map(p => (
+            <div key={p.name} className="programs-program-card">
+              <div className="programs-program-tag">{p.tag}</div>
+              <div className="programs-program-name">{p.name}</div>
+              <div className="programs-program-meta">{p.meta}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="programs-footer">
