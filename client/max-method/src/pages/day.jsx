@@ -91,6 +91,11 @@ const FIXED_EXERCISE_1RM = {
 
 const isCardioSlot = (slot) => slot.pattern === 'Cardio' || slot.label === 'Cardio';
 
+const TIMED_EXERCISES = new Set(["Plank"]);
+const DISTANCE_EXERCISES = new Set(["Farmer Carries", "Suitcase Carries"]);
+const isTimedSlot = (slot) => slot.repsType === "time" || TIMED_EXERCISES.has(slot.exercise ?? '');
+const isDistanceSlot = (slot) => slot.repsType === "distance" || DISTANCE_EXERCISES.has(slot.exercise ?? '');
+
 function Day() {
   const { weekNum, dayNum } = useParams();
   const navigate = useNavigate();
@@ -438,6 +443,8 @@ function Day() {
     const isEditing = editingSlot === firstSi;
     const options = firstSlot.label ? (movementPatterns[firstSlot.label] ?? [exercise]) : [exercise];
     const isCardio = isCardioSlot(firstSlot);
+    const isTimed = !isCardio && isTimedSlot(firstSlot);
+    const isDistance = !isCardio && isDistanceSlot(firstSlot);
 
     const pb = personalBests?.[exercise];
     const maxActual = Math.max(
@@ -551,8 +558,8 @@ function Day() {
                 </>
               ) : (
                 <>
-                  <span className="ex-col-lbl">Target Reps</span>
-                  <span className="ex-col-lbl">Actual Reps</span>
+                  <span className="ex-col-lbl">{isTimed ? 'Duration' : isDistance ? 'Distance' : 'Target Reps'}</span>
+                  <span className="ex-col-lbl">{isTimed ? 'Actual (s)' : isDistance ? 'Actual' : 'Actual Reps'}</span>
                   <span className="ex-col-lbl">Target</span>
                   <span className="ex-col-lbl">Actual (lbs)</span>
                 </>

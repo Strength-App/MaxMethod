@@ -242,6 +242,9 @@
 .el-tag.pattern {
   background: rgba(204, 4, 4, 0.1);
   color: var(--el-accent2);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .el-tag.equipment--barbell        { background: rgba(245, 158, 11, 0.12); color: #fcd34d; }

@@ -109,7 +109,6 @@ function SlotRow({ slot, dayIdx, onSwap }) {
   // Find alternatives: try exact label match first, then scan all patterns for
   // the current exercise name as a fallback (handles pattern vs label mismatch)
   const alternatives = useMemo(() => {
-    if (isFixed) return [];
     if (slot.label && MOVEMENT_PATTERNS[slot.label]) {
       return MOVEMENT_PATTERNS[slot.label];
     }
@@ -117,7 +116,7 @@ function SlotRow({ slot, dayIdx, onSwap }) {
       if (exercises.includes(slot.exercise)) return exercises;
     }
     return [];
-  }, [slot.label, slot.exercise, isFixed]);
+  }, [slot.label, slot.exercise]);
 
   const handleSelect = (e) => {
     const val = e.target.value;
@@ -141,9 +140,7 @@ function SlotRow({ slot, dayIdx, onSwap }) {
           </div>
         </div>
         <div className="rp-slot-meta">
-          {isFixed ? (
-            <span className="rp-fixed-tag">Fixed</span>
-          ) : alternatives.length > 0 ? (
+          {alternatives.length > 0 ? (
             <button
               className={`rp-swap-btn${open ? ' rp-swap-btn--active' : ''}`}
               onClick={() => setOpen(o => !o)}
