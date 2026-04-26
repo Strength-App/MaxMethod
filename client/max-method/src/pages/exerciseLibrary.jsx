@@ -646,9 +646,278 @@ function DetailView({ exercise, onBack }) {
   )
 }
 
+// ─── Custom Detail View ───────────────────────────────────────────────────────
+
+function CustomDetailView({ name, onBack }) {
+  const { personalBests } = useWorkout()
+  const [detailTab, setDetailTab] = useState('pr')
+  const [exerciseHistory, setExerciseHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    if (!userId) return
+    setHistoryLoading(true)
+    fetch(`http://localhost:5050/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(name)}`)
+      .then(r => r.ok ? r.json() : { history: [] })
+      .then(data => {
+        setExerciseHistory(
+          (data.history ?? []).map(entry => {
+            const repsRaw = entry.reps
+            const repsArr = Array.isArray(repsRaw)
+              ? repsRaw
+              : typeof repsRaw === 'string' && repsRaw.includes(',')
+                ? repsRaw.split(',').map(r => r.trim())
+                : null
+            return {
+              ...entry,
+              date: new Date(entry.date),
+              getReps: (j) => repsArr ? (repsArr[j] ?? repsArr[repsArr.length - 1]) : repsRaw,
+            }
+          })
+        )
+      })
+      .catch(() => setExerciseHistory([]))
+      .finally(() => setHistoryLoading(false))
+  }, [name])
+
+  const pr = personalBests?.[name] ?? null
+
+  return (
+    <div className="el-page">
+      <button className="el-detail-back" onClick={onBack}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Custom Exercises
+      </button>
+
+      <div className="el-detail-body" style={{ marginTop: '24px' }}>
+        <div className="el-steps-container">
+          <div className="el-steps-header">
+            <div className="el-steps-title">{name}</div>
+            <div className="el-steps-subtitle">Custom Exercise</div>
+          </div>
+
+          <div className="el-detail-tabs">
+            <button
+              className={`el-detail-tab${detailTab === 'pr' ? ' active' : ''}`}
+              onClick={() => setDetailTab('pr')}
+            >
+              Personal Record
+            </button>
+            <button
+              className={`el-detail-tab${detailTab === 'history' ? ' active' : ''}`}
+              onClick={() => setDetailTab('history')}
+            >
+              Exercise History
+            </button>
+          </div>
+
+          {detailTab === 'pr' && (
+            <div className="el-pr-panel">
+              {pr != null ? (
+                <div className="el-pr-card">
+                  <div className="el-pr-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </div>
+                  <div className="el-pr-weight">{pr}<span>lbs</span></div>
+                  <div className="el-pr-label">Personal Record</div>
+                  <div className="el-pr-sub">{name}</div>
+                </div>
+              ) : (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-icon">🏆</div>
+                  <div className="el-panel-empty-text">No personal record yet</div>
+                  <div className="el-panel-empty-sub">Log this exercise to set your first PR</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {detailTab === 'history' && (
+            <div className="el-history-panel">
+              {historyLoading ? (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-text">Loading history…</div>
+                </div>
+              ) : exerciseHistory.length === 0 ? (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-icon">📋</div>
+                  <div className="el-panel-empty-text">No history yet</div>
+                  <div className="el-panel-empty-sub">Complete a workout containing {name} to see it here</div>
+                </div>
+              ) : (
+                exerciseHistory.map((entry, idx) => (
+                  <div className="el-hist-item" key={idx}>
+                    <div className="el-hist-date-col">
+                      <div className="el-hist-day-num">{entry.date.getDate()}</div>
+                      <div className="el-hist-month">{MONTHS_SHORT[entry.date.getMonth()]}</div>
+                      <div className="el-hist-weekday">{DAYS_SHORT_EL[entry.date.getDay()]}</div>
+                    </div>
+                    <div className="el-hist-divider" />
+                    <div className="el-hist-content">
+                      <div className="el-hist-day-title">
+                        {entry.weekNumber != null && (
+                          <span className="el-hist-week-tag">Week {entry.weekNumber}</span>
+                        )}
+                        {entry.dayTitle}
+                      </div>
+                      <div className="el-hist-sets">
+                        {Array.from({ length: entry.setCount }, (_, j) => {
+                          if (!entry.completedSets?.[j]) return null
+                          const w = entry.actualWeights?.[j]
+                          const r = entry.actualReps?.[j] ?? entry.getReps(j)
+                          return (
+                            <div className="el-hist-set-row" key={j}>
+                              <div className="el-hist-set-num">{j + 1}</div>
+                              <div className="el-hist-set-val"><span>{r ?? '—'}</span> reps</div>
+                              <div className="el-hist-set-val"><span>{w ?? '—'}</span> lbs</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Custom Exercises Section ─────────────────────────────────────────────────
+
+function CustomExercisesSection({ onSelect }) {
+  const [customExercises, setCustomExercises] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('customExercises') || '[]') } catch { return [] }
+  })
+  const [inputVal, setInputVal] = useState('')
+  const [error, setError] = useState('')
+
+  const userId = localStorage.getItem('userId')
+
+  useEffect(() => {
+    if (!userId) return
+    fetch(`http://localhost:5050/api/users/${userId}/custom-exercises`)
+      .then(r => r.ok ? r.json() : { custom_exercises: [] })
+      .then(data => {
+        const list = data.custom_exercises ?? []
+        setCustomExercises(list)
+        localStorage.setItem('customExercises', JSON.stringify(list))
+      })
+      .catch(() => {})
+  }, [userId])
+
+  const syncLocalStorage = (list) => localStorage.setItem('customExercises', JSON.stringify(list))
+
+  const addExercise = async () => {
+    const name = inputVal.trim()
+    if (!name) return
+    if (customExercises.some(n => n.toLowerCase() === name.toLowerCase())) {
+      setError('That exercise already exists in your custom list')
+      return
+    }
+    setInputVal('')
+    setError('')
+    if (userId) {
+      try {
+        const res = await fetch(`http://localhost:5050/api/users/${userId}/custom-exercises`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        })
+        const data = await res.json()
+        const list = data.custom_exercises ?? [...customExercises, name]
+        setCustomExercises(list)
+        syncLocalStorage(list)
+      } catch {
+        const list = [...customExercises, name]
+        setCustomExercises(list)
+        syncLocalStorage(list)
+      }
+    } else {
+      const list = [...customExercises, name]
+      setCustomExercises(list)
+      syncLocalStorage(list)
+    }
+  }
+
+  const removeExercise = async (name) => {
+    const list = customExercises.filter(n => n !== name)
+    setCustomExercises(list)
+    syncLocalStorage(list)
+    if (userId) {
+      fetch(`http://localhost:5050/api/users/${userId}/custom-exercises/${encodeURIComponent(name)}`, { method: 'DELETE' })
+        .catch(() => {})
+    }
+  }
+
+  return (
+    <div className="el-section">
+      <div className="el-section-label">Custom Exercises</div>
+      <p style={{ color: 'var(--text-muted, #888)', fontSize: '13px', margin: '0 0 14px', lineHeight: 1.5 }}>
+        Add exercises not in the standard library. They will be available as valid options in the custom workout maker.
+      </p>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: error ? '6px' : '16px' }}>
+        <input
+          type="text"
+          placeholder="Exercise name..."
+          value={inputVal}
+          onChange={e => { setInputVal(e.target.value); setError('') }}
+          onKeyDown={e => e.key === 'Enter' && addExercise()}
+          style={{ flex: 1, background: 'var(--input-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '8px', padding: '9px 12px', color: 'var(--text)', fontSize: '14px', outline: 'none' }}
+        />
+        <button
+          onClick={addExercise}
+          style={{ background: 'var(--accent, #e63946)', border: 'none', borderRadius: '8px', padding: '9px 18px', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+        >
+          Add
+        </button>
+      </div>
+      {error && <div style={{ color: '#ff5555', fontSize: '12px', marginBottom: '12px' }}>{error}</div>}
+      {customExercises.length === 0 ? (
+        <div style={{ color: 'var(--text-muted, #888)', fontSize: '13px', padding: '12px 0' }}>No custom exercises yet.</div>
+      ) : (
+        <div className="el-grid">
+          {customExercises.map(name => (
+            <div key={name} className="el-card" onClick={() => onSelect(name)}>
+              <div className="el-card-body">
+                <div className="el-card-info" style={{ width: '100%' }}>
+                  <div className="el-card-name">{name}</div>
+                  <div className="el-card-tags">
+                    <span className="el-tag" style={{ background: 'rgba(250,204,21,0.15)', color: '#facc15' }}>Custom</span>
+                  </div>
+                </div>
+              </div>
+              <div className="el-card-footer">
+                <span className="el-card-muscle">Custom Exercise</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    className="el-card-arrow"
+                    onClick={e => { e.stopPropagation(); removeExercise(name) }}
+                    title="Remove"
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', fontSize: '16px', lineHeight: 1, padding: '0 2px' }}
+                  >×</button>
+                  <span className="el-card-arrow">→</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Library View ─────────────────────────────────────────────────────────────
 
-function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange, onSelect }) {
+function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange, onSelect, onCustomSelect }) {
   const grouped = useMemo(() => {
     const upper  = {}
     const lower  = {}
@@ -673,6 +942,7 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
     { key: 'lower',  label: 'Lower Body' },
     { key: 'core',   label: 'Core' },
     { key: 'cardio', label: 'Cardio' },
+    { key: 'custom', label: 'Custom' },
   ]
 
   function PatternSection({ patterns, visible }) {
@@ -704,21 +974,25 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
           <div className="el-title">Exercise <span>Library</span></div>
           <div className="el-subtitle">Video guides for every movement in your program</div>
         </div>
-        <div className="el-count">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</div>
+        {activeTab !== 'custom' && (
+          <div className="el-count">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</div>
+        )}
       </div>
 
-      <div className="el-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          type="text"
-          placeholder="Search exercises or patterns…"
-          value={search}
-          onChange={e => onSearchChange(e.target.value)}
-        />
-      </div>
+      {activeTab !== 'custom' && (
+        <div className="el-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search exercises or patterns…"
+            value={search}
+            onChange={e => onSearchChange(e.target.value)}
+          />
+        </div>
+      )}
 
       <div className="el-tabs">
         {tabs.map(({ key, label }) => (
@@ -734,34 +1008,41 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
         ))}
       </div>
 
-      {exercises.length === 0 ? (
-        <div className="el-empty">No exercises match "{search}"</div>
+      {activeTab === 'custom' ? (
+        <CustomExercisesSection onSelect={onCustomSelect} />
       ) : (
         <>
-          {showUpper && Object.keys(grouped.upper).length > 0 && (
-            <div className="el-section">
-              <div className="el-section-label">Upper Body</div>
-              <PatternSection patterns={grouped.upper} visible />
-            </div>
+          {exercises.length === 0 ? (
+            <div className="el-empty">No exercises match "{search}"</div>
+          ) : (
+            <>
+              {showUpper && Object.keys(grouped.upper).length > 0 && (
+                <div className="el-section">
+                  <div className="el-section-label">Upper Body</div>
+                  <PatternSection patterns={grouped.upper} visible />
+                </div>
+              )}
+              {showLower && Object.keys(grouped.lower).length > 0 && (
+                <div className="el-section">
+                  <div className="el-section-label">Lower Body</div>
+                  <PatternSection patterns={grouped.lower} visible />
+                </div>
+              )}
+              {showCore && Object.keys(grouped.core).length > 0 && (
+                <div className="el-section">
+                  <div className="el-section-label">Core</div>
+                  <PatternSection patterns={grouped.core} visible />
+                </div>
+              )}
+              {showCardio && Object.keys(grouped.cardio).length > 0 && (
+                <div className="el-section">
+                  <div className="el-section-label">Cardio</div>
+                  <PatternSection patterns={grouped.cardio} visible />
+                </div>
+              )}
+            </>
           )}
-          {showLower && Object.keys(grouped.lower).length > 0 && (
-            <div className="el-section">
-              <div className="el-section-label">Lower Body</div>
-              <PatternSection patterns={grouped.lower} visible />
-            </div>
-          )}
-          {showCore && Object.keys(grouped.core).length > 0 && (
-            <div className="el-section">
-              <div className="el-section-label">Core</div>
-              <PatternSection patterns={grouped.core} visible />
-            </div>
-          )}
-          {showCardio && Object.keys(grouped.cardio).length > 0 && (
-            <div className="el-section">
-              <div className="el-section-label">Cardio</div>
-              <PatternSection patterns={grouped.cardio} visible />
-            </div>
-          )}
+          <CustomExercisesSection onSelect={onCustomSelect} />
         </>
       )}
     </div>
@@ -770,12 +1051,13 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const ALL_EXERCISES = buildExerciseList()
+export const ALL_EXERCISES = buildExerciseList()
 
 function ExerciseLibrary() {
-  const [activeTab, setActiveTab]   = useState('all')
-  const [search, setSearch]         = useState('')
-  const [selected, setSelected]     = useState(null)
+  const [activeTab, setActiveTab]       = useState('all')
+  const [search, setSearch]             = useState('')
+  const [selected, setSelected]         = useState(null)
+  const [customSelected, setCustomSelected] = useState(null)
 
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim()
@@ -791,12 +1073,11 @@ function ExerciseLibrary() {
   }, [activeTab, search])
 
   if (selected) {
-    return (
-      <DetailView
-        exercise={selected}
-        onBack={() => setSelected(null)}
-      />
-    )
+    return <DetailView exercise={selected} onBack={() => setSelected(null)} />
+  }
+
+  if (customSelected) {
+    return <CustomDetailView name={customSelected} onBack={() => setCustomSelected(null)} />
   }
 
   return (
@@ -808,6 +1089,7 @@ function ExerciseLibrary() {
       onTabChange={(tab) => { setActiveTab(tab); setSearch('') }}
       onSearchChange={setSearch}
       onSelect={setSelected}
+      onCustomSelect={setCustomSelected}
     />
   )
 }

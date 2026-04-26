@@ -129,6 +129,7 @@
 .el-tab[data-tab="lower"]  .el-tab-dot { background: var(--el-lower); }
 .el-tab[data-tab="core"]   .el-tab-dot { background: var(--el-core-c); }
 .el-tab[data-tab="cardio"] .el-tab-dot { background: var(--el-cardio); }
+.el-tab[data-tab="custom"] .el-tab-dot { background: #facc15; }
 
 /* ── Sections ───────────────────────────────────────────────────── */
 .el-section { margin-bottom: 8px; }
