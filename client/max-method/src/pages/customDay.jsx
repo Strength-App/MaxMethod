@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { ALL_EXERCISES } from './exerciseLibrary';
 
-const ALL_EXERCISE_NAMES = ALL_EXERCISES.map(e => e.name);
+const ALL_EXERCISE_NAMES = [...new Set(ALL_EXERCISES.map(e => e.name))];
 const getCustomExerciseNames = () => { try { return JSON.parse(localStorage.getItem('customExercises') || '[]'); } catch { return []; } };
 const getAllExerciseNames = () => [...ALL_EXERCISE_NAMES, ...getCustomExerciseNames()];
 const isValidExercise = name => getAllExerciseNames().some(n => n.toLowerCase() === name.toLowerCase());

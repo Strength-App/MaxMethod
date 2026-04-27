@@ -24,11 +24,13 @@ const MOVEMENT_PATTERNS = {
   'Calves & Shins':              ['Single Leg Calf Raises','Calf Raise Machine','Seated Calf Raises','Bodyweight Calf Raises','Weighted Calf Raises','Donkey Calf Raises','Tibia Raises','Tibia Curls','Banded Tibia Curls'],
   'Machine Lower':               ['Leg Press','Hack Squat','Hack Squat Machine','Pendulum Squat','Reverse Hack Squat'],
   'Core':                        ['Plank','Ab Wheel Rollouts','Hanging Leg Raises','Cable Crunches','Decline Crunches','Pallof Press','Dead Bugs','Suitcase Carries','Farmer Carries'],
+  'Bodyweight Strength Upper':   ['Pushups','Incline Pushups','Diamond Pushups','Wide Pushups','Dips','Pullups','Chin Ups','Neutral Grip Pullups','Inverted Bodyweight Row','Burpees'],
+  'Bodyweight Lower':            ['Bodyweight Squat','Bodyweight Lunges','Bodyweight ATG Lunges','Bodyweight Bulgarians','Bodyweight Hip Thrusts','Bodyweight Glute Bridges','Bodyweight Back Extensions','Nordics','GHD Raises','Bodyweight Calf Raises'],
   'Cardio':                      ['Treadmill','Curved Treadmill','Assault Bike','Bike','Recumbent Bike','Elliptical','Stairmaster','Rowing Machine','Ski Erg'],
 }
 
-const UPPER_PATTERNS = ['Horizontal Push','Vertical Push','Unilateral Push','Tricep Accessory','Shoulder Accessory','Chest Accessory','Push Machine','Vertical Pull','Horizontal Pull','Posterior Upper Accessory','Bicep Accessory']
-const LOWER_PATTERNS = ['Hinge','Squat Pattern','Posterior Chain Accessory','Unilateral Lower','Isolation Lower','Calves & Shins','Machine Lower']
+const UPPER_PATTERNS = ['Horizontal Push','Vertical Push','Unilateral Push','Tricep Accessory','Shoulder Accessory','Chest Accessory','Push Machine','Vertical Pull','Horizontal Pull','Posterior Upper Accessory','Bicep Accessory','Bodyweight Strength Upper']
+const LOWER_PATTERNS = ['Hinge','Squat Pattern','Posterior Chain Accessory','Unilateral Lower','Isolation Lower','Calves & Shins','Machine Lower','Bodyweight Lower']
 
 function bodyOf(p) {
   if (UPPER_PATTERNS.includes(p)) return 'upper'
@@ -57,6 +59,8 @@ const PATTERN_MUSCLES = {
   'Calves & Shins':            { calves: '#cc0404' },
   'Machine Lower':             { quads: '#cc0404', glutes: 'rgba(204,4,4,0.4)' },
   'Core':                      { abs: '#cc0404', lats: 'rgba(204,4,4,0.15)' },
+  'Bodyweight Strength Upper': { chest: '#cc0404', lats: 'rgba(204,4,4,0.5)', triceps: 'rgba(204,4,4,0.4)', shoulders: 'rgba(204,4,4,0.3)' },
+  'Bodyweight Lower':          { quads: '#cc0404', glutes: 'rgba(204,4,4,0.6)', hamstrings: 'rgba(204,4,4,0.35)', calves: 'rgba(204,4,4,0.15)' },
   'Cardio':                    { quads: 'rgba(204,4,4,0.25)', hamstrings: 'rgba(204,4,4,0.2)', calves: 'rgba(204,4,4,0.2)' },
 }
 
@@ -80,6 +84,8 @@ const PATTERN_PRIMARY = {
   'Calves & Shins':            'Calves',
   'Machine Lower':             'Quads',
   'Core':                      'Core',
+  'Bodyweight Strength Upper': 'Chest / Back / Triceps',
+  'Bodyweight Lower':          'Quads / Glutes',
   'Cardio':                    'Cardiovascular System',
 }
 
@@ -224,6 +230,20 @@ const PATTERN_STEPS = {
     { t: 'Breathe',   d: '<strong>Rhythmic, controlled breathing</strong> throughout. Never hold your breath — exhale on the hardest effort phase.' },
     { t: 'Cool Down', d: 'Reduce intensity for the <strong>final 2–3 minutes</strong>. Let heart rate come down gradually — don\'t stop abruptly.' },
   ],
+  'Bodyweight Strength Upper': [
+    { t: 'Setup',    d: 'No equipment needed — <strong>position your body correctly</strong> for the variation. Hands, rings, or bar at the right width and height.' },
+    { t: 'Brace',    d: '<strong>Full-body tension every rep</strong>. Core tight, glutes squeezed, legs straight or planted. Bodyweight work demands total-body rigidity.' },
+    { t: 'Range',    d: '<strong>Full range of motion every rep</strong> — chest to floor on pushups, chin over bar on pullups. Partial reps are wasted reps.' },
+    { t: 'Control',  d: '<strong>Slow the eccentric</strong> on the way down. Lower yourself with control — tempo and tension build more strength than rushing reps.' },
+    { t: 'Volume',   d: 'These movements respond to <strong>density and quality reps</strong>. Push for max quality, rest minimally, and focus on what the muscle feels.' },
+  ],
+  'Bodyweight Lower': [
+    { t: 'Setup',   d: 'Position yourself for the specific variation — squat, lunge, bridge, or hinge. <strong>No load doesn\'t mean no effort</strong>.' },
+    { t: 'Brace',   d: '<strong>Core tight, neutral spine</strong>. Treat every bodyweight rep as seriously as a loaded one — technique is how you progress here.' },
+    { t: 'Depth',   d: '<strong>Full range every time</strong>. Bodyweight work relies on full ROM for development — never cut depth short.' },
+    { t: 'Drive',   d: '<strong>Push through the heel(s)</strong> to emphasize glutes and hamstrings. For squats and lunges — knee tracks over the toes.' },
+    { t: 'Tension', d: 'Maintain <strong>active tension throughout</strong> — don\'t just fall into position. Control the descent and own the ascent.' },
+  ],
 }
 
 const PATTERN_TIPS = {
@@ -246,6 +266,8 @@ const PATTERN_TIPS = {
   'Calves & Shins':            ['Full range is non-negotiable — no partial reps','Pause at the top for full engagement','Slightly bent knee hits soleus more','Calves need high volume — 15–25 reps works best'],
   'Machine Lower':             ['Never fully lock knees out — takes load off the joint','Control the negative — growth happens here','Foot position changes muscle emphasis significantly','Don\'t let lower back lift off the pad'],
   'Core':                      ['Quality over quantity — 5 perfect reps beats 20 sloppy','Full body tension during every core movement','Exhale on the exertion phase','Core strength transfers directly to your big lifts'],
+  'Bodyweight Strength Upper': ['Full range is non-negotiable — chest to floor, chin over bar','Hollow body position improves every bodyweight movement','Slow the eccentric — tempo builds more strength than speed','These movements build real-world, transferable upper body strength'],
+  'Bodyweight Lower':          ['Full depth every rep — no shortcuts','Tempo matters more than load with bodyweight','Drive through the heel for maximum glute emphasis','High volume works well — bodyweight lower responds to density'],
   'Cardio':                    ['Keep heart rate in your target zone for your goal','Steady state: conversational pace — RPE 5–6','Intervals: push hard then recover fully before repeating','Hydrate before, during, and after every session','Consistency and frequency matter more than any single session'],
 }
 
@@ -329,14 +351,11 @@ const EXERCISE_EQUIPMENT = {
 // ─── Build Exercise List ──────────────────────────────────────────────────────
 
 function buildExerciseList() {
-  const seen = new Set()
   const list = []
   for (const [pattern, names] of Object.entries(MOVEMENT_PATTERNS)) {
     for (const name of names) {
-      if (seen.has(name)) continue
-      seen.add(name)
       list.push({
-        id:        name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        id:        `${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}__${pattern.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
         name,
         pattern,
         body:      bodyOf(pattern),

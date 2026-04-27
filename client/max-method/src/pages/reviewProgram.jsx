@@ -49,6 +49,10 @@ const EXERCISE_EQUIPMENT = {
   // Additional bodyweight exercises from backend patterns
   'Incline Pushups': 'Bodyweight', 'Diamond Pushups': 'Bodyweight', 'Wide Pushups': 'Bodyweight',
   'Inverted Bodyweight Row': 'Bodyweight', 'Burpees': 'Bodyweight', 'Banded Tibia Raises': 'Bodyweight',
+  'Bodyweight Squat': 'Bodyweight', 'Bodyweight Lunges': 'Bodyweight', 'Bodyweight ATG Lunges': 'Bodyweight',
+  'Bodyweight Bulgarians': 'Bodyweight', 'Bodyweight Hip Thrusts': 'Bodyweight', 'Bodyweight Glute Bridges': 'Bodyweight',
+  'Bodyweight Back Extensions': 'Bodyweight', 'Nordics': 'Bodyweight', 'GHD Raises': 'Bodyweight',
+  'Bodyweight Calf Raises': 'Bodyweight',
 };
 
 // Exercise alternatives per movement pattern (mirrors exerciseLibrary.jsx)
@@ -72,10 +76,72 @@ const MOVEMENT_PATTERNS = {
   'Calves & Shins':              ['Single Leg Calf Raises','Calf Raise Machine','Seated Calf Raises','Bodyweight Calf Raises','Weighted Calf Raises','Donkey Calf Raises','Tibia Raises','Tibia Curls','Banded Tibia Curls'],
   'Machine Lower':               ['Leg Press','Hack Squat','Hack Squat Machine','Pendulum Squat','Reverse Hack Squat'],
   'Core':                        ['Plank','Ab Wheel Rollouts','Hanging Leg Raises','Cable Crunches','Decline Crunches','Pallof Press','Dead Bugs','Suitcase Carries','Farmer Carries'],
+  'Bodyweight Strength Upper':   ['Pushups','Incline Pushups','Diamond Pushups','Wide Pushups','Dips','Pullups','Chin Ups','Neutral Grip Pullups','Inverted Bodyweight Row','Burpees'],
+  'Bodyweight Lower':            ['Bodyweight Squat','Bodyweight Lunges','Bodyweight ATG Lunges','Bodyweight Bulgarians','Bodyweight Hip Thrusts','Bodyweight Glute Bridges','Bodyweight Back Extensions','Nordics','GHD Raises','Bodyweight Calf Raises'],
   'Cardio':                      ['Treadmill','Curved Treadmill','Assault Bike','Bike','Recumbent Bike','Elliptical','Stairmaster','Rowing Machine','Ski Erg'],
 };
 
-function CircuitGroup({ slot }) {
+function CircuitExRow({ ex, exIdx, slotIdx, dayIdx, onSwap }) {
+  const [open, setOpen] = useState(false);
+  const [selected, setSelected] = useState(ex.exercise ?? ex.fixed ?? ex.label);
+  const isRest = ex.pattern == null && ex.fixed == null && ex.label === 'Rest';
+
+  const alternatives = useMemo(() => {
+    if (ex.label && MOVEMENT_PATTERNS[ex.label]) return MOVEMENT_PATTERNS[ex.label];
+    const name = ex.exercise ?? ex.fixed;
+    if (name) {
+      for (const exs of Object.values(MOVEMENT_PATTERNS)) {
+        if (exs.includes(name)) return exs;
+      }
+    }
+    return [];
+  }, [ex.label, ex.exercise, ex.fixed]);
+
+  const handleSelect = (e) => {
+    const val = e.target.value;
+    setSelected(val);
+    onSwap(dayIdx, [slotIdx], val, exIdx);
+    setOpen(false);
+  };
+
+  const displayName = ex.exercise ?? ex.fixed ?? ex.label;
+
+  return (
+    <div className="rp-slot-row rp-slot-row--circuit-ex">
+      <div className="rp-slot-main">
+        <div className="rp-slot-info">
+          <span className="rp-exercise-name">{displayName}</span>
+          {!isRest && ex.label && <span className="rp-slot-pattern">{ex.label}</span>}
+        </div>
+        {!isRest && (
+          <div className="rp-slot-meta">
+            {alternatives.length > 0 && (
+              <button
+                className={`rp-swap-btn${open ? ' rp-swap-btn--active' : ''}`}
+                onClick={() => setOpen(o => !o)}
+                title="Swap exercise"
+              >
+                {open ? 'Cancel' : 'Swap'}
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      {open && (
+        <div className="rp-swap-dropdown">
+          <select value={selected} onChange={handleSelect} className="rp-select">
+            {alternatives.map(a => (
+              <option key={a} value={a}>{a}</option>
+            ))}
+          </select>
+          <span className="rp-swap-hint">Pick a replacement — applied across all weeks</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CircuitGroup({ slot, dayIdx, onSwap }) {
   const parts = [slot.label];
   if (slot.circuitType) parts.push(slot.circuitType);
   if (slot.totalTime) parts.push(slot.totalTime);
@@ -83,19 +149,16 @@ function CircuitGroup({ slot }) {
   return (
     <div className="rp-circuit-group">
       <div className="rp-circuit-header">{parts.join(' · ')}</div>
-      {(slot.exercises ?? []).map((ex, i) => {
-        const exName = ex.exercise ?? ex.fixed ?? ex.label;
-        return (
-          <div key={i} className="rp-slot-row rp-slot-row--circuit-ex">
-            <div className="rp-slot-main">
-              <div className="rp-slot-info">
-                <span className="rp-exercise-name">{exName}</span>
-                {ex.label && <span className="rp-slot-pattern">{ex.label}</span>}
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      {(slot.exercises ?? []).map((ex, i) => (
+        <CircuitExRow
+          key={i}
+          ex={ex}
+          exIdx={i}
+          slotIdx={slot.slotIdxs[0]}
+          dayIdx={dayIdx}
+          onSwap={onSwap}
+        />
+      ))}
     </div>
   );
 }
@@ -221,19 +284,32 @@ function ReviewProgram() {
     return null;
   }
 
-  const handleSwap = (dayIdx, slotIdxs, newExercise) => {
+  const handleSwap = (dayIdx, slotIdxs, newExercise, circuitExIdx = null) => {
     setSwaps(prev => {
       const next = { ...prev };
-      slotIdxs.forEach(si => { next[`${dayIdx}-${si}`] = newExercise; });
+      if (circuitExIdx !== null) {
+        slotIdxs.forEach(si => { next[`${dayIdx}-${si}-${circuitExIdx}`] = newExercise; });
+      } else {
+        slotIdxs.forEach(si => { next[`${dayIdx}-${si}`] = newExercise; });
+      }
       return next;
     });
     setDays(prev =>
       prev.map((day, di) =>
         di !== dayIdx ? day : {
           ...day,
-          slots: day.slots.map(s =>
-            slotIdxs.includes(s.slotIdx) ? { ...s, exercise: newExercise } : s
-          )
+          slots: day.slots.map(s => {
+            if (!slotIdxs.includes(s.slotIdx)) return s;
+            if (circuitExIdx !== null) {
+              return {
+                ...s,
+                exercises: s.exercises.map((ex, ei) =>
+                  ei === circuitExIdx ? { ...ex, exercise: newExercise } : ex
+                )
+              };
+            }
+            return { ...s, exercise: newExercise };
+          })
         }
       )
     );
@@ -245,11 +321,14 @@ function ReviewProgram() {
       // Save each swap to the backend (applies across all weeks)
       const swapEntries = Object.entries(swaps);
       await Promise.all(swapEntries.map(([key, newExercise]) => {
-        const [dayIdx, slotIdx] = key.split('-').map(Number);
+        const parts = key.split('-').map(Number);
+        const [dayIdx, slotIdx] = parts;
+        const body = { dayIdx, slotIdx, newExercise };
+        if (parts.length === 3) body.circuitExIdx = parts[2];
         return fetch(`http://localhost:5050/api/users/workout-log/${workoutLogId}/swap-exercise-all-weeks`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dayIdx, slotIdx, newExercise })
+          body: JSON.stringify(body)
         });
       }));
 
@@ -289,7 +368,7 @@ function ReviewProgram() {
             <div className="rp-slots-list">
               {(day.uniqueSlots ?? []).map((slot, si) =>
                 slot.isCircuit ? (
-                  <CircuitGroup key={si} slot={slot} />
+                  <CircuitGroup key={si} slot={slot} dayIdx={di} onSwap={handleSwap} />
                 ) : (
                   <SlotRow key={si} slot={slot} dayIdx={di} onSwap={handleSwap} />
                 )
