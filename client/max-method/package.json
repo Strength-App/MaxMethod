@@ -3,7 +3,6 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "proxy": "${import.meta.env.VITE_API_URL}",
   "scripts": {
     "dev": "vite",
     "build": "vite build",

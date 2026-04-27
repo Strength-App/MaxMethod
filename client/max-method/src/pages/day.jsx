@@ -149,7 +149,7 @@ function Day() {
       try {
         const url = (editMode && workoutLogId)
           ? `${import.meta.env.VITE_API_URL}/api/users/workout-log/${workoutLogId}/custom-day`
-          : '${import.meta.env.VITE_API_URL}/api/users/workout/custom-day';
+          : `${import.meta.env.VITE_API_URL}/api/users/workout/custom-day`;
         const body = (editMode && workoutLogId)
           ? { weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: customExercises }
           : { userId, weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: customExercises };
@@ -239,7 +239,7 @@ function Day() {
 
   const handleSetComplete = (exercise, actual, markingDone) => {
     if (markingDone && actual) {
-      fetch('${import.meta.env.VITE_API_URL}/api/users/workout/pb-check', {
+      fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/pb-check`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

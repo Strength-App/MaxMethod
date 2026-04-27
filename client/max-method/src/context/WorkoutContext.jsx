@@ -157,7 +157,7 @@ export function WorkoutProvider({ children }) {
     clearTimeout(updateLogTimer.current);
     updateLogTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch('${import.meta.env.VITE_API_URL}/api/users/workout/log', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/log`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -195,7 +195,7 @@ export function WorkoutProvider({ children }) {
     });
 
     try {
-      await fetch('${import.meta.env.VITE_API_URL}/api/users/workout/complete-day', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/complete-day`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

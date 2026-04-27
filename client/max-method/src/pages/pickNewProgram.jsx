@@ -65,7 +65,7 @@ function PickNewProgram() {
     }
 
     try {
-      const response = await fetch("${import.meta.env.VITE_API_URL}/api/users/classification", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/classification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

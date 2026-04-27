@@ -67,7 +67,7 @@ function ViewProgram() {
     const userId = localStorage.getItem('userId');
     setSettingActive(true);
     try {
-      await fetch('${import.meta.env.VITE_API_URL}/api/users/program-logs/set-active', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/users/program-logs/set-active`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, programLogId })

@@ -65,7 +65,7 @@ function CustomWorkout() {
 
       } else {
         // ── CREATING a new workout ───────────────────────────────────
-        const res = await fetch('${import.meta.env.VITE_API_URL}/api/users/custom-workout', {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/custom-workout`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, title: title || 'Custom Workout', weeks: weeksWithExercises })

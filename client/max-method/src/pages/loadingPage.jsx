@@ -50,7 +50,7 @@ function LoadingPage() {
           if (!classRes.ok) throw new Error('Classification failed');
           const classData = await classRes.json();
 
-          const goalsRes = await fetch('${import.meta.env.VITE_API_URL}/api/users/goals', {
+          const goalsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/users/goals`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, classification: classData.classification, daysPerWeek, goalSelection }),
@@ -74,7 +74,7 @@ function LoadingPage() {
         } else if (source === 'goals') {
           const { userId, classification, daysPerWeek, goalSelection } = state;
 
-          const goalsRes = await fetch('${import.meta.env.VITE_API_URL}/api/users/goals', {
+          const goalsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/users/goals`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, classification, daysPerWeek, goalSelection }),

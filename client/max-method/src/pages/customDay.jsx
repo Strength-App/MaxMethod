@@ -59,7 +59,7 @@ function CustomDay() {
       try {
         const url = isExternal
           ? `${import.meta.env.VITE_API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`
-          : '${import.meta.env.VITE_API_URL}/api/users/workout/custom-day';
+          : `${import.meta.env.VITE_API_URL}/api/users/workout/custom-day`;
         const body = isExternal
           ? { weekNum: Number(weekNum), dayNum: Number(dayNum), exercises }
           : { userId, weekNum: Number(weekNum), dayNum: Number(dayNum), exercises };
