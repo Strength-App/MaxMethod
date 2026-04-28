@@ -3176,6 +3176,12 @@ button,
   to { opacity: 1; transform: translateY(0); }
 }
 
+.ob-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
 .ob-section-label {
   font-family: var(--font-sub);
   font-size: 10px;
@@ -3183,6 +3189,35 @@ button,
   letter-spacing: 0.20em;
   color: var(--muted);
   text-transform: uppercase;
+}
+
+.ob-beginner-btn {
+  background: var(--surface-deep);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  font-family: var(--font-sub);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all var(--transition-md);
+  margin-top: -4px;
+}
+
+.ob-beginner-btn:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent);
+  box-shadow: var(--accent-glow-sm);
+  color: var(--text);
+}
+.ob-beginner-btn.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow: var(--accent-glow-sm);
 }
 .ob-section-label::after {
   content: '';
@@ -3277,6 +3312,11 @@ button,
 }
 .ob-input-wrap input::placeholder {
   color: var(--muted);
+}
+.ob-input-wrap input[readonly] {
+  color: var(--accent);
+  background: var(--accent-dim);
+  cursor: default;
 }
 .ob-input-unit {
   padding: 0 12px;
