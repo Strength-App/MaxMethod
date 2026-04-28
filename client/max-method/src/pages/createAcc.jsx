@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import axios from "axios";
+import { API_URL } from '../config/api';
 
 function CreateAcc() {
   const [firstName, setFirstName] = useState('');
@@ -17,7 +18,7 @@ function CreateAcc() {
     e.preventDefault();
     try {
       const userData = { firstName, lastName, email, password };
-      const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/users/create-account`, userData);
+      const response = await axios.post(`${API_URL}/api/users/create-account`, userData);
 
       console.log("Status: ", response.status);
 

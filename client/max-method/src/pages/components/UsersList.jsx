@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { API_URL } from '../../config/api';
 
 const Restaurant = (props) => (
   <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
@@ -25,8 +26,8 @@ export default function RestaurantList() {
       // Determines which endpoint to call based on current route
       const endpoint =
         location.pathname === "/browse"
-          ? `${import.meta.env.VITE_API_URL}/restaurant/browse`
-          : `${import.meta.env.VITE_API_URL}/restaurant/`;
+          ? `${API_URL}/restaurant/browse`
+          : `${API_URL}/restaurant/`;
 
       const response = await fetch(endpoint);
       if (!response.ok) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ALL_EXERCISES } from './exerciseLibrary';
 import { useWorkout } from '../context/WorkoutContext';
+import { API_URL } from '../config/api';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(name) {
@@ -52,7 +53,7 @@ const addToCustomExercises = (name) => {
   localStorage.setItem('customExercises', JSON.stringify([...existing, name]));
   const userId = localStorage.getItem('userId');
   if (userId) {
-    fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}/custom-exercises`, {
+    fetch(`${API_URL}/api/users/${userId}/custom-exercises`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
@@ -118,7 +119,7 @@ function Logger() {
     if (!userId) return;
     setFinishing(true);
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/quick-sessions`, {
+      await fetch(`${API_URL}/api/users/quick-sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, title: title.trim() || defaultTitle, exercises })
@@ -324,7 +325,7 @@ function Logger() {
                           if (markingDone) {
                             if (s.weight && ex.name) {
                               recordPRIfBeaten(ex.name, s.weight, s.reps);
-                                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/pb-check`, {
+                              fetch(`${API_URL}/api/users/workout/pb-check`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ userId, exercise: ex.name, actualWeight: Number(s.weight) })

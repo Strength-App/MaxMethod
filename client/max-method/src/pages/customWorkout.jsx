@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { API_URL } from '../config/api';
 
 function CustomWorkout() {
   // At the top of CustomWorkout(), read the existing workoutLogId if editing
@@ -50,14 +51,14 @@ function CustomWorkout() {
       if (workoutLogId) {
         // ── EDITING an existing workout ──────────────────────────────
         // 1. Update the weeks
-        await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${workoutLogId}/weeks`, {
+        await fetch(`${API_URL}/api/users/workout-log/${workoutLogId}/weeks`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ weeks: weeksWithExercises })
         });
 
         // 2. Update the title
-        await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${workoutLogId}/title`, {
+        await fetch(`${API_URL}/api/users/workout-log/${workoutLogId}/title`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: title || 'Custom Workout' })
@@ -65,7 +66,7 @@ function CustomWorkout() {
 
       } else {
         // ── CREATING a new workout ───────────────────────────────────
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/custom-workout`, {
+        const res = await fetch(`${API_URL}/api/users/custom-workout`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId, title: title || 'Custom Workout', weeks: weeksWithExercises })

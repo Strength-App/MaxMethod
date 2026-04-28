@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { API_URL } from '../config/api';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(exerciseName) {
@@ -123,7 +124,7 @@ function Day() {
   useEffect(() => {
     const uid = localStorage.getItem('userId');
     if (!uid) return;
-    fetch(`${import.meta.env.VITE_API_URL}/api/users/profile/${uid}`)
+    fetch(`${API_URL}/api/users/profile/${uid}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.current_one_rep_maxes) setUserOneRMs(data.current_one_rep_maxes); })
       .catch(() => {});
@@ -154,8 +155,8 @@ function Day() {
     saveTimerRef.current = setTimeout(async () => {
       try {
         const url = (editMode && workoutLogId)
-          ? `${import.meta.env.VITE_API_URL}/api/users/workout-log/${workoutLogId}/custom-day`
-          : `${import.meta.env.VITE_API_URL}/api/users/workout/custom-day`;
+          ? `${API_URL}/api/users/workout-log/${workoutLogId}/custom-day`
+          : `${API_URL}/api/users/workout/custom-day`;
         const body = (editMode && workoutLogId)
           ? { weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: customExercises }
           : { userId, weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: customExercises };
@@ -246,7 +247,7 @@ function Day() {
   const handleSetComplete = async (exercise, actual, markingDone) => {
     if (markingDone && actual) {
       const res = async
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/pb-check`, {
+      await fetch(`${API_URL}/api/users/workout/pb-check`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
@@ -480,7 +481,7 @@ function Day() {
                   setEditingSlot(null);
                   if (editMode && workoutLogId) {
                     items.forEach(({ si }) =>
-                      fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${workoutLogId}/slot-exercise`, {
+                      fetch(`${API_URL}/api/users/workout-log/${workoutLogId}/slot-exercise`, {
                         method: 'PATCH',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ weekNum: wi + 1, dayNum: di + 1, slotIdx: si, exercise: e.target.value })

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { ALL_EXERCISES } from './exerciseLibrary';
+import { API_URL } from '../config/api';
 
 const ALL_EXERCISE_NAMES = [...new Set(ALL_EXERCISES.map(e => e.name))];
 const getCustomExerciseNames = () => { try { return JSON.parse(localStorage.getItem('customExercises') || '[]'); } catch { return []; } };
@@ -15,7 +16,7 @@ const addToCustomExercises = (name) => {
   localStorage.setItem('customExercises', JSON.stringify(updated));
   const userId = localStorage.getItem('userId');
   if (userId) {
-    fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}/custom-exercises`, {
+    fetch(`${API_URL}/api/users/${userId}/custom-exercises`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
@@ -80,8 +81,8 @@ function CustomDay() {
     saveTimer.current = setTimeout(async () => {
       try {
         const url = isExternal
-          ? `${import.meta.env.VITE_API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`
-          : `${import.meta.env.VITE_API_URL}/api/users/workout/custom-day`;
+          ? `${API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`
+          : `${API_URL}/api/users/workout/custom-day`;
         const body = isExternal
           ? { weekNum: Number(weekNum), dayNum: Number(dayNum), exercises }
           : { userId, weekNum: Number(weekNum), dayNum: Number(dayNum), exercises };
@@ -107,7 +108,7 @@ function CustomDay() {
     if (!isExternal) return;
     clearTimeout(saveTimer.current);
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
+      await fetch(`${API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: currentExercises })
@@ -167,7 +168,7 @@ function CustomDay() {
         // Only apply to weeks that already have a day at this index
         if ((weekDayCounts[w - 1] ?? 0) < Number(dayNum)) continue;
         requests.push(
-          fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
+          fetch(`${API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ weekNum: w, dayNum: Number(dayNum), exercises: stripped }),

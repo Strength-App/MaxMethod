@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { API_URL } from '../config/api';
 
 // Equipment map (mirrors exerciseLibrary.jsx)
 const EXERCISE_EQUIPMENT = {
@@ -325,7 +326,7 @@ function ReviewProgram() {
         const [dayIdx, slotIdx] = parts;
         const body = { dayIdx, slotIdx, newExercise };
         if (parts.length === 3) body.circuitExIdx = parts[2];
-        return fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${workoutLogId}/swap-exercise-all-weeks`, {
+        return fetch(`${API_URL}/api/users/workout-log/${workoutLogId}/swap-exercise-all-weeks`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)

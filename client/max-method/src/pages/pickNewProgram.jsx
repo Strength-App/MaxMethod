@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
+import { API_URL } from '../config/api';
 
 const FEATURED = [
   { tag: 'Strength · 12 weeks', name: 'Power Builder',   meta: '4 days/week · Intermediate' },
@@ -37,7 +38,7 @@ function PickNewProgram() {
     const userId = localStorage.getItem('userId');
     if (!userId) return;
 
-    fetch(`${import.meta.env.VITE_API_URL}/api/users/program-logs/${userId}`)
+    fetch(`${API_URL}/api/users/program-logs/${userId}`)
       .then(res => res.json())
       .then(data => {
         setMyPrograms(data);
@@ -54,7 +55,7 @@ function PickNewProgram() {
     const userId = localStorage.getItem('userId');
 
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/program-logs/${programLogId}`, {
+      await fetch(`${API_URL}/api/users/program-logs/${programLogId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId })
@@ -99,7 +100,7 @@ const handleChange = (e) => {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/classification`, {
+      const response = await fetch(`${API_URL}/api/users/classification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

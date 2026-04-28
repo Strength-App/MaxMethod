@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { API_URL } from '../config/api';
 
 const WorkoutContext = createContext(null);
 
@@ -49,8 +50,8 @@ export function WorkoutProvider({ children }) {
           data = preloadedData;
         } else {
             const [res, pbRes] = await Promise.all([
-            fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/${resolvedId}`),
-            fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/${resolvedId}/personal-bests`)
+            fetch(`${API_URL}/api/users/workout/${resolvedId}`),
+            fetch(`${API_URL}/api/users/workout/${resolvedId}/personal-bests`)
           ])
 
           if (res.status === 404) {
@@ -158,7 +159,7 @@ export function WorkoutProvider({ children }) {
     clearTimeout(updateLogTimer.current);
     updateLogTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/log`, {
+        const res = await fetch(`${API_URL}/api/users/workout/log`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -191,7 +192,7 @@ export function WorkoutProvider({ children }) {
     const resolvedId = userId;
     if (!resolvedId) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/${resolvedId}/personal-bests`);
+      const res = await fetch(`${API_URL}/api/users/workout/${resolvedId}/personal-bests`);
       if (res.ok) {
         const data = await res.json();
         setPersonalBests(data.personal_bests ?? {});
@@ -204,7 +205,7 @@ export function WorkoutProvider({ children }) {
   const deselectProgram = useCallback(async () => {
     if (!userId) return;
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/program-logs/deselect`, {
+      await fetch(`${API_URL}/api/users/program-logs/deselect`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
@@ -226,7 +227,7 @@ export function WorkoutProvider({ children }) {
     });
 
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/complete-day`, {
+      await fetch(`${API_URL}/api/users/workout/complete-day`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

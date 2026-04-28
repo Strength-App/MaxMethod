@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useWorkout } from '../context/WorkoutContext'
 import './exerciseLibrary.css'
+import { API_URL } from '../config/api';
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -460,7 +461,7 @@ function DetailView({ exercise, onBack }) {
     const userId = localStorage.getItem('userId')
     if (!userId) return
     setHistoryLoading(true)
-    fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(exercise.name)}`)
+    fetch(`${API_URL}/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(exercise.name)}`)
       .then(r => r.ok ? r.json() : { history: [] })
       .then(data => {
         setExerciseHistory(
@@ -677,7 +678,7 @@ function CustomDetailView({ name, onBack }) {
     const userId = localStorage.getItem('userId')
     if (!userId) return
     setHistoryLoading(true)
-    fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(name)}`)
+    fetch(`${API_URL}/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(name)}`)
       .then(r => r.ok ? r.json() : { history: [] })
       .then(data => {
         setExerciseHistory(
@@ -823,7 +824,7 @@ function CustomExercisesSection({ onSelect }) {
 
   useEffect(() => {
     if (!userId) return
-    fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}/custom-exercises`)
+    fetch(`${API_URL}/api/users/${userId}/custom-exercises`)
       .then(r => r.ok ? r.json() : { custom_exercises: [] })
       .then(data => {
         const list = data.custom_exercises ?? []
@@ -846,7 +847,7 @@ function CustomExercisesSection({ onSelect }) {
     setError('')
     if (userId) {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}/custom-exercises`, {
+        const res = await fetch(`${API_URL}/api/users/${userId}/custom-exercises`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name }),
@@ -872,7 +873,7 @@ function CustomExercisesSection({ onSelect }) {
     setCustomExercises(list)
     syncLocalStorage(list)
     if (userId) {
-      fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}/custom-exercises/${encodeURIComponent(name)}`, { method: 'DELETE' })
+      fetch(`${API_URL}/api/users/${userId}/custom-exercises/${encodeURIComponent(name)}`, { method: 'DELETE' })
         .catch(() => {})
     }
   }

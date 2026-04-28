@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { API_URL } from '../config/api';
 
 function ViewProgram() {
   const { programLogId } = useParams();
@@ -24,7 +25,7 @@ function ViewProgram() {
         let prog = program;
         if (!prog) {
           const userId = localStorage.getItem('userId');
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/program-logs/${userId}`);
+          const res = await fetch(`${API_URL}/api/users/program-logs/${userId}`);
           if (!res.ok) throw new Error('Failed to fetch programs');
           const programs = await res.json();
           prog = programs.find(p => p._id === programLogId);
@@ -32,7 +33,7 @@ function ViewProgram() {
           setProgram(prog);
         }
 
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${prog.workoutLogId}`);
+        const res = await fetch(`${API_URL}/api/users/workout-log/${prog.workoutLogId}`);
         if (!res.ok) throw new Error('Failed to fetch workout data');
         const data = await res.json();
         setWorkoutData(data);
@@ -51,7 +52,7 @@ function ViewProgram() {
     clearTimeout(titleTimer.current);
     titleTimer.current = setTimeout(async () => {
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${program.workoutLogId}/title`, {
+        await fetch(`${API_URL}/api/users/workout-log/${program.workoutLogId}/title`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title: editTitle })
@@ -67,7 +68,7 @@ function ViewProgram() {
     const userId = localStorage.getItem('userId');
     setSettingActive(true);
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/program-logs/set-active`, {
+      await fetch(`${API_URL}/api/users/program-logs/set-active`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, programLogId })
@@ -82,7 +83,7 @@ function ViewProgram() {
 
   const saveWeeks = async (newWeeks) => {
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${program.workoutLogId}/weeks`, {
+      await fetch(`${API_URL}/api/users/workout-log/${program.workoutLogId}/weeks`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weeks: newWeeks })

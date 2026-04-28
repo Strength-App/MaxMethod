@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { API_URL } from '../config/api';
 
 function resolveWeekValue(value, wi) {
   if (Array.isArray(value)) return value[wi] ?? null;
@@ -33,7 +34,7 @@ export default function History() {
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     if (!userId) { setLoading(false); return; }
-    fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/${userId}/all-history`)
+    fetch(`${API_URL}/api/users/workout/${userId}/all-history`)
       .then(r => r.ok ? r.json() : { sessions: [] })
       .then(data => {
         setSessions(

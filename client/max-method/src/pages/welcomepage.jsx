@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import { useWorkout } from '../context/WorkoutContext'
+import { API_URL } from '../config/api';
 
 function Welcomepage() {
   const [email, setEmail] = useState('')
@@ -13,7 +14,7 @@ function Welcomepage() {
   const handleSubmit = async (e) => {
     e.preventDefault()
 
-    const request = await fetch(`${import.meta.env.VITE_API_URL}/api/users/login`, {
+    const request = await fetch(`${API_URL}/api/users/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
