@@ -15,7 +15,7 @@ const addToCustomExercises = (name) => {
   localStorage.setItem('customExercises', JSON.stringify(updated));
   const userId = localStorage.getItem('userId');
   if (userId) {
-    fetch(`http://localhost:5050/api/users/${userId}/custom-exercises`, {
+    fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}/custom-exercises`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
@@ -80,8 +80,8 @@ function CustomDay() {
     saveTimer.current = setTimeout(async () => {
       try {
         const url = isExternal
-          ? `http://localhost:5050/api/users/workout-log/${externalWorkoutLogId}/custom-day`
-          : 'http://localhost:5050/api/users/workout/custom-day';
+          ? `${import.meta.env.VITE_API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`
+          : `${import.meta.env.VITE_API_URL}/api/users/workout/custom-day`;
         const body = isExternal
           ? { weekNum: Number(weekNum), dayNum: Number(dayNum), exercises }
           : { userId, weekNum: Number(weekNum), dayNum: Number(dayNum), exercises };
@@ -107,7 +107,7 @@ function CustomDay() {
     if (!isExternal) return;
     clearTimeout(saveTimer.current);
     try {
-      await fetch(`http://localhost:5050/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ weekNum: Number(weekNum), dayNum: Number(dayNum), exercises: currentExercises })
@@ -167,7 +167,7 @@ function CustomDay() {
         // Only apply to weeks that already have a day at this index
         if ((weekDayCounts[w - 1] ?? 0) < Number(dayNum)) continue;
         requests.push(
-          fetch(`http://localhost:5050/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
+          fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${externalWorkoutLogId}/custom-day`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ weekNum: w, dayNum: Number(dayNum), exercises: stripped }),
@@ -440,3 +440,4 @@ function CustomDay() {
 }
 
 export default CustomDay;
+

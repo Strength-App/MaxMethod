@@ -36,7 +36,7 @@ function Settings() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const res = await fetch(`http://localhost:5050/api/users/profile/${user._id}`)
+                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/profile/${user._id}`)
 
                 if (!res.ok) {
                     const text = await res.text()
@@ -277,7 +277,7 @@ function UserName({ firstName, lastName, userId, setFirstName, setLastName }) {
 
     const handleSave = async () => {
         try {
-            await fetch(`http://localhost:5050/api/users/update/${userId}`, {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/users/update/${userId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -336,7 +336,7 @@ function UserEmail({ email, userId, setEmail }) {
 
     const handleSave = async () => {
         try {
-            await fetch(`http://localhost:5050/api/users/update/${userId}`, {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/users/update/${userId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email: tempEmail })
@@ -382,7 +382,7 @@ function UserGender({ gender, userId, setGender }) {
 
     const handleSave = async () => {
         try {
-            await fetch(`http://localhost:5050/api/users/update/${userId}`, {
+            await fetch(`${import.meta.env.VITE_API_URL}/api/users/update/${userId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ gender: tempGender })
@@ -456,7 +456,7 @@ function ChangePassword({ userId }) {
         e.preventDefault()
 
         try {
-            const res = await fetch(`http://localhost:5050/api/users/change-password/${userId}`, {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/change-password/${userId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ currentPassword, newPassword })

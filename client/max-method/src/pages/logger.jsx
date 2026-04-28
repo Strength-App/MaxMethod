@@ -52,7 +52,7 @@ const addToCustomExercises = (name) => {
   localStorage.setItem('customExercises', JSON.stringify([...existing, name]));
   const userId = localStorage.getItem('userId');
   if (userId) {
-    fetch(`http://localhost:5050/api/users/${userId}/custom-exercises`, {
+    fetch(`${import.meta.env.VITE_API_URL}/api/users/${userId}/custom-exercises`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name }),
@@ -118,7 +118,7 @@ function Logger() {
     if (!userId) return;
     setFinishing(true);
     try {
-      await fetch('http://localhost:5050/api/users/quick-sessions', {
+      await fetch(`${import.meta.env.VITE_API_URL}/api/users/quick-sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId, title: title.trim() || defaultTitle, exercises })
@@ -324,7 +324,7 @@ function Logger() {
                           if (markingDone) {
                             if (s.weight && ex.name) {
                               recordPRIfBeaten(ex.name, s.weight, s.reps);
-                              fetch('http://localhost:5050/api/users/workout/pb-check', {
+                                const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/pb-check`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ userId, exercise: ex.name, actualWeight: Number(s.weight) })
@@ -445,3 +445,4 @@ function Logger() {
 }
 
 export default Logger;
+

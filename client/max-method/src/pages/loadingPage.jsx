@@ -42,7 +42,7 @@ function LoadingPage() {
         if (source === 'onboarding') {
           const { userId, email, gender, benchPress, squat, deadlift, bodyWeight, daysPerWeek, goalSelection, isBeginner } = state;
 
-          const classRes = await fetch('http://localhost:5050/api/users/classification', {
+          const classRes = await fetch(`${import.meta.env.VITE_API_URL}/api/users/classification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, gender, benchPress, deadlift, squat, bodyWeight, isBeginner }),
@@ -50,7 +50,7 @@ function LoadingPage() {
           if (!classRes.ok) throw new Error('Classification failed');
           const classData = await classRes.json();
 
-          const goalsRes = await fetch('http://localhost:5050/api/users/goals', {
+          const goalsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/users/goals`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, classification: classData.classification, daysPerWeek, goalSelection, isBeginner }),
@@ -74,7 +74,7 @@ function LoadingPage() {
         } else if (source === 'goals') {
           const { userId, classification, daysPerWeek, goalSelection } = state;
 
-          const goalsRes = await fetch('http://localhost:5050/api/users/goals', {
+          const goalsRes = await fetch(`${import.meta.env.VITE_API_URL}/api/users/goals`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId, classification, daysPerWeek, goalSelection }),
@@ -123,3 +123,4 @@ function LoadingPage() {
 }
 
 export default LoadingPage;
+

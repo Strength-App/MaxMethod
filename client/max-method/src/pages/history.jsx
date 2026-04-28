@@ -33,7 +33,7 @@ export default function History() {
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     if (!userId) { setLoading(false); return; }
-    fetch(`http://localhost:5050/api/users/workout/${userId}/all-history`)
+    fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/${userId}/all-history`)
       .then(r => r.ok ? r.json() : { sessions: [] })
       .then(data => {
         setSessions(
@@ -303,3 +303,4 @@ export default function History() {
     </div>
   );
 }
+

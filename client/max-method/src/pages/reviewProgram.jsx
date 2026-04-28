@@ -325,7 +325,7 @@ function ReviewProgram() {
         const [dayIdx, slotIdx] = parts;
         const body = { dayIdx, slotIdx, newExercise };
         if (parts.length === 3) body.circuitExIdx = parts[2];
-        return fetch(`http://localhost:5050/api/users/workout-log/${workoutLogId}/swap-exercise-all-weeks`, {
+        return fetch(`${import.meta.env.VITE_API_URL}/api/users/workout-log/${workoutLogId}/swap-exercise-all-weeks`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body)
@@ -415,3 +415,4 @@ function ReviewProgram() {
 }
 
 export default ReviewProgram;
+
