@@ -811,9 +811,9 @@ function Day() {
             const exName = ex.exercise ?? ex.fixed ?? ex.label;
             const isOpen = openCards[cardKey] ?? false;
             const exState = setData[`${si}-amrap-${ei}`] ?? { actual: '', actualReps: '' };
-            const weightNote = ex.weightNote || null;
-            const hasTarget = weightNote != null && weightNote !== '';
-            const matched = exState.actual !== '' && hasTarget && parseInt(exState.actual) >= parseInt(weightNote);
+            const exTarget = ex.projectedWeight ?? (ex.weightNote || null);
+            const hasTarget = exTarget != null && exTarget !== '';
+            const matched = exState.actual !== '' && hasTarget && parseInt(exState.actual) >= parseInt(exTarget);
             const updateExState = (patch) =>
               setSetData(prev => ({ ...prev, [`${si}-amrap-${ei}`]: { ...(prev[`${si}-amrap-${ei}`] ?? {}), ...patch } }));
 
@@ -872,7 +872,7 @@ function Day() {
                       </div>
                       <div className="set-target">
                         {hasTarget
-                          ? <><span className="target-wt">{weightNote}</span><span className="target-unit"> lbs</span></>
+                          ? <><span className="target-wt">{exTarget}</span><span className="target-unit"> lbs</span></>
                           : <span className="target-dash">—</span>
                         }
                       </div>
@@ -989,9 +989,9 @@ function Day() {
 
                   {Array.from({ length: setCount }, (_, j) => {
                     const s = setData[`${si}-${ei}-${j}`] ?? { done: false, actual: '', actualReps: '' };
-                    const weightNote = ex.weightNote || null;
-                    const hasTarget = weightNote != null && weightNote !== '';
-                    const matched = s.actual !== '' && hasTarget && parseInt(s.actual) >= parseInt(weightNote);
+                    const exTarget = ex.projectedWeight ?? (ex.weightNote || null);
+                    const hasTarget = exTarget != null && exTarget !== '';
+                    const matched = s.actual !== '' && hasTarget && parseInt(s.actual) >= parseInt(exTarget);
 
                     return (
                       <div key={j} className={`ex-set-row${s.done ? ' ex-set-row--done' : ''}`}>
@@ -1029,7 +1029,7 @@ function Day() {
                         </div>
                         <div className="set-target">
                           {hasTarget
-                            ? <><span className="target-wt">{weightNote}</span><span className="target-unit"> lbs</span></>
+                            ? <><span className="target-wt">{exTarget}</span><span className="target-unit"> lbs</span></>
                             : <span className="target-dash">—</span>
                           }
                         </div>

@@ -18,6 +18,7 @@ import CustomDay from './pages/customDay'
 import ViewProgram from './pages/viewProgram'
 import LoadingPage from './pages/loadingPage'
 import ReviewProgram from './pages/reviewProgram'
+import Logger from './pages/logger'
 
 // Workout context — wraps the whole app so state persists when navigating
 import { WorkoutProvider } from './context/WorkoutContext'
@@ -121,6 +122,7 @@ function App() {
             <Route path="/customDay/:weekNum/:dayNum" element={protectedRoute(<CustomDay />)} />
             <Route path="/view-program/:programLogId" element={protectedRoute(<ViewProgram />)} />
             <Route path="/review-program" element={user ? <ReviewProgram /> : <Navigate to="/welcomepage" replace />} />
+            <Route path="/logger" element={protectedRoute(<Logger />)} />
           </Routes>
         </div>
       </WorkoutProvider>

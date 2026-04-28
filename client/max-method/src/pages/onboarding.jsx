@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import Classification from "./classification";
 
 function Onboarding() {
   const navigate = useNavigate();
@@ -10,9 +11,19 @@ function Onboarding() {
   const [formData, setFormData] = useState({
     gender: "",
     bodyWeight: "",
+
+    benchPressWeight: "",
+    benchRep: "",
     benchPress: "",
-    squat: "",
+
+    deadliftWeight: "",
+    deadliftRep: "",
     deadlift: "",
+
+    squatWeight: "",
+    squatRep: "",
+    squat: "",
+
     daysPerWeek: "",
     goalSelection: "",
     isBeginner: false,
@@ -180,8 +191,12 @@ function Onboarding() {
             ))}
           </div>
         </div>
+        <Classification
+          formData={formData}
+          setFormData={setFormData}
+        />
 
-        <div className="ob-divider" />
+        <div className="ob-divider" /> 
 
         {/* ── DAYS PER WEEK ── */}
         <div className="ob-section">

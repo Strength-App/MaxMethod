@@ -54,6 +54,7 @@ export function WorkoutProvider({ children }) {
           ])
 
           if (res.status === 404) {
+            setWorkout(null);
             return;
           }
 
@@ -186,6 +187,36 @@ export function WorkoutProvider({ children }) {
     }, 500);
   }, [userId]);
 
+  const refreshPersonalBests = useCallback(async () => {
+    const resolvedId = userId;
+    if (!resolvedId) return;
+    try {
+      const res = await fetch(`http://localhost:5050/api/users/workout/${resolvedId}/personal-bests`);
+      if (res.ok) {
+        const data = await res.json();
+        setPersonalBests(data.personal_bests ?? {});
+      }
+    } catch (err) {
+      console.error('Failed to refresh personal bests:', err);
+    }
+  }, [userId]);
+
+  const deselectProgram = useCallback(async () => {
+    if (!userId) return;
+    try {
+      await fetch('http://localhost:5050/api/users/program-logs/deselect', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+    } catch (err) {
+      console.error('Failed to deselect program:', err);
+    }
+    setWorkout(null);
+    setLog({});
+    setAssignments({});
+  }, [userId]);
+
   const completeDay = useCallback(async (weekIdx, dayIdx) => {
     setWorkout(prev => {
       const updated = structuredClone(prev);
@@ -228,6 +259,8 @@ export function WorkoutProvider({ children }) {
       setExercise,
       updateLog,
       completeDay,
+      deselectProgram,
+      refreshPersonalBests,
       logoutWorkout
     }}>
       {children}

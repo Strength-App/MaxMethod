@@ -1,6 +1,27 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { ALL_EXERCISES } from './exerciseLibrary';
+
+const ALL_EXERCISE_NAMES = [...new Set(ALL_EXERCISES.map(e => e.name))];
+const getCustomExerciseNames = () => { try { return JSON.parse(localStorage.getItem('customExercises') || '[]'); } catch { return []; } };
+const getAllExerciseNames = () => [...ALL_EXERCISE_NAMES, ...getCustomExerciseNames()];
+const isValidExercise = name => getAllExerciseNames().some(n => n.toLowerCase() === name.toLowerCase());
+
+const addToCustomExercises = (name) => {
+  const existing = getCustomExerciseNames();
+  if (existing.some(n => n.toLowerCase() === name.toLowerCase())) return;
+  const updated = [...existing, name];
+  localStorage.setItem('customExercises', JSON.stringify(updated));
+  const userId = localStorage.getItem('userId');
+  if (userId) {
+    fetch(`http://localhost:5050/api/users/${userId}/custom-exercises`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }).catch(() => {});
+  }
+};
 
 function CustomDay() {
   const { weekNum, dayNum } = useParams();
@@ -27,6 +48,7 @@ function CustomDay() {
     return workout?.weeks[wi]?.days[di]?.exercises ?? [];
   });
   const [openCards, setOpenCards] = useState({});
+  const [activeDropdown, setActiveDropdown] = useState(null);
   const [saved, setSaved] = useState(false);
   const saveTimer = useRef(null);
   const initialised = useRef(false);
@@ -210,15 +232,67 @@ function CustomDay() {
             <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
               {/* Card Header */}
               <div className="ex-card-header" onClick={() => toggleCard(ei)}>
-                <div className="ex-card-title-block">
+                <div className="ex-card-title-block" style={{ position: 'relative', flex: 1 }}>
                   <input
                     className="ex-card-name"
                     placeholder="Search exercise..."
                     value={ex.name}
                     onClick={e => e.stopPropagation()}
-                    onChange={e => updateName(ei, e.target.value)}
+                    onChange={e => { updateName(ei, e.target.value); setActiveDropdown(ei); }}
+                    onFocus={() => setActiveDropdown(ei)}
+                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
                     style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--accent)', fontWeight: 700, fontSize: '1em', width: '100%' }}
                   />
+                  {activeDropdown === ei && ex.name.length > 0 && (() => {
+                    const q = ex.name.toLowerCase();
+                    const matches = getAllExerciseNames().filter(n => n.toLowerCase().includes(q)).slice(0, 8);
+                    return (
+                      <div
+                        onClick={e => e.stopPropagation()}
+                        style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '8px', zIndex: 100, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
+                      >
+                        {matches.length > 0 ? matches.map(name => (
+                          <div
+                            key={name}
+                            onMouseDown={() => { updateName(ei, name); setActiveDropdown(null); }}
+                            style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '13px', color: 'var(--text)', borderBottom: '1px solid var(--border, #333)' }}
+                            onMouseEnter={e => e.currentTarget.style.background = 'var(--border, #333)'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                          >
+                            {name}
+                          </div>
+                        )) : (
+                          <div style={{ padding: '10px 12px', fontSize: '13px' }}>
+                            <div style={{ color: '#ff5555', marginBottom: '8px' }}>"{ex.name}" is not in the exercise library</div>
+                            <div
+                              onMouseDown={() => {
+                                addToCustomExercises(ex.name.trim());
+                                setActiveDropdown(null);
+                              }}
+                              style={{ display: 'inline-block', padding: '5px 12px', background: 'rgba(250,204,21,0.15)', color: '#facc15', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                            >
+                              + Add "{ex.name}" to Custom Exercises
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  {ex.name.length > 0 && activeDropdown !== ei && !isValidExercise(ex.name) && (
+                    <div style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ color: '#ff5555' }}>"{ex.name}" is not in the exercise library</span>
+                      <span
+                        onClick={e => {
+                          e.stopPropagation();
+                          addToCustomExercises(ex.name.trim());
+                          setExercises(prev => [...prev]);
+                        }}
+                        style={{ color: '#facc15', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+                      >
+                        + Add to Custom Exercises
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <div className="ex-card-stats">
                   <div className="stat-chip">
