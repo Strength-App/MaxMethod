@@ -8,6 +8,8 @@
   --el-lower-dim:  rgba(74, 222, 128, 0.15);
   --el-core-c:     #c084fc;
   --el-core-dim:   rgba(192, 132, 252, 0.15);
+  --el-cardio:     #fb923c;
+  --el-cardio-dim: rgba(251, 146, 60, 0.15);
   --el-accent:     #cc0404;
   --el-accent2:    #e86060;
   --el-glow:       rgba(204, 4, 4, 0.22);
@@ -122,10 +124,12 @@
   flex-shrink: 0;
 }
 
-.el-tab[data-tab="all"]   .el-tab-dot { background: var(--el-accent); }
-.el-tab[data-tab="upper"] .el-tab-dot { background: var(--el-upper); }
-.el-tab[data-tab="lower"] .el-tab-dot { background: var(--el-lower); }
-.el-tab[data-tab="core"]  .el-tab-dot { background: var(--el-core-c); }
+.el-tab[data-tab="all"]    .el-tab-dot { background: var(--el-accent); }
+.el-tab[data-tab="upper"]  .el-tab-dot { background: var(--el-upper); }
+.el-tab[data-tab="lower"]  .el-tab-dot { background: var(--el-lower); }
+.el-tab[data-tab="core"]   .el-tab-dot { background: var(--el-core-c); }
+.el-tab[data-tab="cardio"] .el-tab-dot { background: var(--el-cardio); }
+.el-tab[data-tab="custom"] .el-tab-dot { background: #facc15; }
 
 /* ── Sections ───────────────────────────────────────────────────── */
 .el-section { margin-bottom: 8px; }
@@ -232,13 +236,31 @@
   white-space: nowrap;
 }
 
-.el-tag.upper  { background: var(--el-upper-dim); color: #93c5fd; }
-.el-tag.lower  { background: var(--el-lower-dim); color: #86efac; }
-.el-tag.core   { background: var(--el-core-dim);  color: #d8b4fe; }
+.el-tag.upper  { background: var(--el-upper-dim);  color: #93c5fd; }
+.el-tag.lower  { background: var(--el-lower-dim);  color: #86efac; }
+.el-tag.core   { background: var(--el-core-dim);   color: #d8b4fe; }
+.el-tag.cardio { background: var(--el-cardio-dim); color: #fdba74; }
 .el-tag.pattern {
   background: rgba(204, 4, 4, 0.1);
   color: var(--el-accent2);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
+
+.el-tag.equipment--barbell        { background: rgba(245, 158, 11, 0.12); color: #fcd34d; }
+.el-tag.equipment--dumbbell       { background: rgba(56, 189, 248, 0.12); color: #7dd3fc; }
+.el-tag.equipment--machine        { background: rgba(148, 163, 184, 0.12); color: #cbd5e1; }
+.el-tag.equipment--cable          { background: rgba(45, 212, 191, 0.12); color: #5eead4; }
+.el-tag.equipment--cardio-machine { background: rgba(251, 146, 60, 0.12); color: #fdba74; }
+.el-tag.equipment--bodyweight     { background: rgba(163, 230, 53, 0.12); color: #bef264; }
+
+.el-badge.equipment--barbell        { background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); color: #fcd34d; }
+.el-badge.equipment--dumbbell       { background: rgba(56, 189, 248, 0.12); border-color: rgba(56, 189, 248, 0.3); color: #7dd3fc; }
+.el-badge.equipment--machine        { background: rgba(148, 163, 184, 0.12); border-color: rgba(148, 163, 184, 0.3); color: #cbd5e1; }
+.el-badge.equipment--cable          { background: rgba(45, 212, 191, 0.12); border-color: rgba(45, 212, 191, 0.3); color: #5eead4; }
+.el-badge.equipment--cardio-machine { background: rgba(251, 146, 60, 0.12); border-color: rgba(251, 146, 60, 0.3); color: #fdba74; }
+.el-badge.equipment--bodyweight     { background: rgba(163, 230, 53, 0.12); border-color: rgba(163, 230, 53, 0.3); color: #bef264; }
 
 .el-card-footer {
   border-top: 1px solid var(--border);
@@ -393,6 +415,12 @@
   background: var(--el-core-dim);
   border-color: rgba(192, 132, 252, 0.25);
   color: #d8b4fe;
+}
+
+.el-badge.cardio {
+  background: var(--el-cardio-dim);
+  border-color: rgba(251, 146, 60, 0.25);
+  color: #fdba74;
 }
 
 /* ── Detail Body ────────────────────────────────────────────────── */
@@ -801,6 +829,20 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.el-hist-week-tag {
+  background: var(--accent, #c0392b);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
 }
 
 .el-hist-sets {

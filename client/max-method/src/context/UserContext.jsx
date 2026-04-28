@@ -21,7 +21,7 @@ export function UserProvider({ children }) {
   // If the account was deleted or the server was reset, clear stale session data.
   useEffect(() => {
     if (!user?._id) return;
-    fetch(`http://localhost:5050/api/users/profile/${user._id}`)
+    fetch(`import.meta.env.VITE_API_URL/api/users/profile/${user._id}`)
       .then(res => {
         if (res.status === 404) {
           setUser(null);
