@@ -1,14 +1,41 @@
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { useEffect } from 'react';
 
 function Home() {
   const navigate = useNavigate();
-  const { displayWorkout, loading, error } = useWorkout();
+  const { displayWorkout, loading, error, fetchWorkout } = useWorkout();
+  const userId = localStorage.getItem('userId');
+  
+  // Re-fetch every time the home page is visited so title/data is always fresh
+  useEffect(() => {
+    if (userId) fetchWorkout(userId);
+  }, []);
 
   if (loading) return <p className="status-msg">Loading your program...</p>;
   if (error) return <p className="status-msg status-msg--error">Error loading workout: {error}</p>;
   if (!displayWorkout) {
-    return <p className="status-msg">No workout found. Generate a program in the Programs page to get started.</p>;
+    return (
+      <div className="home-page-container">
+        <div className="home-empty-state">
+          <svg width="56" height="56" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.4 }}>
+            <rect x="6" y="8" width="28" height="26" rx="3"/>
+            <path d="M13 8V5M27 8V5M6 16h28"/>
+            <path d="M13 23h14M13 29h8"/>
+          </svg>
+          <h2 className="home-empty-state__title">No Active Program</h2>
+          <p className="home-empty-state__subtitle">Pick a structured plan, or jump straight into a workout.</p>
+          <div className="home-empty-state__actions">
+            <button className="home-empty-state__cta" onClick={() => navigate('/pickNewProgram')}>
+              Go to Programs
+            </button>
+            <button className="home-empty-state__cta home-empty-state__cta--outline" onClick={() => navigate('/logger')}>
+              Start a Workout
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const isCustom = displayWorkout?.type === 'custom';

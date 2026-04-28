@@ -49,11 +49,12 @@ export function WorkoutProvider({ children }) {
           data = preloadedData;
         } else {
             const [res, pbRes] = await Promise.all([
-            fetch(`http://localhost:5050/api/users/workout/${resolvedId}`),
-            fetch(`http://localhost:5050/api/users/workout/${resolvedId}/personal-bests`)
+            fetch(`import.meta.env.VITE_API_URL/api/users/workout/${resolvedId}`),
+            fetch(`import.meta.env.VITE_API_URL/api/users/workout/${resolvedId}/personal-bests`)
           ])
 
           if (res.status === 404) {
+            setWorkout(null);
             return;
           }
 
@@ -90,6 +91,9 @@ export function WorkoutProvider({ children }) {
                 actualWeights: slot.actualWeights ?? [],
                 actualReps: slot.actualReps ?? [],
                 completedSets: slot.completedSets ?? [],
+                cardioTimes: slot.cardioTimes ?? [],
+                cardioIntensities: slot.cardioIntensities ?? [],
+                cardioDistances: slot.cardioDistances ?? [],
                 notes: slot.notes ?? ''
               };
             });
@@ -131,6 +135,12 @@ export function WorkoutProvider({ children }) {
         ? { ...prevSlot, actualReps: { ...prevSlot.actualReps, [setIdx]: value } }
         : field === 'setDone'
         ? { ...prevSlot, completedSets: { ...prevSlot.completedSets, [setIdx]: value } }
+        : field === 'cardioTime'
+        ? { ...prevSlot, cardioTimes: { ...prevSlot.cardioTimes, [setIdx]: value } }
+        : field === 'cardioIntensity'
+        ? { ...prevSlot, cardioIntensities: { ...prevSlot.cardioIntensities, [setIdx]: value } }
+        : field === 'cardioDistance'
+        ? { ...prevSlot, cardioDistances: { ...prevSlot.cardioDistances, [setIdx]: value } }
         : { ...prevSlot, [field]: value };
 
       return {
@@ -148,7 +158,7 @@ export function WorkoutProvider({ children }) {
     clearTimeout(updateLogTimer.current);
     updateLogTimer.current = setTimeout(async () => {
       try {
-        const res = await fetch('http://localhost:5050/api/users/workout/log', {
+        const res = await fetch('import.meta.env.VITE_API_URL/api/users/workout/log', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -177,6 +187,36 @@ export function WorkoutProvider({ children }) {
     }, 500);
   }, [userId]);
 
+  const refreshPersonalBests = useCallback(async () => {
+    const resolvedId = userId;
+    if (!resolvedId) return;
+    try {
+      const res = await fetch(`import.meta.env.VITE_API_URL/api/users/workout/${resolvedId}/personal-bests`);
+      if (res.ok) {
+        const data = await res.json();
+        setPersonalBests(data.personal_bests ?? {});
+      }
+    } catch (err) {
+      console.error('Failed to refresh personal bests:', err);
+    }
+  }, [userId]);
+
+  const deselectProgram = useCallback(async () => {
+    if (!userId) return;
+    try {
+      await fetch('import.meta.env.VITE_API_URL/api/users/program-logs/deselect', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+    } catch (err) {
+      console.error('Failed to deselect program:', err);
+    }
+    setWorkout(null);
+    setLog({});
+    setAssignments({});
+  }, [userId]);
+
   const completeDay = useCallback(async (weekIdx, dayIdx) => {
     setWorkout(prev => {
       const updated = structuredClone(prev);
@@ -186,7 +226,7 @@ export function WorkoutProvider({ children }) {
     });
 
     try {
-      await fetch('http://localhost:5050/api/users/workout/complete-day', {
+      await fetch('import.meta.env.VITE_API_URL/api/users/workout/complete-day', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -195,7 +235,7 @@ export function WorkoutProvider({ children }) {
           dayNum: dayIdx + 1
         })
       });
-      await fetchWorkout();
+      await fetchWorkout(userId);
 
     } catch (err) {
       console.error('Failed to mark day complete:', err);
@@ -219,6 +259,8 @@ export function WorkoutProvider({ children }) {
       setExercise,
       updateLog,
       completeDay,
+      deselectProgram,
+      refreshPersonalBests,
       logoutWorkout
     }}>
       {children}

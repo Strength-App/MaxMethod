@@ -8,30 +8,34 @@ const MOVEMENT_PATTERNS = {
   'Horizontal Push':             ['Bench Press','Incline Bench Press','Decline Bench Press','Floor Press'],
   'Vertical Push':               ['Military Press','Seated Military Press','Push Press'],
   'Unilateral Push':             ['DB Incline Bench','DB Flat Bench','DB Shoulder Press','Arnold Press','DB Floor Press'],
-  'Tricep Accessory':            ['Dips','Skullcrushers','Tricep Pushdowns','Tricep Extensions','Dip Machine','Overhead Tricep Extensions','One Arm Extensions','Close Grip Bench Press'],
+  'Tricep Accessory':            ['Dips','Weighted Dips','Skullcrushers','Tricep Pushdowns','Tricep Extensions','Dip Machine','Overhead Tricep Extensions','One Arm Extensions','Close Grip Bench Press'],
   'Shoulder Accessory':          ['Front Raises','Lateral Raises','Cable Lateral Raises','Upright Rows','Face Pulls','Band Pull Aparts'],
   'Chest Accessory':             ['Chest Fly Machine','DB Chest Flys','Pushups','Weighted Pushups','Floor Chest Flys','Incline Chest Flys','Cable Chest Flys','Low to High Cable Flys'],
   'Push Machine':                ['Chest Press Machine','Shoulder Press Machine','Decline Press Machine','Incline Press Machine'],
-  'Vertical Pull':               ['Neutral Grip Pullups','Pullups','Chin Ups','Lat Pulldowns','Close Grip Lat Pulldowns','Wide Grip Lat Pulldowns','Single Arm Pulldowns'],
-  'Horizontal Pull':             ['Barbell Row','Underhand Barbell Row','Cable Row','T Bar Rows','Single Arm Cable Rows','Single Arm Dumbbell Rows','Chest Supported Row','Meadows Row','Seal Row','Pendlay Row'],
+  'Vertical Pull':               ['Neutral Grip Pullups','Weighted Neutral Grip Pullups','Pullups','Weighted Pull Ups','Chin Ups','Weighted Chin Ups','Lat Pulldowns','Close Grip Lat Pulldowns','Wide Grip Lat Pulldowns','Single Arm Pulldowns'],
+  'Horizontal Pull':             ['Barbell Row','Underhand Barbell Row','Cable Row','T Bar Rows','Single Arm Cable Rows','Single Arm Dumbbell Rows','Chest Supported Row','Seal Row','Pendlay Row'],
   'Posterior Upper Accessory':   ['Scarecrows','Rear Delt Flys','Machine Rear Delt Flys','Pullovers','Cable Pullovers','Shrugs','DB Shrugs','Trap Bar Shrugs','YTWLs'],
   'Bicep Accessory':             ['DB Curls','Barbell Curls','Ez Bar Curls','Hammer Curls','Preacher Curls','Cable Curls','Rope Curls','Incline DB Curls','Concentration Curls','Cross Body Hammer Curls'],
-  'Hinge':                       ['Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
-  'Squat Pattern':               ['Front Squat','SSB Squats','Hack Squat Machine','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
-  'Posterior Chain Accessory':   ['Back Extensions','Nordics','Reverse Hypers','GHD Raises','Single Leg Hip Thrusts'],
-  'Unilateral Lower':            ['Bulgarians','Walking Lunges','ATG Lunges','Reverse Lunges','Step Ups'],
+  'Hinge':                       ['Hip Thrusts','Bodyweight Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Bodyweight Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
+  'Squat Pattern':               ['Front Squat','SSB Squats','Squats','Back Squat','Box Squats','Bodyweight Squat','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
+  'Posterior Chain Accessory':   ['Back Extensions','Bodyweight Back Extensions','Nordics','Reverse Hypers','GHD Raises','Single Leg Hip Thrusts'],
+  'Unilateral Lower':            ['Bulgarians','Bodyweight Bulgarians','Walking Lunges','Bodyweight Lunges','ATG Lunges','Bodyweight ATG Lunges','Reverse Lunges','Step Ups'],
   'Isolation Lower':             ['Leg Extensions','Single Leg Extensions','Seated Leg Curls','Lying Leg Curls','Abductor Machine','Adductor Machine'],
   'Calves & Shins':              ['Single Leg Calf Raises','Calf Raise Machine','Seated Calf Raises','Bodyweight Calf Raises','Weighted Calf Raises','Donkey Calf Raises','Tibia Raises','Tibia Curls','Banded Tibia Curls'],
-  'Machine Lower':               ['Leg Press','Hack Squat','Pendulum Squat','Reverse Hack Squat'],
+  'Machine Lower':               ['Leg Press','Hack Squat','Hack Squat Machine','Pendulum Squat','Reverse Hack Squat'],
   'Core':                        ['Plank','Ab Wheel Rollouts','Hanging Leg Raises','Cable Crunches','Decline Crunches','Pallof Press','Dead Bugs','Suitcase Carries','Farmer Carries'],
+  'Bodyweight Strength Upper':   ['Pushups','Incline Pushups','Diamond Pushups','Wide Pushups','Dips','Pullups','Chin Ups','Neutral Grip Pullups','Inverted Bodyweight Row','Burpees'],
+  'Bodyweight Lower':            ['Bodyweight Squat','Bodyweight Lunges','Bodyweight ATG Lunges','Bodyweight Bulgarians','Bodyweight Hip Thrusts','Bodyweight Glute Bridges','Bodyweight Back Extensions','Nordics','GHD Raises','Bodyweight Calf Raises'],
+  'Cardio':                      ['Treadmill','Curved Treadmill','Assault Bike','Bike','Recumbent Bike','Elliptical','Stairmaster','Rowing Machine','Ski Erg'],
 }
 
-const UPPER_PATTERNS = ['Horizontal Push','Vertical Push','Unilateral Push','Tricep Accessory','Shoulder Accessory','Chest Accessory','Push Machine','Vertical Pull','Horizontal Pull','Posterior Upper Accessory','Bicep Accessory']
-const LOWER_PATTERNS = ['Hinge','Squat Pattern','Posterior Chain Accessory','Unilateral Lower','Isolation Lower','Calves & Shins','Machine Lower']
+const UPPER_PATTERNS = ['Horizontal Push','Vertical Push','Unilateral Push','Tricep Accessory','Shoulder Accessory','Chest Accessory','Push Machine','Vertical Pull','Horizontal Pull','Posterior Upper Accessory','Bicep Accessory','Bodyweight Strength Upper']
+const LOWER_PATTERNS = ['Hinge','Squat Pattern','Posterior Chain Accessory','Unilateral Lower','Isolation Lower','Calves & Shins','Machine Lower','Bodyweight Lower']
 
 function bodyOf(p) {
   if (UPPER_PATTERNS.includes(p)) return 'upper'
   if (LOWER_PATTERNS.includes(p)) return 'lower'
+  if (p === 'Cardio') return 'cardio'
   return 'core'
 }
 
@@ -55,6 +59,9 @@ const PATTERN_MUSCLES = {
   'Calves & Shins':            { calves: '#cc0404' },
   'Machine Lower':             { quads: '#cc0404', glutes: 'rgba(204,4,4,0.4)' },
   'Core':                      { abs: '#cc0404', lats: 'rgba(204,4,4,0.15)' },
+  'Bodyweight Strength Upper': { chest: '#cc0404', lats: 'rgba(204,4,4,0.5)', triceps: 'rgba(204,4,4,0.4)', shoulders: 'rgba(204,4,4,0.3)' },
+  'Bodyweight Lower':          { quads: '#cc0404', glutes: 'rgba(204,4,4,0.6)', hamstrings: 'rgba(204,4,4,0.35)', calves: 'rgba(204,4,4,0.15)' },
+  'Cardio':                    { quads: 'rgba(204,4,4,0.25)', hamstrings: 'rgba(204,4,4,0.2)', calves: 'rgba(204,4,4,0.2)' },
 }
 
 const PATTERN_PRIMARY = {
@@ -77,6 +84,9 @@ const PATTERN_PRIMARY = {
   'Calves & Shins':            'Calves',
   'Machine Lower':             'Quads',
   'Core':                      'Core',
+  'Bodyweight Strength Upper': 'Chest / Back / Triceps',
+  'Bodyweight Lower':          'Quads / Glutes',
+  'Cardio':                    'Cardiovascular System',
 }
 
 const PATTERN_STEPS = {
@@ -213,6 +223,27 @@ const PATTERN_STEPS = {
     { t: 'Full range',     d: '<strong>Complete the full movement</strong>. Core exercises are often cut short, limiting effectiveness.' },
     { t: 'Breathe',        d: '<strong>Exhale on the effort</strong>. Holding breath during core work creates unnecessary tension.' },
   ],
+  'Cardio': [
+    { t: 'Setup',     d: 'Set your machine to a comfortable starting resistance or speed. <strong>Begin at a warm-up pace</strong> — don\'t start at full intensity.' },
+    { t: 'Warm Up',   d: '<strong>Gradually increase intensity</strong> over the first 2–3 minutes. Let heart rate rise before hitting your target zone.' },
+    { t: 'Effort',    d: 'Maintain your <strong>target intensity</strong>. Steady state: conversational pace, RPE 5–6. Intervals: push RPE 7–9 then recover fully.' },
+    { t: 'Breathe',   d: '<strong>Rhythmic, controlled breathing</strong> throughout. Never hold your breath — exhale on the hardest effort phase.' },
+    { t: 'Cool Down', d: 'Reduce intensity for the <strong>final 2–3 minutes</strong>. Let heart rate come down gradually — don\'t stop abruptly.' },
+  ],
+  'Bodyweight Strength Upper': [
+    { t: 'Setup',    d: 'No equipment needed — <strong>position your body correctly</strong> for the variation. Hands, rings, or bar at the right width and height.' },
+    { t: 'Brace',    d: '<strong>Full-body tension every rep</strong>. Core tight, glutes squeezed, legs straight or planted. Bodyweight work demands total-body rigidity.' },
+    { t: 'Range',    d: '<strong>Full range of motion every rep</strong> — chest to floor on pushups, chin over bar on pullups. Partial reps are wasted reps.' },
+    { t: 'Control',  d: '<strong>Slow the eccentric</strong> on the way down. Lower yourself with control — tempo and tension build more strength than rushing reps.' },
+    { t: 'Volume',   d: 'These movements respond to <strong>density and quality reps</strong>. Push for max quality, rest minimally, and focus on what the muscle feels.' },
+  ],
+  'Bodyweight Lower': [
+    { t: 'Setup',   d: 'Position yourself for the specific variation — squat, lunge, bridge, or hinge. <strong>No load doesn\'t mean no effort</strong>.' },
+    { t: 'Brace',   d: '<strong>Core tight, neutral spine</strong>. Treat every bodyweight rep as seriously as a loaded one — technique is how you progress here.' },
+    { t: 'Depth',   d: '<strong>Full range every time</strong>. Bodyweight work relies on full ROM for development — never cut depth short.' },
+    { t: 'Drive',   d: '<strong>Push through the heel(s)</strong> to emphasize glutes and hamstrings. For squats and lunges — knee tracks over the toes.' },
+    { t: 'Tension', d: 'Maintain <strong>active tension throughout</strong> — don\'t just fall into position. Control the descent and own the ascent.' },
+  ],
 }
 
 const PATTERN_TIPS = {
@@ -235,26 +266,104 @@ const PATTERN_TIPS = {
   'Calves & Shins':            ['Full range is non-negotiable — no partial reps','Pause at the top for full engagement','Slightly bent knee hits soleus more','Calves need high volume — 15–25 reps works best'],
   'Machine Lower':             ['Never fully lock knees out — takes load off the joint','Control the negative — growth happens here','Foot position changes muscle emphasis significantly','Don\'t let lower back lift off the pad'],
   'Core':                      ['Quality over quantity — 5 perfect reps beats 20 sloppy','Full body tension during every core movement','Exhale on the exertion phase','Core strength transfers directly to your big lifts'],
+  'Bodyweight Strength Upper': ['Full range is non-negotiable — chest to floor, chin over bar','Hollow body position improves every bodyweight movement','Slow the eccentric — tempo builds more strength than speed','These movements build real-world, transferable upper body strength'],
+  'Bodyweight Lower':          ['Full depth every rep — no shortcuts','Tempo matters more than load with bodyweight','Drive through the heel for maximum glute emphasis','High volume works well — bodyweight lower responds to density'],
+  'Cardio':                    ['Keep heart rate in your target zone for your goal','Steady state: conversational pace — RPE 5–6','Intervals: push hard then recover fully before repeating','Hydrate before, during, and after every session','Consistency and frequency matter more than any single session'],
+}
+
+// ─── Equipment Map ────────────────────────────────────────────────────────────
+
+const EXERCISE_EQUIPMENT = {
+  // Horizontal Push
+  'Bench Press': 'Barbell', 'Incline Bench Press': 'Barbell', 'Decline Bench Press': 'Barbell', 'Floor Press': 'Barbell',
+  // Vertical Push
+  'Military Press': 'Barbell', 'Seated Military Press': 'Barbell', 'Push Press': 'Barbell',
+  // Unilateral Push
+  'DB Incline Bench': 'Dumbbell', 'DB Flat Bench': 'Dumbbell', 'DB Shoulder Press': 'Dumbbell', 'Arnold Press': 'Dumbbell', 'DB Floor Press': 'Dumbbell',
+  // Tricep Accessory
+  'Dips': 'Bodyweight', 'Weighted Dips': 'Dumbbell', 'Skullcrushers': 'Barbell', 'Tricep Pushdowns': 'Cable',
+  'Tricep Extensions': 'Cable', 'Dip Machine': 'Machine', 'Overhead Tricep Extensions': 'Cable',
+  'One Arm Extensions': 'Dumbbell', 'Close Grip Bench Press': 'Barbell',
+  // Shoulder Accessory
+  'Front Raises': 'Dumbbell', 'Lateral Raises': 'Dumbbell', 'Cable Lateral Raises': 'Cable',
+  'Upright Rows': 'Barbell', 'Face Pulls': 'Cable', 'Band Pull Aparts': 'Dumbbell',
+  // Chest Accessory
+  'Chest Fly Machine': 'Machine', 'DB Chest Flys': 'Dumbbell', 'Pushups': 'Bodyweight', 'Weighted Pushups': 'Dumbbell',
+  'Floor Chest Flys': 'Dumbbell', 'Incline Chest Flys': 'Dumbbell', 'Cable Chest Flys': 'Cable', 'Low to High Cable Flys': 'Cable',
+  // Push Machine
+  'Chest Press Machine': 'Machine', 'Shoulder Press Machine': 'Machine', 'Decline Press Machine': 'Machine', 'Incline Press Machine': 'Machine',
+  // Vertical Pull
+  'Neutral Grip Pullups': 'Bodyweight', 'Weighted Neutral Grip Pullups': 'Dumbbell', 'Pullups': 'Bodyweight', 'Weighted Pull Ups': 'Dumbbell',
+  'Chin Ups': 'Bodyweight', 'Weighted Chin Ups': 'Dumbbell', 'Lat Pulldowns': 'Cable', 'Close Grip Lat Pulldowns': 'Cable',
+  'Wide Grip Lat Pulldowns': 'Cable', 'Single Arm Pulldowns': 'Cable',
+  // Horizontal Pull
+  'Barbell Row': 'Barbell', 'Underhand Barbell Row': 'Barbell', 'Cable Row': 'Cable', 'T Bar Rows': 'Barbell',
+  'Single Arm Cable Rows': 'Cable', 'Single Arm Dumbbell Rows': 'Dumbbell', 'Chest Supported Row': 'Machine',
+  'Seal Row': 'Barbell', 'Pendlay Row': 'Barbell',
+  // Posterior Upper Accessory
+  'Scarecrows': 'Dumbbell', 'Rear Delt Flys': 'Dumbbell', 'Machine Rear Delt Flys': 'Machine', 'Pullovers': 'Dumbbell',
+  'Cable Pullovers': 'Cable', 'Shrugs': 'Barbell', 'DB Shrugs': 'Dumbbell', 'Trap Bar Shrugs': 'Barbell', 'YTWLs': 'Dumbbell',
+  // Bicep Accessory
+  'DB Curls': 'Dumbbell', 'Barbell Curls': 'Barbell', 'Ez Bar Curls': 'Barbell', 'Hammer Curls': 'Dumbbell',
+  'Preacher Curls': 'Barbell', 'Cable Curls': 'Cable', 'Rope Curls': 'Cable', 'Incline DB Curls': 'Dumbbell',
+  'Concentration Curls': 'Dumbbell', 'Cross Body Hammer Curls': 'Dumbbell',
+  // Hinge
+  'Hip Thrusts': 'Barbell', 'Bodyweight Hip Thrusts': 'Bodyweight', 'RDLs': 'Barbell', 'Trap Bar Deadlifts': 'Barbell',
+  'Barbell Glute Bridges': 'Barbell', 'Bodyweight Glute Bridges': 'Bodyweight', 'Single Leg RDLs': 'Dumbbell',
+  'Sumo Deadlift': 'Barbell', 'Good Mornings': 'Barbell',
+  // Squat Pattern
+  'Front Squat': 'Barbell', 'SSB Squats': 'Barbell', 'Squats': 'Barbell', 'Back Squat': 'Barbell', 'Box Squats': 'Barbell',
+  'Bodyweight Squat': 'Bodyweight', 'Pendulum Squat': 'Machine', 'Leg Press': 'Machine', 'Goblet Squat': 'Dumbbell', 'Zercher Squat': 'Barbell',
+  // Posterior Chain Accessory
+  'Back Extensions': 'Machine', 'Bodyweight Back Extensions': 'Bodyweight', 'Nordics': 'Bodyweight', 'Reverse Hypers': 'Machine',
+  'GHD Raises': 'Bodyweight', 'Single Leg Hip Thrusts': 'Barbell',
+  // Unilateral Lower
+  'Bulgarians': 'Dumbbell', 'Bodyweight Bulgarians': 'Bodyweight', 'Walking Lunges': 'Dumbbell', 'Bodyweight Lunges': 'Bodyweight',
+  'ATG Lunges': 'Dumbbell', 'Bodyweight ATG Lunges': 'Bodyweight', 'Reverse Lunges': 'Dumbbell', 'Step Ups': 'Dumbbell',
+  // Isolation Lower
+  'Leg Extensions': 'Machine', 'Single Leg Extensions': 'Machine', 'Seated Leg Curls': 'Machine', 'Lying Leg Curls': 'Machine',
+  'Abductor Machine': 'Machine', 'Adductor Machine': 'Machine',
+  // Calves & Shins
+  'Single Leg Calf Raises': 'Dumbbell', 'Calf Raise Machine': 'Machine', 'Seated Calf Raises': 'Machine', 'Bodyweight Calf Raises': 'Bodyweight',
+  'Weighted Calf Raises': 'Dumbbell', 'Donkey Calf Raises': 'Machine', 'Tibia Raises': 'Bodyweight', 'Tibia Curls': 'Machine', 'Banded Tibia Curls': 'Bodyweight',
+  // Machine Lower
+  'Hack Squat': 'Machine', 'Hack Squat Machine': 'Machine', 'Reverse Hack Squat': 'Machine',
+  // Core
+  'Plank': 'Bodyweight', 'Ab Wheel Rollouts': 'Bodyweight', 'Hanging Leg Raises': 'Bodyweight', 'Cable Crunches': 'Cable',
+  'Decline Crunches': 'Bodyweight', 'Pallof Press': 'Cable', 'Dead Bugs': 'Bodyweight', 'Suitcase Carries': 'Dumbbell', 'Farmer Carries': 'Dumbbell',
+  // Cardio
+  'Treadmill': 'Cardio Machine', 'Curved Treadmill': 'Cardio Machine', 'Assault Bike': 'Cardio Machine', 'Bike': 'Cardio Machine',
+  'Recumbent Bike': 'Cardio Machine', 'Elliptical': 'Cardio Machine', 'Stairmaster': 'Cardio Machine', 'Rowing Machine': 'Cardio Machine', 'Ski Erg': 'Cardio Machine',
+  // Fixed template exercises
+  'Squat': 'Barbell', 'Back Squat': 'Barbell', 'Deadlift': 'Barbell',
+  // Bodyweight exercises
+  'Pullups': 'Bodyweight', 'Chin Ups': 'Bodyweight', 'Neutral Grip Pullups': 'Bodyweight',
+  'Dips': 'Bodyweight', 'Pushups': 'Bodyweight',
+  'Nordics': 'Bodyweight', 'Bodyweight Back Extensions': 'Bodyweight', 'GHD Raises': 'Bodyweight',
+  'Bodyweight Calf Raises': 'Bodyweight', 'Tibia Raises': 'Bodyweight', 'Banded Tibia Raises': 'Bodyweight', 'Banded Tibia Curls': 'Bodyweight',
+  'Plank': 'Bodyweight', 'Ab Wheel Rollouts': 'Bodyweight', 'Hanging Leg Raises': 'Bodyweight', 'Decline Crunches': 'Bodyweight', 'Dead Bugs': 'Bodyweight',
+  'Bodyweight Squat': 'Bodyweight', 'Bodyweight Lunges': 'Bodyweight', 'Bodyweight ATG Lunges': 'Bodyweight',
+  'Bodyweight Bulgarians': 'Bodyweight', 'Bodyweight Hip Thrusts': 'Bodyweight', 'Bodyweight Glute Bridges': 'Bodyweight',
+  'Incline Pushups': 'Bodyweight', 'Diamond Pushups': 'Bodyweight', 'Wide Pushups': 'Bodyweight',
+  'Inverted Bodyweight Row': 'Bodyweight', 'Burpees': 'Bodyweight',
 }
 
 // ─── Build Exercise List ──────────────────────────────────────────────────────
 
 function buildExerciseList() {
-  const seen = new Set()
   const list = []
   for (const [pattern, names] of Object.entries(MOVEMENT_PATTERNS)) {
     for (const name of names) {
-      if (seen.has(name)) continue
-      seen.add(name)
       list.push({
-        id:      name.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+        id:        `${name.toLowerCase().replace(/[^a-z0-9]/g, '_')}__${pattern.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
         name,
         pattern,
-        body:    bodyOf(pattern),
-        primary: PATTERN_PRIMARY[pattern] || pattern,
-        muscles: PATTERN_MUSCLES[pattern] || {},
-        steps:   PATTERN_STEPS[pattern]   || [],
-        tips:    PATTERN_TIPS[pattern]     || [],
+        body:      bodyOf(pattern),
+        primary:   PATTERN_PRIMARY[pattern] || pattern,
+        muscles:   PATTERN_MUSCLES[pattern] || {},
+        steps:     PATTERN_STEPS[pattern]   || [],
+        tips:      PATTERN_TIPS[pattern]    || [],
+        equipment: EXERCISE_EQUIPMENT[name] || null,
       })
     }
   }
@@ -307,7 +416,7 @@ function BodyDiagram({ muscles = {} }) {
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 
 function ExerciseCard({ exercise, onSelect }) {
-  const bodyLabel = exercise.body === 'upper' ? 'Upper' : exercise.body === 'lower' ? 'Lower' : 'Core'
+  const bodyLabel = exercise.body === 'upper' ? 'Upper' : exercise.body === 'lower' ? 'Lower' : exercise.body === 'cardio' ? 'Cardio' : 'Core'
   return (
     <div className="el-card" onClick={() => onSelect(exercise)}>
       <div className="el-card-body">
@@ -319,6 +428,9 @@ function ExerciseCard({ exercise, onSelect }) {
           <div className="el-card-tags">
             <span className={`el-tag ${exercise.body}`}>{bodyLabel}</span>
             <span className="el-tag pattern">{exercise.pattern}</span>
+            {exercise.equipment && (
+              <span className={`el-tag equipment equipment--${exercise.equipment.toLowerCase().replace(' ', '-')}`}>{exercise.equipment}</span>
+            )}
           </div>
         </div>
       </div>
@@ -341,7 +453,7 @@ function DetailView({ exercise, onBack }) {
   const [exerciseHistory, setExerciseHistory] = useState([])
   const [historyLoading, setHistoryLoading] = useState(false)
 
-  const bodyLabel = exercise.body === 'upper' ? 'Upper Body' : exercise.body === 'lower' ? 'Lower Body' : 'Core'
+  const bodyLabel = exercise.body === 'upper' ? 'Upper Body' : exercise.body === 'lower' ? 'Lower Body' : exercise.body === 'cardio' ? 'Cardio' : 'Core'
 
   // Fetch all-time exercise history across every program
   useEffect(() => {
@@ -393,6 +505,9 @@ function DetailView({ exercise, onBack }) {
           <span className="el-badge primary">{exercise.primary}</span>
           <span className={`el-badge ${exercise.body}`}>{bodyLabel}</span>
           <span className="el-badge">{exercise.pattern}</span>
+          {exercise.equipment && (
+            <span className={`el-badge equipment equipment--${exercise.equipment.toLowerCase().replace(' ', '-')}`}>{exercise.equipment}</span>
+          )}
         </div>
       </div>
 
@@ -490,7 +605,12 @@ function DetailView({ exercise, onBack }) {
                     </div>
                     <div className="el-hist-divider" />
                     <div className="el-hist-content">
-                      <div className="el-hist-day-title">{entry.dayTitle}</div>
+                      <div className="el-hist-day-title">
+                        {entry.weekNumber != null && (
+                          <span className="el-hist-week-tag">Week {entry.weekNumber}</span>
+                        )}
+                        {entry.dayTitle}
+                      </div>
                       <div className="el-hist-sets">
                         {Array.from({ length: entry.setCount }, (_, j) => {
                           if (!entry.completedSets?.[j]) return null
@@ -545,30 +665,303 @@ function DetailView({ exercise, onBack }) {
   )
 }
 
+// ─── Custom Detail View ───────────────────────────────────────────────────────
+
+function CustomDetailView({ name, onBack }) {
+  const { personalBests } = useWorkout()
+  const [detailTab, setDetailTab] = useState('pr')
+  const [exerciseHistory, setExerciseHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  useEffect(() => {
+    const userId = localStorage.getItem('userId')
+    if (!userId) return
+    setHistoryLoading(true)
+    fetch(`http://localhost:5050/api/users/workout/${userId}/exercise-history?exercise=${encodeURIComponent(name)}`)
+      .then(r => r.ok ? r.json() : { history: [] })
+      .then(data => {
+        setExerciseHistory(
+          (data.history ?? []).map(entry => {
+            const repsRaw = entry.reps
+            const repsArr = Array.isArray(repsRaw)
+              ? repsRaw
+              : typeof repsRaw === 'string' && repsRaw.includes(',')
+                ? repsRaw.split(',').map(r => r.trim())
+                : null
+            return {
+              ...entry,
+              date: new Date(entry.date),
+              getReps: (j) => repsArr ? (repsArr[j] ?? repsArr[repsArr.length - 1]) : repsRaw,
+            }
+          })
+        )
+      })
+      .catch(() => setExerciseHistory([]))
+      .finally(() => setHistoryLoading(false))
+  }, [name])
+
+  const pr = personalBests?.[name] ?? null
+
+  return (
+    <div className="el-page">
+      <button className="el-detail-back" onClick={onBack}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M19 12H5M12 5l-7 7 7 7"/>
+        </svg>
+        Custom Exercises
+      </button>
+
+      <div className="el-detail-body" style={{ marginTop: '24px' }}>
+        <div className="el-steps-container">
+          <div className="el-steps-header">
+            <div className="el-steps-title">{name}</div>
+            <div className="el-steps-subtitle">Custom Exercise</div>
+          </div>
+
+          <div className="el-detail-tabs">
+            <button
+              className={`el-detail-tab${detailTab === 'pr' ? ' active' : ''}`}
+              onClick={() => setDetailTab('pr')}
+            >
+              Personal Record
+            </button>
+            <button
+              className={`el-detail-tab${detailTab === 'history' ? ' active' : ''}`}
+              onClick={() => setDetailTab('history')}
+            >
+              Exercise History
+            </button>
+          </div>
+
+          {detailTab === 'pr' && (
+            <div className="el-pr-panel">
+              {pr != null ? (
+                <div className="el-pr-card">
+                  <div className="el-pr-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </div>
+                  <div className="el-pr-weight">{pr}<span>lbs</span></div>
+                  <div className="el-pr-label">Personal Record</div>
+                  <div className="el-pr-sub">{name}</div>
+                </div>
+              ) : (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-icon">🏆</div>
+                  <div className="el-panel-empty-text">No personal record yet</div>
+                  <div className="el-panel-empty-sub">Log this exercise to set your first PR</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {detailTab === 'history' && (
+            <div className="el-history-panel">
+              {historyLoading ? (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-text">Loading history…</div>
+                </div>
+              ) : exerciseHistory.length === 0 ? (
+                <div className="el-panel-empty">
+                  <div className="el-panel-empty-icon">📋</div>
+                  <div className="el-panel-empty-text">No history yet</div>
+                  <div className="el-panel-empty-sub">Complete a workout containing {name} to see it here</div>
+                </div>
+              ) : (
+                exerciseHistory.map((entry, idx) => (
+                  <div className="el-hist-item" key={idx}>
+                    <div className="el-hist-date-col">
+                      <div className="el-hist-day-num">{entry.date.getDate()}</div>
+                      <div className="el-hist-month">{MONTHS_SHORT[entry.date.getMonth()]}</div>
+                      <div className="el-hist-weekday">{DAYS_SHORT_EL[entry.date.getDay()]}</div>
+                    </div>
+                    <div className="el-hist-divider" />
+                    <div className="el-hist-content">
+                      <div className="el-hist-day-title">
+                        {entry.weekNumber != null && (
+                          <span className="el-hist-week-tag">Week {entry.weekNumber}</span>
+                        )}
+                        {entry.dayTitle}
+                      </div>
+                      <div className="el-hist-sets">
+                        {Array.from({ length: entry.setCount }, (_, j) => {
+                          if (!entry.completedSets?.[j]) return null
+                          const w = entry.actualWeights?.[j]
+                          const r = entry.actualReps?.[j] ?? entry.getReps(j)
+                          return (
+                            <div className="el-hist-set-row" key={j}>
+                              <div className="el-hist-set-num">{j + 1}</div>
+                              <div className="el-hist-set-val"><span>{r ?? '—'}</span> reps</div>
+                              <div className="el-hist-set-val"><span>{w ?? '—'}</span> lbs</div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Custom Exercises Section ─────────────────────────────────────────────────
+
+function CustomExercisesSection({ onSelect }) {
+  const [customExercises, setCustomExercises] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('customExercises') || '[]') } catch { return [] }
+  })
+  const [inputVal, setInputVal] = useState('')
+  const [error, setError] = useState('')
+
+  const userId = localStorage.getItem('userId')
+
+  useEffect(() => {
+    if (!userId) return
+    fetch(`http://localhost:5050/api/users/${userId}/custom-exercises`)
+      .then(r => r.ok ? r.json() : { custom_exercises: [] })
+      .then(data => {
+        const list = data.custom_exercises ?? []
+        setCustomExercises(list)
+        localStorage.setItem('customExercises', JSON.stringify(list))
+      })
+      .catch(() => {})
+  }, [userId])
+
+  const syncLocalStorage = (list) => localStorage.setItem('customExercises', JSON.stringify(list))
+
+  const addExercise = async () => {
+    const name = inputVal.trim()
+    if (!name) return
+    if (customExercises.some(n => n.toLowerCase() === name.toLowerCase())) {
+      setError('That exercise already exists in your custom list')
+      return
+    }
+    setInputVal('')
+    setError('')
+    if (userId) {
+      try {
+        const res = await fetch(`http://localhost:5050/api/users/${userId}/custom-exercises`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name }),
+        })
+        const data = await res.json()
+        const list = data.custom_exercises ?? [...customExercises, name]
+        setCustomExercises(list)
+        syncLocalStorage(list)
+      } catch {
+        const list = [...customExercises, name]
+        setCustomExercises(list)
+        syncLocalStorage(list)
+      }
+    } else {
+      const list = [...customExercises, name]
+      setCustomExercises(list)
+      syncLocalStorage(list)
+    }
+  }
+
+  const removeExercise = async (name) => {
+    const list = customExercises.filter(n => n !== name)
+    setCustomExercises(list)
+    syncLocalStorage(list)
+    if (userId) {
+      fetch(`http://localhost:5050/api/users/${userId}/custom-exercises/${encodeURIComponent(name)}`, { method: 'DELETE' })
+        .catch(() => {})
+    }
+  }
+
+  return (
+    <div className="el-section">
+      <div className="el-section-label">Custom Exercises</div>
+      <p style={{ color: 'var(--text-muted, #888)', fontSize: '13px', margin: '0 0 14px', lineHeight: 1.5 }}>
+        Add exercises not in the standard library. They will be available as valid options in the custom workout maker.
+      </p>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: error ? '6px' : '16px' }}>
+        <input
+          type="text"
+          placeholder="Exercise name..."
+          value={inputVal}
+          onChange={e => { setInputVal(e.target.value); setError('') }}
+          onKeyDown={e => e.key === 'Enter' && addExercise()}
+          style={{ flex: 1, background: 'var(--input-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '8px', padding: '9px 12px', color: 'var(--text)', fontSize: '14px', outline: 'none' }}
+        />
+        <button
+          onClick={addExercise}
+          style={{ background: 'var(--accent, #e63946)', border: 'none', borderRadius: '8px', padding: '9px 18px', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+        >
+          Add
+        </button>
+      </div>
+      {error && <div style={{ color: '#ff5555', fontSize: '12px', marginBottom: '12px' }}>{error}</div>}
+      {customExercises.length === 0 ? (
+        <div style={{ color: 'var(--text-muted, #888)', fontSize: '13px', padding: '12px 0' }}>No custom exercises yet.</div>
+      ) : (
+        <div className="el-grid">
+          {customExercises.map(name => (
+            <div key={name} className="el-card" onClick={() => onSelect(name)}>
+              <div className="el-card-body">
+                <div className="el-card-info" style={{ width: '100%' }}>
+                  <div className="el-card-name">{name}</div>
+                  <div className="el-card-tags">
+                    <span className="el-tag" style={{ background: 'rgba(250,204,21,0.15)', color: '#facc15' }}>Custom</span>
+                  </div>
+                </div>
+              </div>
+              <div className="el-card-footer">
+                <span className="el-card-muscle">Custom Exercise</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    className="el-card-arrow"
+                    onClick={e => { e.stopPropagation(); removeExercise(name) }}
+                    title="Remove"
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', fontSize: '16px', lineHeight: 1, padding: '0 2px' }}
+                  >×</button>
+                  <span className="el-card-arrow">→</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Library View ─────────────────────────────────────────────────────────────
 
-function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange, onSelect }) {
+function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange, onSelect, onCustomSelect }) {
   const grouped = useMemo(() => {
-    const upper = {}
-    const lower = {}
-    const core  = {}
+    const upper  = {}
+    const lower  = {}
+    const core   = {}
+    const cardio = {}
     for (const ex of exercises) {
-      const bucket = ex.body === 'upper' ? upper : ex.body === 'lower' ? lower : core
+      const bucket = ex.body === 'upper' ? upper : ex.body === 'lower' ? lower : ex.body === 'cardio' ? cardio : core
       if (!bucket[ex.pattern]) bucket[ex.pattern] = []
       bucket[ex.pattern].push(ex)
     }
-    return { upper, lower, core }
+    return { upper, lower, core, cardio }
   }, [exercises])
 
-  const showUpper = activeTab === 'all' || activeTab === 'upper'
-  const showLower = activeTab === 'all' || activeTab === 'lower'
-  const showCore  = activeTab === 'all' || activeTab === 'core'
+  const showUpper  = activeTab === 'all' || activeTab === 'upper'
+  const showLower  = activeTab === 'all' || activeTab === 'lower'
+  const showCore   = activeTab === 'all' || activeTab === 'core'
+  const showCardio = activeTab === 'all' || activeTab === 'cardio'
 
   const tabs = [
-    { key: 'all',   label: 'All' },
-    { key: 'upper', label: 'Upper Body' },
-    { key: 'lower', label: 'Lower Body' },
-    { key: 'core',  label: 'Core' },
+    { key: 'all',    label: 'All' },
+    { key: 'upper',  label: 'Upper Body' },
+    { key: 'lower',  label: 'Lower Body' },
+    { key: 'core',   label: 'Core' },
+    { key: 'cardio', label: 'Cardio' },
+    { key: 'custom', label: 'Custom' },
   ]
 
   function PatternSection({ patterns, visible }) {
@@ -600,21 +993,25 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
           <div className="el-title">Exercise <span>Library</span></div>
           <div className="el-subtitle">Video guides for every movement in your program</div>
         </div>
-        <div className="el-count">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</div>
+        {activeTab !== 'custom' && (
+          <div className="el-count">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</div>
+        )}
       </div>
 
-      <div className="el-search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.35-4.35"/>
-        </svg>
-        <input
-          type="text"
-          placeholder="Search exercises or patterns…"
-          value={search}
-          onChange={e => onSearchChange(e.target.value)}
-        />
-      </div>
+      {activeTab !== 'custom' && (
+        <div className="el-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Search exercises or patterns…"
+            value={search}
+            onChange={e => onSearchChange(e.target.value)}
+          />
+        </div>
+      )}
 
       <div className="el-tabs">
         {tabs.map(({ key, label }) => (
@@ -630,28 +1027,41 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
         ))}
       </div>
 
-      {exercises.length === 0 ? (
-        <div className="el-empty">No exercises match "{search}"</div>
+      {activeTab === 'custom' ? (
+        <CustomExercisesSection onSelect={onCustomSelect} />
       ) : (
         <>
-          {showUpper && Object.keys(grouped.upper).length > 0 && (
-            <div className="el-section">
-              <div className="el-section-label">Upper Body</div>
-              <PatternSection patterns={grouped.upper} visible />
-            </div>
+          {exercises.length === 0 ? (
+            <div className="el-empty">No exercises match "{search}"</div>
+          ) : (
+            <>
+              {showUpper && Object.keys(grouped.upper).length > 0 && (
+                <div className="el-section">
+                  <div className="el-section-label">Upper Body</div>
+                  <PatternSection patterns={grouped.upper} visible />
+                </div>
+              )}
+              {showLower && Object.keys(grouped.lower).length > 0 && (
+                <div className="el-section">
+                  <div className="el-section-label">Lower Body</div>
+                  <PatternSection patterns={grouped.lower} visible />
+                </div>
+              )}
+              {showCore && Object.keys(grouped.core).length > 0 && (
+                <div className="el-section">
+                  <div className="el-section-label">Core</div>
+                  <PatternSection patterns={grouped.core} visible />
+                </div>
+              )}
+              {showCardio && Object.keys(grouped.cardio).length > 0 && (
+                <div className="el-section">
+                  <div className="el-section-label">Cardio</div>
+                  <PatternSection patterns={grouped.cardio} visible />
+                </div>
+              )}
+            </>
           )}
-          {showLower && Object.keys(grouped.lower).length > 0 && (
-            <div className="el-section">
-              <div className="el-section-label">Lower Body</div>
-              <PatternSection patterns={grouped.lower} visible />
-            </div>
-          )}
-          {showCore && Object.keys(grouped.core).length > 0 && (
-            <div className="el-section">
-              <div className="el-section-label">Core</div>
-              <PatternSection patterns={grouped.core} visible />
-            </div>
-          )}
+          <CustomExercisesSection onSelect={onCustomSelect} />
         </>
       )}
     </div>
@@ -660,12 +1070,13 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const ALL_EXERCISES = buildExerciseList()
+export const ALL_EXERCISES = buildExerciseList()
 
 function ExerciseLibrary() {
-  const [activeTab, setActiveTab]   = useState('all')
-  const [search, setSearch]         = useState('')
-  const [selected, setSelected]     = useState(null)
+  const [activeTab, setActiveTab]       = useState('all')
+  const [search, setSearch]             = useState('')
+  const [selected, setSelected]         = useState(null)
+  const [customSelected, setCustomSelected] = useState(null)
 
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim()
@@ -681,12 +1092,11 @@ function ExerciseLibrary() {
   }, [activeTab, search])
 
   if (selected) {
-    return (
-      <DetailView
-        exercise={selected}
-        onBack={() => setSelected(null)}
-      />
-    )
+    return <DetailView exercise={selected} onBack={() => setSelected(null)} />
+  }
+
+  if (customSelected) {
+    return <CustomDetailView name={customSelected} onBack={() => setCustomSelected(null)} />
   }
 
   return (
@@ -698,6 +1108,7 @@ function ExerciseLibrary() {
       onTabChange={(tab) => { setActiveTab(tab); setSearch('') }}
       onSearchChange={setSearch}
       onSelect={setSelected}
+      onCustomSelect={setCustomSelected}
     />
   )
 }
