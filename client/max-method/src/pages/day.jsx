@@ -243,11 +243,12 @@ function Day() {
       i === ei ? { ...ex, sets: ex.sets.map((s, j) => j === si ? { ...s, ...patch } : s) } : ex
     ));
 
-  const handleSetComplete = (exercise, actual, markingDone) => {
+  const handleSetComplete = async (exercise, actual, markingDone) => {
     if (markingDone && actual) {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/pb-check`, {
+      const res = async
+      await fetch(`${import.meta.env.VITE_API_URL}/api/users/workout/pb-check`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
           userId: localStorage.getItem('userId'),
           exercise,
