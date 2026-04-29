@@ -16,20 +16,12 @@ function PickNewProgram() {
   const { user } = useUser();
   const { workout, deselectProgram } = useWorkout();
 
-  const [formData, setFormData] = useState({ 
-    benchPressWeight: '',
-    benchRep: '',
+  const [formData, setFormData] = useState({
     benchPress: '',
-
-    deadliftWeight: '',
-    deadliftRep: '',
     deadlift: '',
-
-    squatWeight: '',
-    squatRep: '',
     squat: '',
-
-    bodyWeight: '' });
+    bodyWeight: '',
+  });
   const [myPrograms, setMyPrograms] = useState([]);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
 
@@ -67,28 +59,10 @@ function PickNewProgram() {
     }
   };
 
-  const RPE_TABLE = {
-  1: 1.00, 2: 0.97, 3: 0.94, 4: 0.92, 5: 0.89,
-  6: 0.86, 7: 0.83, 8: 0.81, 9: 0.78, 10: 0.75,
-  11: 0.73, 12: 0.71, 13: 0.70, 14: 0.68, 15: 0.67
-};
-
-const calcE1RM = (weight, reps) => {
-  const factor = RPE_TABLE[reps];
-  if (!factor || !weight) return '';
-  return Math.round((weight / factor) / 5) * 5;
-};
-
-const handleChange = (e) => {
-  const { name, value } = e.target;
-  const updated = { ...formData, [name]: value };
-
-  updated.benchPress = calcE1RM(Number(updated.benchPressWeight), Number(updated.benchRep));
-  updated.deadlift   = calcE1RM(Number(updated.deadliftWeight),   Number(updated.deadliftRep));
-  updated.squat      = calcE1RM(Number(updated.squatWeight),      Number(updated.squatRep));
-
-  setFormData(updated);
-};
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -161,33 +135,22 @@ const handleSelectProgram = (p) => {
         <form onSubmit={handleSubmit}>
           <div className="programs-inputs-grid">
             {[
-              { label: 'BenchPress Weight', name: 'benchPressWeight', unit: 'lbs' },
-              { label: 'Bench Reps', name: 'benchRep', unit: 'reps', max: 15},
-              { label: 'Bench 1RM', name: 'benchPress', unit: 'lbs', readOnly: true},
-
-              { label: 'Deadlift Weight', name: 'deadliftWeight', unit: 'lbs' },
-              { label: 'Deadlift Rep', name: 'deadliftRep', unit: 'reps', max: 15 },
-              { label: 'Deadlift 1RM', name: 'deadlift', unit: 'lbs', readOnly: true},
-
-              { label: 'Squat Weight', name: 'squatWeight', unit: 'lbs' },
-              { label: 'Squat Rep', name: 'squatRep', unit: 'reps', max: 15},
-              { label: 'Squat 1RM', name: 'squat', unit: 'lbs', readOnly: true},
-
-              { label: 'Body Weight', name: 'bodyWeight', unit: 'lbs' },
-            ].map(({ label, name, unit, max, readOnly }) => (
+              { label: 'Bench Press 1RM', name: 'benchPress', unit: 'lbs' },
+              { label: 'Deadlift 1RM',   name: 'deadlift',   unit: 'lbs' },
+              { label: 'Squat 1RM',      name: 'squat',      unit: 'lbs' },
+              { label: 'Body Weight',    name: 'bodyWeight', unit: 'lbs' },
+            ].map(({ label, name, unit }) => (
               <div key={name} className="programs-input-group">
                 <div className="programs-field-label">{label}</div>
                 <div className="programs-input-wrap">
                   <input
-                    type={readOnly ? "text" : "number"}
+                    type="number"
                     name={name}
                     value={formData[name]}
-                    onChange={readOnly ? undefined: handleChange}
-                    placeholder={readOnly ? '' :"Enter Amount"}
-                    min={readOnly ? undefined: 0}
-                    max={max}
-                    readOnly={readOnly}
-                    required={!readOnly}
+                    onChange={handleChange}
+                    placeholder="Enter Amount"
+                    min="0"
+                    required
                   />
                   <span className="programs-unit-tag">{unit.toUpperCase()}</span>
                 </div>

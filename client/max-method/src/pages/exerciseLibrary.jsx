@@ -1,7 +1,46 @@
 import { useState, useMemo, useEffect } from 'react'
+import MuxPlayer from '@mux/mux-player-react'
 import { useWorkout } from '../context/WorkoutContext'
 import './exerciseLibrary.css'
 import { API_URL } from '../config/api';
+
+// ─── Library Video Lookup ─────────────────────────────────────────────────────
+
+// MongoDB and the frontend's hardcoded exercise list disagree on plurals,
+// spaces in compound words, and word order. Two normalized keys per name —
+// one strict (handles compounds like "Goodmornings" vs "Good Mornings"), one
+// token-sorted (handles re-orderings like "DB Incline Curls" vs "Incline DB
+// Curls") — let us match without maintaining a full alias table.
+function normKey(name) {
+  return (name || '').toLowerCase().replace(/[^a-z0-9]/g, '').replace(/s$/, '')
+}
+function sortedKey(name) {
+  return (name || '').toLowerCase()
+    .split(/[^a-z0-9]+/).filter(Boolean)
+    .map(t => t.replace(/s$/, ''))
+    .sort()
+    .join('')
+}
+
+// Cases the normalizers can't bridge (e.g. mongo "Close Grip Pulldowns" has
+// no "Lat", but the frontend label does).
+const VIDEO_NAME_ALIASES = {
+  'Close Grip Lat Pulldowns': 'Close Grip Pulldowns',
+}
+
+function buildVideoLookup(videos) {
+  const byNorm = {}
+  const bySorted = {}
+  for (const v of videos) {
+    if (!v?.mux_playback_id) continue
+    byNorm[normKey(v.exercise_name)] = v.mux_playback_id
+    bySorted[sortedKey(v.exercise_name)] = v.mux_playback_id
+  }
+  return (exerciseName) => {
+    const aliased = VIDEO_NAME_ALIASES[exerciseName] || exerciseName
+    return byNorm[normKey(aliased)] || bySorted[sortedKey(aliased)] || null
+  }
+}
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -448,7 +487,7 @@ function ExerciseCard({ exercise, onSelect }) {
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const DAYS_SHORT_EL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
-function DetailView({ exercise, onBack }) {
+function DetailView({ exercise, onBack, playbackId }) {
   const { personalBests } = useWorkout()
   const [detailTab, setDetailTab] = useState('cues')
   const [exerciseHistory, setExerciseHistory] = useState([])
@@ -497,10 +536,22 @@ function DetailView({ exercise, onBack }) {
 
       <div className="el-detail-hero">
         <div className="el-video-wrap">
-          <button className="el-play-btn" aria-label="Play video">
-            <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-          </button>
-          <div className="el-video-label">How to perform — {exercise.name}</div>
+          {playbackId ? (
+            <MuxPlayer
+              streamType="on-demand"
+              playbackId={playbackId}
+              metadata={{ video_title: `How to perform — ${exercise.name}` }}
+              accentColor="#cc0404"
+              className="el-mux-player"
+            />
+          ) : (
+            <>
+              <button className="el-play-btn" aria-label="Play video">
+                <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+              </button>
+              <div className="el-video-label">Video coming soon — {exercise.name}</div>
+            </>
+          )}
         </div>
         <div className="el-detail-meta">
           <span className="el-badge primary">{exercise.primary}</span>
@@ -1078,6 +1129,16 @@ function ExerciseLibrary() {
   const [search, setSearch]             = useState('')
   const [selected, setSelected]         = useState(null)
   const [customSelected, setCustomSelected] = useState(null)
+  const [videos, setVideos]             = useState([])
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/users/library-videos`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setVideos(Array.isArray(data) ? data : []))
+      .catch(() => setVideos([]))
+  }, [])
+
+  const lookupPlaybackId = useMemo(() => buildVideoLookup(videos), [videos])
 
   const filtered = useMemo(() => {
     const term = search.toLowerCase().trim()
@@ -1093,7 +1154,7 @@ function ExerciseLibrary() {
   }, [activeTab, search])
 
   if (selected) {
-    return <DetailView exercise={selected} onBack={() => setSelected(null)} />
+    return <DetailView exercise={selected} onBack={() => setSelected(null)} playbackId={lookupPlaybackId(selected.name)} />
   }
 
   if (customSelected) {

@@ -1,32 +1,44 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
-import Classification from "./classification";
+import { API_URL } from "../config/api";
+
+const REP_COEFFS = {
+  1: 1.0, 2: 0.97, 3: 0.94, 4: 0.92, 5: 0.89,
+  6: 0.86, 7: 0.83, 8: 0.81, 9: 0.78, 10: 0.75,
+  11: 0.73, 12: 0.71, 13: 0.70, 14: 0.68, 15: 0.67,
+};
+
+function estimate1RM(weight, reps) {
+  const w = Number(weight);
+  const r = Number(reps);
+  if (!w || !r || r < 1 || r > 15) return "";
+  return Math.round((w / REP_COEFFS[r]) / 5) * 5;
+}
 
 function Onboarding() {
   const navigate = useNavigate();
   const { user } = useUser();
 
-  // add isBeginner
+  const [step, setStep] = useState(1);
+  const [strengthMode, setStrengthMode] = useState(null);
   const [formData, setFormData] = useState({
     gender: "",
     bodyWeight: "",
 
     benchPressWeight: "",
     benchRep: "",
-    benchPress: "",
 
     deadliftWeight: "",
     deadliftRep: "",
-    deadlift: "",
 
     squatWeight: "",
     squatRep: "",
-    squat: "",
 
     daysPerWeek: "",
     goalSelection: "",
     isBeginner: false,
+    skipped: false,
   });
 
   const set = (field, value) =>
@@ -34,52 +46,103 @@ function Onboarding() {
 
   const handleInput = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      const next = { ...prev, [name]: value };
-      if (prev.isBeginner && name === "bodyWeight") {
-        const bw = Number(value) || 0;
-        next.benchPress = Math.round(bw * 0.30).toString();
-        next.squat = Math.round(bw * 0.50).toString();
-        next.deadlift = Math.round(bw * 0.75).toString();
-      }
-      return next;
-    });
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleFillDefaults = () => {
-    setFormData((prev) => {
-      if (prev.isBeginner) {
-        return { ...prev, isBeginner: false };
-      }
-      const bw = prev.bodyWeight || "100";
-      const bwNum = Number(bw);
+  const computeOneRMs = () => {
+    if (formData.isBeginner || formData.skipped) {
+      const bw = Number(formData.bodyWeight) || 0;
       return {
-        ...prev,
-        isBeginner: true,
-        bodyWeight: bw,
-        benchPress: Math.round(bwNum * 0.30).toString(),
-        squat: Math.round(bwNum * 0.50).toString(),
-        deadlift: Math.round(bwNum * 0.75).toString(),
+        benchPress: Math.round(bw * 0.30),
+        squat: Math.round(bw * 0.50),
+        deadlift: Math.round(bw * 0.75),
       };
-    });
+    }
+    return {
+      benchPress: estimate1RM(formData.benchPressWeight, formData.benchRep),
+      squat: estimate1RM(formData.squatWeight, formData.squatRep),
+      deadlift: estimate1RM(formData.deadliftWeight, formData.deadliftRep),
+    };
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const oneRMs = computeOneRMs();
 
-    const missing = [];
-    if (!formData.gender)        missing.push("gender");
-    if (!formData.bodyWeight)    missing.push("body weight");
-    if (!formData.benchPress)    missing.push("bench press");
-    if (!formData.squat)         missing.push("squat");
-    if (!formData.deadlift)      missing.push("deadlift");
-    if (!formData.daysPerWeek)   missing.push("training days");
-    if (!formData.goalSelection) missing.push("training focus");
+  const selectMode = async (mode) => {
+    if (mode === "skip") {
+      const userId = localStorage.getItem("userId");
+      if (!userId) {
+        alert("Session error — please sign in again.");
+        navigate("/");
+        return;
+      }
 
-    if (missing.length) {
-      alert("Please complete: " + missing.join(", "));
+      try {
+        await fetch(`${API_URL}/api/users/update/${userId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            gender: formData.gender,
+            bodyWeight: formData.bodyWeight,
+          }),
+        });
+      } catch (err) {
+        console.error("Failed to save profile on skip:", err);
+      }
+
+      navigate("/home", { replace: true });
       return;
     }
+    setStrengthMode(mode);
+    setFormData((prev) => ({
+      ...prev,
+      isBeginner: mode === "beginner",
+      skipped: false,
+    }));
+  };
+
+  const goNext = () => {
+    if (step === 1) {
+      const missing = [];
+      if (!formData.gender) missing.push("gender");
+      if (!formData.bodyWeight) missing.push("body weight");
+      if (missing.length) {
+        alert("Please complete: " + missing.join(", "));
+        return;
+      }
+    }
+    if (step === 2) {
+      if (!strengthMode) {
+        alert("Pick how you'd like to set your strength baseline.");
+        return;
+      }
+      if (strengthMode === "bestset" && (!oneRMs.benchPress || !oneRMs.squat || !oneRMs.deadlift)) {
+        alert("Enter weight and reps (1–15) for each lift.");
+        return;
+      }
+    }
+    setStep((s) => Math.min(3, s + 1));
+  };
+
+  const goBack = () => setStep((s) => Math.max(1, s - 1));
+
+  const submitOnboarding = (overrides = {}) => {
+    const merged = { ...formData, ...overrides };
+
+    const isSkip = merged.skipped;
+    const oneRMsForSubmit = isSkip || merged.isBeginner
+      ? (() => {
+          const bw = Number(merged.bodyWeight) || 0;
+          return {
+            benchPress: Math.round(bw * 0.30),
+            squat: Math.round(bw * 0.50),
+            deadlift: Math.round(bw * 0.75),
+          };
+        })()
+      : {
+          benchPress: estimate1RM(merged.benchPressWeight, merged.benchRep),
+          squat: estimate1RM(merged.squatWeight, merged.squatRep),
+          deadlift: estimate1RM(merged.deadliftWeight, merged.deadliftRep),
+        };
 
     const userId = localStorage.getItem("userId");
     if (!userId) {
@@ -90,19 +153,31 @@ function Onboarding() {
 
     navigate("/loading", {
       state: {
-        source: 'onboarding',
+        source: "onboarding",
         userId,
         email: user.email,
-        gender: formData.gender,
-        benchPress: Number(formData.benchPress),
-        squat: Number(formData.squat),
-        deadlift: Number(formData.deadlift),
-        bodyWeight: Number(formData.bodyWeight),
-        daysPerWeek: formData.daysPerWeek,
-        goalSelection: formData.goalSelection,
-        isBeginner: formData.isBeginner,
-      }
+        gender: merged.gender,
+        benchPress: Number(oneRMsForSubmit.benchPress),
+        squat: Number(oneRMsForSubmit.squat),
+        deadlift: Number(oneRMsForSubmit.deadlift),
+        bodyWeight: Number(merged.bodyWeight),
+        daysPerWeek: merged.daysPerWeek,
+        goalSelection: merged.goalSelection,
+        isBeginner: merged.isBeginner,
+        skipped: merged.skipped,
+      },
     });
+  };
+
+  const handleSubmit = () => {
+    const missing = [];
+    if (!formData.daysPerWeek) missing.push("training days");
+    if (!formData.goalSelection) missing.push("training focus");
+    if (missing.length) {
+      alert("Please complete: " + missing.join(", "));
+      return;
+    }
+    submitOnboarding();
   };
 
   const focusOptions = [
@@ -126,126 +201,238 @@ function Onboarding() {
     },
   ];
 
+  const lifts = [
+    { key: "bench", label: "Bench Press", weightField: "benchPressWeight", repField: "benchRep", est: oneRMs.benchPress },
+    { key: "squat", label: "Squat", weightField: "squatWeight", repField: "squatRep", est: oneRMs.squat },
+    { key: "deadlift", label: "Deadlift", weightField: "deadliftWeight", repField: "deadliftRep", est: oneRMs.deadlift },
+  ];
+
+  const stepTitle = {
+    1: "Tell us about yourself",
+    2: "Your strength baseline",
+    3: "How you want to train",
+  }[step];
+
   return (
     <div className="onboarding-page">
       <h1 className="onboarding-title">Welcome!</h1>
-      <p className="onboarding-subtitle">Tell us about yourself to get started</p>
+      <p className="onboarding-subtitle">{stepTitle}</p>
 
-      <form className="onboarding-card" onSubmit={handleSubmit}>
-
-        {/* ── GENDER ── */}
-        <div className="ob-section">
-          <div className="ob-section-label">Gender</div>
-          <div className="ob-btn-group">
-            {["male", "female", "other"].map((g) => (
-              <button
-                key={g}
-                type="button"
-                className={`ob-toggle-btn${formData.gender === g ? " active" : ""}`}
-                onClick={() => set("gender", g)}
-              >
-                {g.charAt(0).toUpperCase() + g.slice(1)}
-              </button>
-            ))}
+      <div className="ob-stepper" aria-label="Onboarding progress">
+        {[1, 2, 3].map((n) => (
+          <div
+            key={n}
+            className={`ob-step-dot${step === n ? " active" : ""}${step > n ? " done" : ""}`}
+          >
+            <span>{n}</span>
           </div>
-        </div>
+        ))}
+      </div>
 
-        <div className="ob-divider" />
+      <form className="onboarding-card" onSubmit={(e) => e.preventDefault()}>
 
-        {/* ── BODY STATS & 1RMs ── */}
-        <div className="ob-section">
-          <div className="ob-section-header">
-            <div className="ob-section-label">Body Stats &amp; 1-Rep Maxes</div>
-            <button 
-              type="button" 
-              className={`ob-beginner-btn${formData.isBeginner ? " active" : ""}`} 
-              onClick={handleFillDefaults}
-            >
-              {formData.isBeginner ? "Deactivate Beginner Mode" : "Beginner? Enter Body Weight. (Fill Defaults)"}
-              {formData.isBeginner && formData.bodyWeight ? " (Body Weight: " + formData.bodyWeight + " lbs)" : ""}
+        {step === 1 && (
+          <>
+            <div className="ob-section">
+              <div className="ob-section-label">Gender</div>
+              <div className="ob-btn-group">
+                {["male", "female", "other"].map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    className={`ob-toggle-btn${formData.gender === g ? " active" : ""}`}
+                    onClick={() => set("gender", g)}
+                  >
+                    {g.charAt(0).toUpperCase() + g.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="ob-divider" />
+
+            <div className="ob-section">
+              <div className="ob-section-label">Body Weight</div>
+              <div className="ob-input-grid ob-input-grid--single">
+                <div className="ob-input-group">
+                  <div className="ob-input-wrap">
+                    <input
+                      type="number"
+                      id="bodyWeight"
+                      name="bodyWeight"
+                      value={formData.bodyWeight}
+                      onChange={handleInput}
+                      placeholder="Enter weight"
+                      min="0"
+                    />
+                    <span className="ob-input-unit">LBS</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {step === 2 && (
+          <div className="ob-section">
+            <div className="ob-section-label">Strength baseline</div>
+
+            <div className="ob-mode-grid" role="radiogroup" aria-label="How to set your strength baseline">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={strengthMode === "bestset"}
+                className={`ob-mode-card${strengthMode === "bestset" ? " active" : ""}`}
+                onClick={() => selectMode("bestset")}
+              >
+                <svg className="ob-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M3 3v18h18" />
+                  <rect x="7" y="13" width="3" height="5" />
+                  <rect x="12" y="9" width="3" height="9" />
+                  <rect x="17" y="5" width="3" height="13" />
+                </svg>
+                <div className="ob-mode-name">I know my numbers</div>
+                <div className="ob-mode-desc">Enter a recent best set</div>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={strengthMode === "beginner"}
+                className={`ob-mode-card${strengthMode === "beginner" ? " active" : ""}`}
+                onClick={() => selectMode("beginner")}
+              >
+                <svg className="ob-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 2l2.39 5.34L20 8l-4 4.06.94 5.94L12 15.27 7.06 18l.94-5.94L4 8l5.61-.66L12 2z" />
+                </svg>
+                <div className="ob-mode-name">I'm new to lifting</div>
+                <div className="ob-mode-desc">Use bodyweight defaults</div>
+              </button>
+
+              <button
+                type="button"
+                role="radio"
+                aria-checked={false}
+                className="ob-mode-card"
+                onClick={() => selectMode("skip")}
+              >
+                <svg className="ob-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polygon points="5 4 15 12 5 20 5 4" />
+                  <line x1="19" y1="5" x2="19" y2="19" />
+                </svg>
+                <div className="ob-mode-name">Skip for now</div>
+                <div className="ob-mode-desc">Use generic defaults</div>
+              </button>
+            </div>
+
+            {strengthMode === "bestset" && (
+              <div className="ob-lift-list">
+                {lifts.map((lift) => (
+                  <div key={lift.key} className="ob-lift-row">
+                    <div className="ob-lift-name">{lift.label}</div>
+                    <div className="ob-lift-inputs">
+                      <div className="ob-input-wrap ob-lift-input">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          name={lift.weightField}
+                          value={formData[lift.weightField]}
+                          onChange={handleInput}
+                          placeholder="Weight"
+                          aria-label={`${lift.label} weight`}
+                          min="0"
+                        />
+                        <span className="ob-input-unit">LBS</span>
+                      </div>
+                      <span className="ob-lift-x" aria-hidden="true">×</span>
+                      <div className="ob-input-wrap ob-lift-input ob-lift-input--reps">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          name={lift.repField}
+                          value={formData[lift.repField]}
+                          onChange={handleInput}
+                          placeholder="Reps"
+                          aria-label={`${lift.label} reps`}
+                          min="1"
+                          max="15"
+                        />
+                        <span className="ob-input-unit">REPS</span>
+                      </div>
+                    </div>
+                    <div className="ob-lift-readout" aria-live="polite">
+                      <span className="ob-lift-readout-value">{lift.est || "—"}</span>
+                      <span className="ob-lift-readout-label">EST 1RM</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
+        )}
+
+        {step === 3 && (
+          <>
+            <div className="ob-section">
+              <div className="ob-section-label">How many days do you train each week?</div>
+              <div className="ob-btn-group">
+                {["3", "4", "5"].map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    className={`ob-toggle-btn${formData.daysPerWeek === d ? " active" : ""}`}
+                    onClick={() => set("daysPerWeek", d)}
+                  >
+                    {d} Days
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="ob-divider" />
+
+            <div className="ob-section">
+              <div className="ob-section-label">Training Focus</div>
+              <div className="ob-focus-grid">
+                {focusOptions.map(({ val, label, icon, desc }) => (
+                  <div
+                    key={val}
+                    className={`ob-focus-card${formData.goalSelection === val ? " active" : ""}`}
+                    onClick={() => set("goalSelection", val)}
+                  >
+                    <div className="ob-focus-img">
+                      <span className="ob-focus-icon">{icon}</span>
+                    </div>
+                    <div className="ob-focus-body">
+                      <div className="ob-focus-name">{label}</div>
+                      <p className="ob-focus-desc">{desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="ob-step-nav">
+          {step > 1 ? (
+            <button type="button" className="ob-back-btn" onClick={goBack}>
+              ← Back
             </button>
-          </div>
-          <div className="ob-input-grid">
-            {[
-              { id: "bodyWeight",  label: "Body Weight" },
-              { id: "benchPress", label: "Bench Press 1RM" },
-              { id: "squat",      label: "Squat 1RM" },
-              { id: "deadlift",   label: "Deadlift 1RM" },
-            ].map(({ id, label }) => (
-              <div key={id} className="ob-input-group">
-                <label htmlFor={id}>{label}</label>
-                <div className="ob-input-wrap">
-                  <input
-                    type="number"
-                    id={id}
-                    name={id}
-                    value={formData[id]}
-                    onChange={handleInput}
-                    placeholder="Enter weight"
-                    min="0"
-                    readOnly={formData.isBeginner && (id === "benchPress" || id === "squat" || id === "deadlift")}
-                  />
-                  <span className="ob-input-unit">LBS</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <Classification
-          formData={formData}
-          setFormData={setFormData}
-        />
+          ) : (
+            <span />
+          )}
 
-        <div className="ob-divider" /> 
-
-        {/* ── DAYS PER WEEK ── */}
-        <div className="ob-section">
-          <div className="ob-section-label">How many days do you train each week?</div>
-          <div className="ob-btn-group">
-            {["3", "4", "5"].map((d) => (
-              <button
-                key={d}
-                type="button"
-                className={`ob-toggle-btn${formData.daysPerWeek === d ? " active" : ""}`}
-                onClick={() => set("daysPerWeek", d)}
-              >
-                {d} Days
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="ob-divider" />
-
-        {/* ── TRAINING FOCUS ── */}
-        <div className="ob-section">
-          <div className="ob-section-label">Training Focus</div>
-          <div className="ob-focus-grid">
-            {focusOptions.map(({ val, label, icon, desc }) => (
-              <div
-                key={val}
-                className={`ob-focus-card${formData.goalSelection === val ? " active" : ""}`}
-                onClick={() => set("goalSelection", val)}
-              >
-                <div className="ob-focus-img">
-                  <span className="ob-focus-icon">{icon}</span>
-                </div>
-                <div className="ob-focus-body">
-                  <div className="ob-focus-name">{label}</div>
-                  <p className="ob-focus-desc">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="ob-divider" />
-
-        {/* ── SUBMIT ── */}
-        <div className="ob-section">
-          <button type="submit" className="ob-submit-btn">
-            Begin My Program
-          </button>
+          {step < 3 ? (
+            <button key="ob-next" type="button" className="ob-submit-btn ob-next-btn" onClick={goNext}>
+              Continue →
+            </button>
+          ) : (
+            <button key="ob-submit" type="button" className="ob-submit-btn" onClick={handleSubmit}>
+              Begin My Program
+            </button>
+          )}
         </div>
 
       </form>
