@@ -37,7 +37,7 @@ function CreateAcc() {
       navigate('/onboarding');
     } catch (error) {
       console.error('Error creating account:', error);
-      alert('Error creating account');
+      alert(error.response?.data?.message || 'Error creating account');
     }
   };
 
