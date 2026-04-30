@@ -24,6 +24,7 @@ function PickNewProgram() {
   });
   const [myPrograms, setMyPrograms] = useState([]);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   // Fetch programs from DB on mount
   useEffect(() => {
@@ -66,6 +67,7 @@ function PickNewProgram() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
     const userId = localStorage.getItem('userId');
     if (!userId) {
       alert("Session error — please sign in again.");
@@ -73,6 +75,7 @@ function PickNewProgram() {
       return;
     }
 
+    setSubmitting(true);
     try {
       const response = await fetch(`${API_URL}/api/users/classification`, {
         method: "POST",
@@ -99,6 +102,7 @@ function PickNewProgram() {
     } catch (err) {
       console.error(err);
       alert("Something went wrong. Please try again.");
+      setSubmitting(false);
     }
   };
 
@@ -158,7 +162,9 @@ const handleSelectProgram = (p) => {
             ))}
           </div>
 
-          <button type="submit" className="programs-btn-primary">Submit</button>
+          <button type="submit" className="programs-btn-primary" disabled={submitting}>
+            {submitting ? 'Submitting…' : 'Submit'}
+          </button>
         </form>
       </div>
 
