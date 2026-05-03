@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useUser } from '../context/UserContext'
 import { useWorkout } from '../context/WorkoutContext'
 import { API_URL } from '../config/api';
+import MaxMethodLogo from '../components/MaxMethodLogo'
 
 function Welcomepage() {
   const [email, setEmail] = useState('')
@@ -48,23 +49,28 @@ function Welcomepage() {
 
   return (
     <div className="welcome-page">
-      <h1>Welcome</h1>
+      <MaxMethodLogo animated />
       <p>Please sign in to continue</p>
 
-      <form onSubmit={handleSubmit} className="welcome-form">
+      <form onSubmit={handleSubmit} className="welcome-form" noValidate>
+        <label htmlFor="login-email" className="sr-only">Email</label>
         <input
+          id="login-email"
           type="email"
           placeholder="Email"
-          aria-label="Email"
+          autoComplete="email"
+          inputMode="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
         />
 
+        <label htmlFor="login-password" className="sr-only">Password</label>
         <input
+          id="login-password"
           type="password"
           placeholder="Password"
-          aria-label="Password"
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required

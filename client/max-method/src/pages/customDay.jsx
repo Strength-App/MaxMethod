@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { ALL_EXERCISES } from './exerciseLibrary';
 import { API_URL } from '../config/api';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 const ALL_EXERCISE_NAMES = [...new Set(ALL_EXERCISES.map(e => e.name))];
 const getCustomExerciseNames = () => { try { return JSON.parse(localStorage.getItem('customExercises') || '[]'); } catch { return []; } };
@@ -50,9 +51,105 @@ function CustomDay() {
   });
   const [openCards, setOpenCards] = useState({});
   const [activeDropdown, setActiveDropdown] = useState(null);
+  // a11y: tracks the option highlighted by keyboard or hover within the open
+  // listbox. Single number scoped to whichever card has activeDropdown set.
+  // Reset to null whenever the dropdown closes or the typed query changes
+  // so aria-activedescendant never points at a stale option id.
+  const [highlightedIndex, setHighlightedIndex] = useState(null);
   const [saved, setSaved] = useState(false);
   const saveTimer = useRef(null);
   const initialised = useRef(false);
+
+  // Combined options for the autocomplete listbox: either matching exercise
+  // names OR (when nothing matches and the user typed something) a single
+  // "add to custom exercises" affordance. Mirrors the existing UI branches
+  // at lines ~265-278; consolidating here lets keyboard nav treat both as
+  // selectable options.
+  const optionsFor = useCallback((name) => {
+    if (!name) return [];
+    const q = name.toLowerCase();
+    const matches = getAllExerciseNames()
+      .filter(n => n.toLowerCase().includes(q))
+      .slice(0, 8);
+    if (matches.length > 0) {
+      return matches.map(n => ({ kind: 'match', name: n }));
+    }
+    return [{ kind: 'add', name: name.trim() }];
+  }, []);
+
+  // Centralized open/close so highlightedIndex resets are guaranteed.
+  const closeDropdown = useCallback(() => {
+    setActiveDropdown(null);
+    setHighlightedIndex(null);
+  }, []);
+  const openDropdown = useCallback((ei, idx = null) => {
+    setActiveDropdown(ei);
+    setHighlightedIndex(idx);
+  }, []);
+
+  // Combobox keydown handler — implements the WAI-ARIA combobox pattern.
+  // Keys: ArrowDown/Up move highlight (open if closed), Home/End jump to
+  // first/last, Enter selects, Esc closes, Tab closes without preventing.
+  // No-op when ex.name is empty (no options exist).
+  const handleComboKeyDown = useCallback((e, ei, name) => {
+    const opts = optionsFor(name);
+    const open = activeDropdown === ei;
+
+    switch (e.key) {
+      case 'ArrowDown': {
+        if (opts.length === 0) return; // empty input — nothing to navigate
+        e.preventDefault();
+        if (!open) { openDropdown(ei, 0); return; }
+        setHighlightedIndex(prev => prev == null ? 0 : (prev + 1) % opts.length);
+        return;
+      }
+      case 'ArrowUp': {
+        if (opts.length === 0) return;
+        e.preventDefault();
+        if (!open) { openDropdown(ei, opts.length - 1); return; }
+        setHighlightedIndex(prev => prev == null ? opts.length - 1 : (prev - 1 + opts.length) % opts.length);
+        return;
+      }
+      case 'Home': {
+        if (!open || opts.length === 0) return;
+        e.preventDefault();
+        setHighlightedIndex(0);
+        return;
+      }
+      case 'End': {
+        if (!open || opts.length === 0) return;
+        e.preventDefault();
+        setHighlightedIndex(opts.length - 1);
+        return;
+      }
+      case 'Enter': {
+        if (!open || opts.length === 0 || highlightedIndex == null) return;
+        const opt = opts[highlightedIndex];
+        if (!opt) return;
+        e.preventDefault();
+        if (opt.kind === 'match') {
+          updateName(ei, opt.name);
+        } else {
+          addToCustomExercises(opt.name);
+        }
+        closeDropdown();
+        return;
+      }
+      case 'Escape': {
+        if (!open) return;
+        e.preventDefault();
+        closeDropdown();
+        return;
+      }
+      case 'Tab': {
+        // Don't preventDefault — let Tab move focus naturally; just close.
+        if (open) closeDropdown();
+        return;
+      }
+      default:
+        return;
+    }
+  }, [activeDropdown, highlightedIndex, optionsFor, openDropdown, closeDropdown]);
 
   // If exercises are still empty after mount and workout loads, pull from DB
   useEffect(() => {
@@ -186,6 +283,15 @@ function CustomDay() {
 
   const [applyConfirm, setApplyConfirm] = useState(false);
   const [applyDone, setApplyDone] = useState(false);
+  const cancelApplyBtnRef = useRef(null);
+  const closeApplyConfirm = useCallback(() => setApplyConfirm(false), []);
+  // Modal a11y: focus trap, Esc to close, return focus on close. Initial
+  // focus lands on Cancel (safer default for a destructive overwrite).
+  const applyModalRef = useModalA11y({
+    isOpen: applyConfirm,
+    onClose: closeApplyConfirm,
+    initialFocusRef: cancelApplyBtnRef,
+  });
 
   // Summary counts
   let totalSets = 0, doneSets = 0;
@@ -206,18 +312,25 @@ function CustomDay() {
       </div>
 
       {/* Summary Bar */}
-      <div className="workout-summary-bar">
+      <div
+        className="workout-summary-bar"
+        role="group"
+        aria-label="Day progress summary"
+      >
         <div className="summary-pill">
-          <div className="summary-pill-val">{doneSets}</div>
-          <div className="summary-pill-lbl">Sets Done</div>
+          <div className="summary-pill-val" aria-hidden="true">{doneSets}</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Sets Done</div>
+          <span className="sr-only">{doneSets} sets done</span>
         </div>
         <div className="summary-pill">
-          <div className="summary-pill-val summary-pill-val--accent">{totalSets}</div>
-          <div className="summary-pill-lbl">Total Sets</div>
+          <div className="summary-pill-val summary-pill-val--accent" aria-hidden="true">{totalSets}</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Total Sets</div>
+          <span className="sr-only">{totalSets} total sets</span>
         </div>
         <div className="summary-pill">
-          <div className="summary-pill-val summary-pill-val--green">{completionPct}%</div>
-          <div className="summary-pill-lbl">Complete</div>
+          <div className="summary-pill-val summary-pill-val--green" aria-hidden="true">{completionPct}%</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Complete</div>
+          <span className="sr-only">{completionPct} percent complete</span>
         </div>
       </div>
 
@@ -229,85 +342,139 @@ function CustomDay() {
           const allDone = ex.sets.length > 0 && doneCount === ex.sets.length;
           const progPct = ex.sets.length > 0 ? Math.round((doneCount / ex.sets.length) * 100) : 0;
 
+          const isDropdownOpen = activeDropdown === ei && ex.name.length > 0;
+          const options = isDropdownOpen ? optionsFor(ex.name) : [];
+          const listboxId = `cd-listbox-${ei}`;
+          const optionId = (idx) => `cd-option-${ei}-${idx}`;
+          const activeOptionId = isDropdownOpen && highlightedIndex != null
+            ? optionId(highlightedIndex)
+            : undefined;
+          const headerToggle = () => toggleCard(ei);
+          const headerKeyDown = (e) => {
+            if (e.key === ' ' || e.key === 'Enter') {
+              e.preventDefault();
+              headerToggle();
+            }
+          };
+          const exerciseLabel = ex.name?.trim() || `unnamed exercise ${ei + 1}`;
+
           return (
             <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
-              {/* Card Header */}
-              <div className="ex-card-header" onClick={() => toggleCard(ei)}>
+              {/* Card Header — keyboard-accessible toggle (mirrors existing onClick).
+                  Inner controls (input, delete button) stop propagation so they don't
+                  trigger the toggle. */}
+              <div
+                className="ex-card-header"
+                onClick={headerToggle}
+                onKeyDown={headerKeyDown}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isOpen}
+                aria-label={`${isOpen ? 'Collapse' : 'Expand'} exercise: ${exerciseLabel}`}
+              >
                 <div className="ex-card-title-block" style={{ position: 'relative', flex: 1 }}>
+                  <label htmlFor={`cd-name-${ei}`} className="sr-only">Exercise name</label>
                   <input
+                    id={`cd-name-${ei}`}
                     className="ex-card-name"
                     placeholder="Search exercise..."
                     value={ex.name}
                     onClick={e => e.stopPropagation()}
-                    onChange={e => { updateName(ei, e.target.value); setActiveDropdown(ei); }}
-                    onFocus={() => setActiveDropdown(ei)}
-                    onBlur={() => setTimeout(() => setActiveDropdown(null), 150)}
+                    onChange={e => { updateName(ei, e.target.value); openDropdown(ei, null); }}
+                    onFocus={() => openDropdown(ei, null)}
+                    onBlur={() => setTimeout(() => closeDropdown(), 150)}
+                    onKeyDown={e => handleComboKeyDown(e, ei, ex.name)}
+                    role="combobox"
+                    aria-label="Exercise name"
+                    aria-autocomplete="list"
+                    aria-expanded={isDropdownOpen}
+                    aria-controls={listboxId}
+                    aria-activedescendant={activeOptionId}
                     style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--accent)', fontWeight: 700, fontSize: '1em', width: '100%' }}
                   />
-                  {activeDropdown === ei && ex.name.length > 0 && (() => {
-                    const q = ex.name.toLowerCase();
-                    const matches = getAllExerciseNames().filter(n => n.toLowerCase().includes(q)).slice(0, 8);
-                    return (
-                      <div
-                        onClick={e => e.stopPropagation()}
-                        style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '8px', zIndex: 100, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
-                      >
-                        {matches.length > 0 ? matches.map(name => (
-                          <div
-                            key={name}
-                            onMouseDown={() => { updateName(ei, name); setActiveDropdown(null); }}
-                            style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '13px', color: 'var(--text)', borderBottom: '1px solid var(--border, #333)' }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'var(--border, #333)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                          >
-                            {name}
-                          </div>
-                        )) : (
-                          <div style={{ padding: '10px 12px', fontSize: '13px' }}>
-                            <div style={{ color: '#ff5555', marginBottom: '8px' }}>"{ex.name}" is not in the exercise library</div>
+                  {isDropdownOpen && (
+                    <div
+                      id={listboxId}
+                      role="listbox"
+                      aria-label="Exercise suggestions"
+                      onClick={e => e.stopPropagation()}
+                      style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '8px', zIndex: 100, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
+                    >
+                      {options.map((opt, optIdx) => {
+                        const highlighted = highlightedIndex === optIdx;
+                        if (opt.kind === 'match') {
+                          return (
                             <div
-                              onMouseDown={() => {
-                                addToCustomExercises(ex.name.trim());
-                                setActiveDropdown(null);
-                              }}
-                              style={{ display: 'inline-block', padding: '5px 12px', background: 'rgba(250,204,21,0.15)', color: '#facc15', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}
+                              key={opt.name}
+                              id={optionId(optIdx)}
+                              role="option"
+                              aria-selected={highlighted}
+                              onMouseDown={() => { updateName(ei, opt.name); closeDropdown(); }}
+                              onMouseEnter={() => setHighlightedIndex(optIdx)}
+                              onMouseLeave={() => setHighlightedIndex(null)}
+                              style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '13px', color: 'var(--text)', borderBottom: '1px solid var(--border, #333)', background: highlighted ? 'var(--border, #333)' : 'transparent' }}
                             >
+                              {opt.name}
+                            </div>
+                          );
+                        }
+                        // 'add' kind — no matches; offer to add typed name to custom exercises.
+                        return (
+                          <div
+                            key="__add__"
+                            id={optionId(optIdx)}
+                            role="option"
+                            aria-selected={highlighted}
+                            onMouseDown={() => { addToCustomExercises(opt.name); closeDropdown(); }}
+                            onMouseEnter={() => setHighlightedIndex(optIdx)}
+                            onMouseLeave={() => setHighlightedIndex(null)}
+                            style={{ padding: '10px 12px', fontSize: '13px', cursor: 'pointer', background: highlighted ? 'var(--border, #333)' : 'transparent' }}
+                          >
+                            <div style={{ color: '#ff5555', marginBottom: '8px' }}>"{ex.name}" is not in the exercise library</div>
+                            <div style={{ display: 'inline-block', padding: '5px 12px', background: 'rgba(250,204,21,0.15)', color: '#facc15', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>
                               + Add "{ex.name}" to Custom Exercises
                             </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })()}
+                        );
+                      })}
+                    </div>
+                  )}
                   {ex.name.length > 0 && activeDropdown !== ei && !isValidExercise(ex.name) && (
-                    <div style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <div
+                      role="status"
+                      aria-live="polite"
+                      style={{ fontSize: '11px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}
+                    >
                       <span style={{ color: '#ff5555' }}>"{ex.name}" is not in the exercise library</span>
-                      <span
+                      <button
+                        type="button"
                         onClick={e => {
                           e.stopPropagation();
                           addToCustomExercises(ex.name.trim());
                           setExercises(prev => [...prev]);
                         }}
-                        style={{ color: '#facc15', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}
+                        style={{ color: '#facc15', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap', background: 'transparent', border: 'none', padding: 0, font: 'inherit' }}
                       >
                         + Add to Custom Exercises
-                      </span>
+                      </button>
                     </div>
                   )}
                 </div>
                 <div className="ex-card-stats">
                   <div className="stat-chip">
-                    <div className="stat-chip-val">{ex.sets.length}</div>
-                    <div className="stat-chip-lbl">Sets</div>
+                    <div className="stat-chip-val" aria-hidden="true">{ex.sets.length}</div>
+                    <div className="stat-chip-lbl" aria-hidden="true">Sets</div>
+                    <span className="sr-only">{ex.sets.length} {ex.sets.length === 1 ? 'set' : 'sets'}</span>
                   </div>
                 </div>
                 <button
                   className="ex-card-delete"
                   onClick={e => { e.stopPropagation(); deleteExercise(ei); }}
-                  title="Delete exercise"
+                  onKeyDown={e => e.stopPropagation()}
+                  aria-label={`Delete exercise: ${exerciseLabel}`}
                   style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', padding: '4px', lineHeight: 1 }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                     <polyline points="3 6 5 6 21 6"/>
                     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                     <path d="M10 11v6M14 11v6"/>
@@ -328,55 +495,64 @@ function CustomDay() {
               {/* Sets Panel */}
               {isOpen && (
                 <div className="ex-sets-panel">
-                  <div className="ex-sets-col-header" style={{ gridTemplateColumns: '36px repeat(3, 1fr)' }}>
+                  <div className="ex-sets-col-header" style={{ gridTemplateColumns: '36px repeat(3, 1fr)' }} aria-hidden="true">
                     <span className="ex-col-lbl">Set</span>
                     <span className="ex-col-lbl">Reps</span>
                     <span className="ex-col-lbl">Target</span>
                     <span className="ex-col-lbl">Actual (lbs)</span>
                   </div>
 
-                  {ex.sets.map((s, si) => (
-                    <div key={si} className="ex-set-row" style={{ gridTemplateColumns: '36px repeat(3, 1fr)' }}>
-                      <div className="set-num">{si + 1}</div>
-                      <div className="actual-input" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', gap: '4px' }}>
-                        <button
-                          type="button"
-                          onClick={() => updateSet(ei, si, { reps: Math.max(0, (Number(s.reps) || 0) - 1) })}
-                          style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
-                        >−</button>
-                        <span style={{ textAlign: 'center', fontSize: '14px', color: s.reps !== '' ? 'var(--text)' : 'var(--muted)' }}>
-                          {s.reps !== '' ? s.reps : '0'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => updateSet(ei, si, { reps: (Number(s.reps) || 0) + 1 })}
-                          style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
-                        >+</button>
+                  {ex.sets.map((s, si) => {
+                    const setLabel = `${exerciseLabel}, set ${si + 1}`;
+                    return (
+                      <div key={si} className="ex-set-row" style={{ gridTemplateColumns: '36px repeat(3, 1fr)' }}>
+                        <div className="set-num" aria-hidden="true">{si + 1}</div>
+                        <div className="actual-input" role="group" aria-label={`${setLabel} reps`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', gap: '4px' }}>
+                          <button
+                            type="button"
+                            onClick={() => updateSet(ei, si, { reps: Math.max(0, (Number(s.reps) || 0) - 1) })}
+                            aria-label={`Decrease reps for ${setLabel}`}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                          ><span aria-hidden="true">−</span></button>
+                          <span style={{ textAlign: 'center', fontSize: '14px', color: s.reps !== '' ? 'var(--text)' : 'var(--muted)' }} aria-live="off">
+                            {s.reps !== '' ? s.reps : '0'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateSet(ei, si, { reps: (Number(s.reps) || 0) + 1 })}
+                            aria-label={`Increase reps for ${setLabel}`}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                          ><span aria-hidden="true">+</span></button>
+                        </div>
+                        <input
+                          className="actual-input"
+                          type="number"
+                          min="0"
+                          step="5"
+                          placeholder="0"
+                          value={s.target}
+                          onChange={e => updateSet(ei, si, { target: e.target.value })}
+                          aria-label={`Target weight in pounds for ${setLabel}`}
+                          inputMode="numeric"
+                        />
+                        <input
+                          className="actual-input"
+                          type="number"
+                          min="0"
+                          step="5"
+                          placeholder="0"
+                          value={s.actual}
+                          onChange={e => updateSet(ei, si, { actual: e.target.value })}
+                          aria-label={`Actual weight in pounds for ${setLabel}`}
+                          inputMode="numeric"
+                        />
                       </div>
-                      <input
-                        className="actual-input"
-                        type="number"
-                        min="0"
-                        step="5"
-                        placeholder="0"
-                        value={s.target}
-                        onChange={e => updateSet(ei, si, { target: e.target.value })}
-                      />
-                      <input
-                        className="actual-input"
-                        type="number"
-                        min="0"
-                        step="5"
-                        placeholder="0"
-                        value={s.actual}
-                        onChange={e => updateSet(ei, si, { actual: e.target.value })}
-                      />
-                    </div>
-                  ))}
+                    );
+                  })}
 
                   {allDone && (
-                    <div className="ex-complete-banner">
-                      <span>✓</span> All sets complete — nice work!
+                    <div className="ex-complete-banner" role="status" aria-live="polite">
+                      <span aria-hidden="true">✓</span> All sets complete — nice work!
                     </div>
                   )}
 
@@ -385,8 +561,9 @@ function CustomDay() {
                     className="btn-back"
                     style={{ marginTop: '10px' }}
                     onClick={() => addSet(ei)}
+                    aria-label={`Add a set to ${exerciseLabel}`}
                   >
-                    + Add Set
+                    <span aria-hidden="true">+</span> Add Set
                   </button>
                 </div>
               )}
@@ -399,27 +576,65 @@ function CustomDay() {
 
       {/* Footer */}
       <div className="day-footer">
-        <button className="btn-back" onClick={async () => { if (isExternal) { await saveToDbNow(exercises); navigate(`/view-program/${location.state?.programLogId}`, { state: { isEditing: true } }); } else { navigate('/customWorkout'); } }}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+        <button
+          className="btn-back"
+          onClick={async () => { if (isExternal) { await saveToDbNow(exercises); navigate(`/view-program/${location.state?.programLogId}`, { state: { isEditing: true } }); } else { navigate('/customWorkout'); } }}
+          aria-label="Back to workout"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><polyline points="15 18 9 12 15 6"/></svg>
           Back
         </button>
-        <button type="button" className="btn-back" onClick={() => setApplyConfirm(true)}>
-          {applyDone ? '✓ Applied!' : 'Apply to All Weeks'}
+        <button
+          type="button"
+          className="btn-back"
+          onClick={() => setApplyConfirm(true)}
+          aria-label={applyDone ? 'Exercises applied to all weeks' : 'Apply this day’s exercises to all other weeks'}
+        >
+          <span aria-hidden="true">{applyDone ? '✓ Applied!' : 'Apply to All Weeks'}</span>
         </button>
-        <button className="btn-complete" onClick={saveWorkout}>
-          {saved ? '✓ Saved!' : 'Save Workout'}
+        <button
+          className="btn-complete"
+          onClick={saveWorkout}
+          aria-label={saved ? 'Workout saved' : 'Save workout'}
+        >
+          <span aria-hidden="true">{saved ? '✓ Saved!' : 'Save Workout'}</span>
         </button>
       </div>
 
+      {/* Polite live region — announces save / apply success without
+          requiring focus on the corresponding button. */}
+      <div role="status" aria-live="polite" className="sr-only">
+        {saved ? 'Workout saved.' : ''}
+        {applyDone ? 'Exercises applied to all other weeks.' : ''}
+      </div>
+
       {applyConfirm && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '12px', padding: '28px 32px', maxWidth: '360px', width: '90%', textAlign: 'center' }}>
-            <h3 style={{ margin: '0 0 10px', color: 'var(--text)' }}>Apply to All Weeks?</h3>
-            <p style={{ margin: '0 0 24px', color: 'var(--text-muted, #888)', fontSize: '14px', lineHeight: 1.5 }}>
+        <div
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}
+          onClick={closeApplyConfirm}
+        >
+          <div
+            ref={applyModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cd-apply-title"
+            aria-describedby="cd-apply-desc"
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '12px', padding: '28px 32px', maxWidth: '360px', width: '90%', textAlign: 'center' }}
+          >
+            <h3 id="cd-apply-title" style={{ margin: '0 0 10px', color: 'var(--text)' }}>Apply to All Weeks?</h3>
+            <p id="cd-apply-desc" style={{ margin: '0 0 24px', color: 'var(--text-muted, #888)', fontSize: '14px', lineHeight: 1.5 }}>
               The exercises in Day {dayNum} will be copied to every other week, overwriting any existing data for that day.
             </p>
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-              <button type="button" className="btn-back" onClick={() => setApplyConfirm(false)}>Cancel</button>
+              <button
+                ref={cancelApplyBtnRef}
+                type="button"
+                className="btn-back"
+                onClick={closeApplyConfirm}
+              >
+                Cancel
+              </button>
               <button
                 type="button"
                 className="btn-complete"

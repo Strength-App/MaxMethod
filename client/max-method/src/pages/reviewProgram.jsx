@@ -86,6 +86,7 @@ function CircuitExRow({ ex, exIdx, slotIdx, dayIdx, onSwap }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(ex.exercise ?? ex.fixed ?? ex.label);
   const isRest = ex.pattern == null && ex.fixed == null && ex.label === 'Rest';
+  const dropdownId = `rp-circ-dd-${dayIdx}-${slotIdx}-${exIdx}`;
 
   const alternatives = useMemo(() => {
     if (ex.label && MOVEMENT_PATTERNS[ex.label]) return MOVEMENT_PATTERNS[ex.label];
@@ -120,7 +121,9 @@ function CircuitExRow({ ex, exIdx, slotIdx, dayIdx, onSwap }) {
               <button
                 className={`rp-swap-btn${open ? ' rp-swap-btn--active' : ''}`}
                 onClick={() => setOpen(o => !o)}
-                title="Swap exercise"
+                aria-expanded={open}
+                aria-controls={dropdownId}
+                aria-label={open ? `Cancel swap for ${displayName}` : `Swap ${displayName} for an alternative`}
               >
                 {open ? 'Cancel' : 'Swap'}
               </button>
@@ -129,8 +132,15 @@ function CircuitExRow({ ex, exIdx, slotIdx, dayIdx, onSwap }) {
         )}
       </div>
       {open && (
-        <div className="rp-swap-dropdown">
-          <select value={selected} onChange={handleSelect} className="rp-select">
+        <div className="rp-swap-dropdown" id={dropdownId}>
+          <label htmlFor={`${dropdownId}-select`} className="sr-only">Replacement for {displayName}</label>
+          <select
+            id={`${dropdownId}-select`}
+            value={selected}
+            onChange={handleSelect}
+            className="rp-select"
+            aria-label={`Replacement for ${displayName}`}
+          >
             {alternatives.map(a => (
               <option key={a} value={a}>{a}</option>
             ))}
@@ -146,10 +156,11 @@ function CircuitGroup({ slot, dayIdx, onSwap }) {
   const parts = [slot.label];
   if (slot.circuitType) parts.push(slot.circuitType);
   if (slot.totalTime) parts.push(slot.totalTime);
+  const headerText = parts.join(' · ');
 
   return (
-    <div className="rp-circuit-group">
-      <div className="rp-circuit-header">{parts.join(' · ')}</div>
+    <div className="rp-circuit-group" role="group" aria-label={`Circuit: ${headerText}`}>
+      <div className="rp-circuit-header" aria-hidden="true">{headerText}</div>
       {(slot.exercises ?? []).map((ex, i) => (
         <CircuitExRow
           key={i}
@@ -169,6 +180,7 @@ function SlotRow({ slot, dayIdx, onSwap }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(slot.exercise);
   const isFixed = !!slot.fixed;
+  const dropdownId = `rp-slot-dd-${dayIdx}-${slot.slotIdxs.join('_')}`;
 
   // Find alternatives: try label match, then scan all patterns for the exercise name.
   // Fixed exercises may have slot.label set to the exercise name rather than the
@@ -213,7 +225,9 @@ function SlotRow({ slot, dayIdx, onSwap }) {
             <button
               className={`rp-swap-btn${open ? ' rp-swap-btn--active' : ''}`}
               onClick={() => setOpen(o => !o)}
-              title="Swap exercise"
+              aria-expanded={open}
+              aria-controls={dropdownId}
+              aria-label={open ? `Cancel swap for ${slot.exercise}` : `Swap ${slot.exercise} for an alternative`}
             >
               {open ? 'Cancel' : 'Swap'}
             </button>
@@ -221,11 +235,14 @@ function SlotRow({ slot, dayIdx, onSwap }) {
         </div>
       </div>
       {open && (
-        <div className="rp-swap-dropdown">
+        <div className="rp-swap-dropdown" id={dropdownId}>
+          <label htmlFor={`${dropdownId}-select`} className="sr-only">Replacement for {slot.exercise}</label>
           <select
+            id={`${dropdownId}-select`}
             value={selected}
             onChange={handleSelect}
             className="rp-select"
+            aria-label={`Replacement for ${slot.exercise}`}
           >
             {alternatives.map(ex => (
               <option key={ex} value={ex}>{ex}</option>
@@ -353,19 +370,24 @@ function ReviewProgram() {
           Fixed exercises are core lifts and cannot be changed.
         </p>
         {classification && (
-          <div className="rp-classification-banner">
-            <span className="rp-classification-label">Strength Classification</span>
+          <div className="rp-classification-banner" role="group" aria-label="Strength classification">
+            <span className="rp-classification-label" aria-hidden="true">Strength Classification</span>
             <span className="rp-classification-value">{classification}</span>
           </div>
         )}
       </div>
 
-      <div className="rp-week-label">Exercise Overview</div>
+      <div className="rp-week-label" id="rp-overview-label">Exercise Overview</div>
 
-      <div className="rp-days-grid">
+      <div className="rp-days-grid" role="list" aria-labelledby="rp-overview-label">
         {processedDays.filter(d => d?.title != null).map((day, di) => (
-          <div key={di} className="rp-day-card">
-            <div className="rp-day-title">{day.title}</div>
+          <section
+            key={di}
+            className="rp-day-card"
+            role="listitem"
+            aria-labelledby={`rp-day-${di}-title`}
+          >
+            <div className="rp-day-title" id={`rp-day-${di}-title`}>{day.title}</div>
             <div className="rp-slots-list">
               {(day.uniqueSlots ?? []).map((slot, si) =>
                 slot.isCircuit ? (
@@ -375,14 +397,17 @@ function ReviewProgram() {
                 )
               )}
             </div>
-          </div>
+          </section>
         ))}
       </div>
 
       <div className="rp-footer">
         <div className="rp-footer-left">
-          <div className="rp-footer-status">
-            <span className={`rp-footer-dot${swapCount > 0 ? ' rp-footer-dot--changed' : ''}`} />
+          <div className="rp-footer-status" role="status" aria-live="polite">
+            <span
+              className={`rp-footer-dot${swapCount > 0 ? ' rp-footer-dot--changed' : ''}`}
+              aria-hidden="true"
+            />
             {swapCount > 0
               ? <span className="rp-footer-status-text">{swapCount} exercise{swapCount !== 1 ? 's' : ''} customized</span>
               : <span className="rp-footer-status-text">No changes — using generated exercises</span>
@@ -395,16 +420,18 @@ function ReviewProgram() {
           className="rp-finalize-btn"
           onClick={handleFinalize}
           disabled={saving}
+          aria-busy={saving || undefined}
+          aria-label={saving ? 'Saving program' : 'Finalize and start this program (replaces any currently active program)'}
         >
           {saving ? (
             <>
-              <span className="rp-finalize-spinner" />
+              <span className="rp-finalize-spinner" aria-hidden="true" />
               Saving…
             </>
           ) : (
             <>
               Finalize & Start Program
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
                 <path d="M5 12h14M13 6l6 6-6 6"/>
               </svg>
             </>

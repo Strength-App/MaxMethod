@@ -416,6 +416,14 @@ function BodyDiagram({ muscles = {} }) {
   const c  = (k) => muscles[k] || 'transparent'
   const b  = 'rgba(0,0,0,0.35)'
   const ol = 'rgba(255,255,255,0.08)'
+  // Derive a dynamic SR label listing which muscle groups are highlighted
+  // for this exercise. Static labels would lie about the diagram contents.
+  const highlightedMuscles = Object.entries(muscles)
+    .filter(([, color]) => color && color !== 'transparent')
+    .map(([key]) => key)
+  const diagramLabel = highlightedMuscles.length > 0
+    ? `Body diagram highlighting: ${highlightedMuscles.join(', ')}`
+    : 'Body diagram'
   const svg = `<svg viewBox="0 0 80 160" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="40" cy="12" rx="9" ry="10" fill="${b}" stroke="${ol}" stroke-width=".5"/>
   <rect x="36" y="21" width="8" height="7" fill="${b}" stroke="${ol}" stroke-width=".5"/>
@@ -450,22 +458,45 @@ function BodyDiagram({ muscles = {} }) {
   <ellipse cx="30" cy="151" rx="5" ry="3" fill="${b}" stroke="${ol}" stroke-width=".5"/>
   <ellipse cx="50" cy="151" rx="5" ry="3" fill="${b}" stroke="${ol}" stroke-width=".5"/>
   </svg>`
-  return <div dangerouslySetInnerHTML={{ __html: svg }} style={{ width: '100%', height: '100%' }} />
+  return (
+    <div
+      role="img"
+      aria-label={diagramLabel}
+      dangerouslySetInnerHTML={{ __html: svg }}
+      style={{ width: '100%', height: '100%' }}
+    />
+  )
 }
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 
 function ExerciseCard({ exercise, onSelect }) {
   const bodyLabel = exercise.body === 'upper' ? 'Upper' : exercise.body === 'lower' ? 'Lower' : exercise.body === 'cardio' ? 'Cardio' : 'Core'
+  const onActivate = () => onSelect(exercise)
+  const onKeyDown = (e) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault()
+      onActivate()
+    }
+  }
+  const equipmentLabel = exercise.equipment ? `, ${exercise.equipment}` : ''
+  const cardLabel = `${exercise.name} — ${bodyLabel}, ${exercise.pattern}${equipmentLabel}, primary muscle: ${exercise.primary}`
   return (
-    <div className="el-card" onClick={() => onSelect(exercise)}>
+    <div
+      className="el-card"
+      onClick={onActivate}
+      onKeyDown={onKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={cardLabel}
+    >
       <div className="el-card-body">
         <div className="el-muscle-icon">
           <BodyDiagram muscles={exercise.muscles} />
         </div>
         <div className="el-card-info">
-          <div className="el-card-name">{exercise.name}</div>
-          <div className="el-card-tags">
+          <div className="el-card-name" aria-hidden="true">{exercise.name}</div>
+          <div className="el-card-tags" aria-hidden="true">
             <span className={`el-tag ${exercise.body}`}>{bodyLabel}</span>
             <span className="el-tag pattern">{exercise.pattern}</span>
             {exercise.equipment && (
@@ -474,7 +505,7 @@ function ExerciseCard({ exercise, onSelect }) {
           </div>
         </div>
       </div>
-      <div className="el-card-footer">
+      <div className="el-card-footer" aria-hidden="true">
         <span className="el-card-muscle">{exercise.primary}</span>
         <span className="el-card-arrow">→</span>
       </div>
@@ -527,8 +558,8 @@ function DetailView({ exercise, onBack, playbackId }) {
 
   return (
     <div className="el-page">
-      <button className="el-detail-back" onClick={onBack}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <button className="el-detail-back" onClick={onBack} aria-label="Back to exercise library">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
           <path d="M19 12H5M12 5l-7 7 7 7"/>
         </svg>
         Exercise Library
@@ -546,14 +577,14 @@ function DetailView({ exercise, onBack, playbackId }) {
             />
           ) : (
             <>
-              <button className="el-play-btn" aria-label="Play video">
-                <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+              <button className="el-play-btn" aria-label={`Play video for ${exercise.name}`} disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><polygon points="5,3 19,12 5,21"/></svg>
               </button>
-              <div className="el-video-label">Video coming soon — {exercise.name}</div>
+              <div className="el-video-label" role="status">Video coming soon — {exercise.name}</div>
             </>
           )}
         </div>
-        <div className="el-detail-meta">
+        <div className="el-detail-meta" role="group" aria-label="Exercise classification">
           <span className="el-badge primary">{exercise.primary}</span>
           <span className={`el-badge ${exercise.body}`}>{bodyLabel}</span>
           <span className="el-badge">{exercise.pattern}</span>
@@ -566,25 +597,37 @@ function DetailView({ exercise, onBack, playbackId }) {
       <div className="el-detail-body">
         <div className="el-steps-container">
           <div className="el-steps-header">
-            <div className="el-steps-title">{exercise.name}</div>
+            <div className="el-steps-title" id="el-steps-title">{exercise.name}</div>
             <div className="el-steps-subtitle">Step-by-step execution</div>
           </div>
 
           {/* Tabs */}
-          <div className="el-detail-tabs">
+          <div className="el-detail-tabs" role="tablist" aria-label="Exercise detail">
             <button
+              id="el-tab-cues"
+              role="tab"
+              aria-selected={detailTab === 'cues'}
+              aria-controls="el-panel-cues"
               className={`el-detail-tab${detailTab === 'cues' ? ' active' : ''}`}
               onClick={() => setDetailTab('cues')}
             >
               Coaching Cues
             </button>
             <button
+              id="el-tab-pr"
+              role="tab"
+              aria-selected={detailTab === 'pr'}
+              aria-controls="el-panel-pr"
               className={`el-detail-tab${detailTab === 'pr' ? ' active' : ''}`}
               onClick={() => setDetailTab('pr')}
             >
               Personal Record
             </button>
             <button
+              id="el-tab-history"
+              role="tab"
+              aria-selected={detailTab === 'history'}
+              aria-controls="el-panel-history"
               className={`el-detail-tab${detailTab === 'history' ? ' active' : ''}`}
               onClick={() => setDetailTab('history')}
             >
@@ -594,10 +637,10 @@ function DetailView({ exercise, onBack, playbackId }) {
 
           {/* Coaching Cues */}
           {detailTab === 'cues' && (
-            <div className="el-step-list">
+            <div className="el-step-list" id="el-panel-cues" role="tabpanel" aria-labelledby="el-tab-cues">
               {exercise.steps.map((step, i) => (
                 <div className="el-step" key={i}>
-                  <div className="el-step-num">{i + 1}</div>
+                  <div className="el-step-num" aria-hidden="true">{i + 1}</div>
                   <div>
                     <div className="el-step-label">{step.t}</div>
                     <div
@@ -612,21 +655,22 @@ function DetailView({ exercise, onBack, playbackId }) {
 
           {/* Personal Record */}
           {detailTab === 'pr' && (
-            <div className="el-pr-panel">
+            <div className="el-pr-panel" id="el-panel-pr" role="tabpanel" aria-labelledby="el-tab-pr">
               {pr != null ? (
                 <div className="el-pr-card">
-                  <div className="el-pr-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <div className="el-pr-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" focusable="false">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                     </svg>
                   </div>
-                  <div className="el-pr-weight">{pr}<span>lbs</span></div>
-                  <div className="el-pr-label">Personal Record</div>
-                  <div className="el-pr-sub">{exercise.name}</div>
+                  <div className="el-pr-weight" aria-hidden="true">{pr}<span>lbs</span></div>
+                  <div className="el-pr-label" aria-hidden="true">Personal Record</div>
+                  <div className="el-pr-sub" aria-hidden="true">{exercise.name}</div>
+                  <span className="sr-only">Personal record for {exercise.name}: {pr} pounds</span>
                 </div>
               ) : (
-                <div className="el-panel-empty">
-                  <div className="el-panel-empty-icon">🏆</div>
+                <div className="el-panel-empty" role="status">
+                  <div className="el-panel-empty-icon" aria-hidden="true">🏆</div>
                   <div className="el-panel-empty-text">No personal record yet</div>
                   <div className="el-panel-empty-sub">Log this exercise to set your first PR</div>
                 </div>
@@ -636,14 +680,14 @@ function DetailView({ exercise, onBack, playbackId }) {
 
           {/* Exercise History */}
           {detailTab === 'history' && (
-            <div className="el-history-panel">
+            <div className="el-history-panel" id="el-panel-history" role="tabpanel" aria-labelledby="el-tab-history">
               {historyLoading ? (
-                <div className="el-panel-empty">
+                <div className="el-panel-empty" role="status" aria-live="polite">
                   <div className="el-panel-empty-text">Loading history…</div>
                 </div>
               ) : exerciseHistory.length === 0 ? (
-                <div className="el-panel-empty">
-                  <div className="el-panel-empty-icon">📋</div>
+                <div className="el-panel-empty" role="status">
+                  <div className="el-panel-empty-icon" aria-hidden="true">📋</div>
                   <div className="el-panel-empty-text">No history yet</div>
                   <div className="el-panel-empty-sub">Complete a workout containing {exercise.name} to see it here</div>
                 </div>
@@ -756,8 +800,8 @@ function CustomDetailView({ name, onBack }) {
 
   return (
     <div className="el-page">
-      <button className="el-detail-back" onClick={onBack}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <button className="el-detail-back" onClick={onBack} aria-label="Back to custom exercises">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
           <path d="M19 12H5M12 5l-7 7 7 7"/>
         </svg>
         Custom Exercises
@@ -770,14 +814,22 @@ function CustomDetailView({ name, onBack }) {
             <div className="el-steps-subtitle">Custom Exercise</div>
           </div>
 
-          <div className="el-detail-tabs">
+          <div className="el-detail-tabs" role="tablist" aria-label="Custom exercise detail">
             <button
+              id="el-cust-tab-pr"
+              role="tab"
+              aria-selected={detailTab === 'pr'}
+              aria-controls="el-cust-panel-pr"
               className={`el-detail-tab${detailTab === 'pr' ? ' active' : ''}`}
               onClick={() => setDetailTab('pr')}
             >
               Personal Record
             </button>
             <button
+              id="el-cust-tab-history"
+              role="tab"
+              aria-selected={detailTab === 'history'}
+              aria-controls="el-cust-panel-history"
               className={`el-detail-tab${detailTab === 'history' ? ' active' : ''}`}
               onClick={() => setDetailTab('history')}
             >
@@ -786,21 +838,22 @@ function CustomDetailView({ name, onBack }) {
           </div>
 
           {detailTab === 'pr' && (
-            <div className="el-pr-panel">
+            <div className="el-pr-panel" id="el-cust-panel-pr" role="tabpanel" aria-labelledby="el-cust-tab-pr">
               {pr != null ? (
                 <div className="el-pr-card">
-                  <div className="el-pr-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <div className="el-pr-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true" focusable="false">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                     </svg>
                   </div>
-                  <div className="el-pr-weight">{pr}<span>lbs</span></div>
-                  <div className="el-pr-label">Personal Record</div>
-                  <div className="el-pr-sub">{name}</div>
+                  <div className="el-pr-weight" aria-hidden="true">{pr}<span>lbs</span></div>
+                  <div className="el-pr-label" aria-hidden="true">Personal Record</div>
+                  <div className="el-pr-sub" aria-hidden="true">{name}</div>
+                  <span className="sr-only">Personal record for {name}: {pr} pounds</span>
                 </div>
               ) : (
-                <div className="el-panel-empty">
-                  <div className="el-panel-empty-icon">🏆</div>
+                <div className="el-panel-empty" role="status">
+                  <div className="el-panel-empty-icon" aria-hidden="true">🏆</div>
                   <div className="el-panel-empty-text">No personal record yet</div>
                   <div className="el-panel-empty-sub">Log this exercise to set your first PR</div>
                 </div>
@@ -809,14 +862,14 @@ function CustomDetailView({ name, onBack }) {
           )}
 
           {detailTab === 'history' && (
-            <div className="el-history-panel">
+            <div className="el-history-panel" id="el-cust-panel-history" role="tabpanel" aria-labelledby="el-cust-tab-history">
               {historyLoading ? (
-                <div className="el-panel-empty">
+                <div className="el-panel-empty" role="status" aria-live="polite">
                   <div className="el-panel-empty-text">Loading history…</div>
                 </div>
               ) : exerciseHistory.length === 0 ? (
-                <div className="el-panel-empty">
-                  <div className="el-panel-empty-icon">📋</div>
+                <div className="el-panel-empty" role="status">
+                  <div className="el-panel-empty-icon" aria-hidden="true">📋</div>
                   <div className="el-panel-empty-text">No history yet</div>
                   <div className="el-panel-empty-sub">Complete a workout containing {name} to see it here</div>
                 </div>
@@ -930,15 +983,20 @@ function CustomExercisesSection({ onSelect }) {
   }
 
   return (
-    <div className="el-section">
-      <div className="el-section-label">Custom Exercises</div>
+    <div className="el-section" aria-labelledby="el-custom-section-label">
+      <div className="el-section-label" id="el-custom-section-label">Custom Exercises</div>
       <p style={{ color: 'var(--text-muted, #888)', fontSize: '13px', margin: '0 0 14px', lineHeight: 1.5 }}>
         Add exercises not in the standard library. They will be available as valid options in the custom workout maker.
       </p>
       <div style={{ display: 'flex', gap: '8px', marginBottom: error ? '6px' : '16px' }}>
+        <label htmlFor="el-custom-add-input" className="sr-only">New custom exercise name</label>
         <input
+          id="el-custom-add-input"
           type="text"
           placeholder="Exercise name..."
+          aria-label="New custom exercise name"
+          aria-describedby={error ? 'el-custom-add-error' : undefined}
+          aria-invalid={!!error || undefined}
           value={inputVal}
           onChange={e => { setInputVal(e.target.value); setError('') }}
           onKeyDown={e => e.key === 'Enter' && addExercise()}
@@ -946,40 +1004,72 @@ function CustomExercisesSection({ onSelect }) {
         />
         <button
           onClick={addExercise}
+          aria-label="Add custom exercise"
           style={{ background: 'var(--accent, #e63946)', border: 'none', borderRadius: '8px', padding: '9px 18px', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', whiteSpace: 'nowrap' }}
         >
           Add
         </button>
       </div>
-      {error && <div style={{ color: '#ff5555', fontSize: '12px', marginBottom: '12px' }}>{error}</div>}
+      {error && (
+        <div
+          id="el-custom-add-error"
+          role="alert"
+          style={{ color: '#ff5555', fontSize: '12px', marginBottom: '12px' }}
+        >
+          {error}
+        </div>
+      )}
       {customExercises.length === 0 ? (
-        <div style={{ color: 'var(--text-muted, #888)', fontSize: '13px', padding: '12px 0' }}>No custom exercises yet.</div>
+        <div role="status" style={{ color: 'var(--text-muted, #888)', fontSize: '13px', padding: '12px 0' }}>No custom exercises yet.</div>
       ) : (
         <div className="el-grid">
-          {customExercises.map(name => (
-            <div key={name} className="el-card" onClick={() => onSelect(name)}>
-              <div className="el-card-body">
-                <div className="el-card-info" style={{ width: '100%' }}>
-                  <div className="el-card-name">{name}</div>
-                  <div className="el-card-tags">
-                    <span className="el-tag" style={{ background: 'rgba(250,204,21,0.15)', color: '#facc15' }}>Custom</span>
+          {customExercises.map(name => {
+            const onActivate = () => onSelect(name)
+            const onCardKeyDown = (e) => {
+              if (e.key === ' ' || e.key === 'Enter') {
+                e.preventDefault()
+                onActivate()
+              }
+            }
+            return (
+              <div
+                key={name}
+                className="el-card"
+                onClick={onActivate}
+                onKeyDown={onCardKeyDown}
+                role="button"
+                tabIndex={0}
+                aria-label={`${name}, custom exercise`}
+              >
+                <div className="el-card-body">
+                  <div className="el-card-info" style={{ width: '100%' }}>
+                    <div className="el-card-name" aria-hidden="true">{name}</div>
+                    <div className="el-card-tags" aria-hidden="true">
+                      <span className="el-tag" style={{ background: 'rgba(250,204,21,0.15)', color: '#facc15' }}>Custom</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="el-card-footer">
+                  <span className="el-card-muscle" aria-hidden="true">Custom Exercise</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {/* Real <button> nested inside role="button" parent — semantically
+                        invalid per ARIA, but functionally works (separate tab stop,
+                        Space/Enter stopPropagation prevents card activation).
+                        Flagged as follow-up: split card into a name-button + remove-button
+                        siblings rather than nested. */}
+                    <button
+                      className="el-card-arrow"
+                      onClick={e => { e.stopPropagation(); removeExercise(name) }}
+                      onKeyDown={e => e.stopPropagation()}
+                      aria-label={`Remove ${name} from custom exercises`}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', fontSize: '16px', lineHeight: 1, padding: '0 2px' }}
+                    ><span aria-hidden="true">×</span></button>
+                    <span className="el-card-arrow" aria-hidden="true">→</span>
                   </div>
                 </div>
               </div>
-              <div className="el-card-footer">
-                <span className="el-card-muscle">Custom Exercise</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    className="el-card-arrow"
-                    onClick={e => { e.stopPropagation(); removeExercise(name) }}
-                    title="Remove"
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-muted, #888)', fontSize: '16px', lineHeight: 1, padding: '0 2px' }}
-                  >×</button>
-                  <span className="el-card-arrow">→</span>
-                </div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
@@ -1046,45 +1136,57 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
           <div className="el-subtitle">Video guides for every movement in your program</div>
         </div>
         {activeTab !== 'custom' && (
-          <div className="el-count">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</div>
+          <div className="el-count" aria-live="polite" aria-atomic="true">
+            <span aria-hidden="true">{exercises.length} exercise{exercises.length !== 1 ? 's' : ''}</span>
+            <span className="sr-only">{exercises.length} {exercises.length === 1 ? 'exercise' : 'exercises'} shown</span>
+          </div>
         )}
       </div>
 
       {activeTab !== 'custom' && (
         <div className="el-search">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true" focusable="false">
             <circle cx="11" cy="11" r="8"/>
             <path d="m21 21-4.35-4.35"/>
           </svg>
+          <label htmlFor="el-search-input" className="sr-only">Search exercises or patterns</label>
           <input
-            type="text"
+            id="el-search-input"
+            type="search"
             placeholder="Search exercises or patterns…"
+            aria-label="Search exercises or patterns"
             value={search}
             onChange={e => onSearchChange(e.target.value)}
           />
         </div>
       )}
 
-      <div className="el-tabs">
+      <div className="el-tabs" role="tablist" aria-label="Filter exercises by body region">
         {tabs.map(({ key, label }) => (
           <button
             key={key}
+            id={`el-filter-tab-${key}`}
+            role="tab"
+            aria-selected={activeTab === key}
+            aria-controls={`el-filter-panel-${key}`}
             className={`el-tab${activeTab === key ? ' active' : ''}`}
             data-tab={key}
             onClick={() => onTabChange(key)}
           >
-            <span className="el-tab-dot" />
+            <span className="el-tab-dot" aria-hidden="true" />
             {label}
           </button>
         ))}
       </div>
 
       {activeTab === 'custom' ? (
-        <CustomExercisesSection onSelect={onCustomSelect} />
+        <div id={`el-filter-panel-custom`} role="tabpanel" aria-labelledby="el-filter-tab-custom">
+          <CustomExercisesSection onSelect={onCustomSelect} />
+        </div>
       ) : (
-        <>
+        <div id={`el-filter-panel-${activeTab}`} role="tabpanel" aria-labelledby={`el-filter-tab-${activeTab}`}>
           {exercises.length === 0 ? (
-            <div className="el-empty">No exercises match "{search}"</div>
+            <div className="el-empty" role="status" aria-live="polite">No exercises match "{search}"</div>
           ) : (
             <>
               {showUpper && Object.keys(grouped.upper).length > 0 && (
@@ -1114,7 +1216,7 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
             </>
           )}
           <CustomExercisesSection onSelect={onCustomSelect} />
-        </>
+        </div>
       )}
     </div>
   )

@@ -107,15 +107,21 @@ function LoadingPage() {
   }, []);
 
   return (
-    <div className="loading-page">
+    <div className="loading-page" aria-busy="true">
       <div className="loading-content">
-        <div className="loading-logo">MaxMethod</div>
-        <div className="loading-spinner-wrap">
+        <div className="loading-logo" aria-hidden="true">MaxMethod</div>
+        <div className="loading-spinner-wrap" aria-hidden="true">
           <div className="loading-ring" />
           <div className="loading-ring loading-ring--delay" />
         </div>
-        <div className="loading-message" key={msgIndex}>
-          {MESSAGES[msgIndex]}
+        {/* Stable aria-live container so screen readers announce each new
+            status message. The inner .loading-message is keyed so React
+            re-mounts it for the fade-in animation; the outer container
+            stays mounted so the live region remains subscribed. */}
+        <div role="status" aria-live="polite" aria-atomic="true">
+          <div className="loading-message" key={msgIndex}>
+            {MESSAGES[msgIndex]}
+          </div>
         </div>
         <div className="loading-sub">Building your personalized program</div>
       </div>

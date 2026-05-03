@@ -48,14 +48,20 @@ function Navigation() {
 
   const onPrograms = location.pathname === '/pickNewProgram' || location.pathname.startsWith('/view-program');
 
+  const isHome = location.pathname === '/home';
+
   return (
-    <nav className="navigation">
-      <button id="backBtn" onClick={() => {
-          if (location.pathname === '/home') return
+    <nav className="navigation" aria-label="Main">
+      <button
+        id="backBtn"
+        onClick={() => {
+          if (isHome) return
           window.history.back()
         }}
+        aria-label="Go back to previous page"
+        aria-disabled={isHome ? 'true' : undefined}
       >
-        ← Back
+        <span aria-hidden="true">←</span> Back
       </button>
 
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"} aria-current={location.pathname === '/home' ? 'page' : undefined}>Home</Link>
@@ -92,10 +98,19 @@ function App() {
   return (
     <div className="App">
       <WorkoutProvider>
+        {/* Skip-to-content link — visible only on keyboard focus. */}
+        {!hideNavigation && (
+          <a href="#main-content" className="skip-link">Skip to main content</a>
+        )}
+
         {/* ONLY SHOW NAV ON NON-AUTH PAGES */}
         {!hideNavigation && <Navigation />}
 
-        <div className={`page-content${hideNavigation ? ' page-content--full' : ''}`}>
+        <main
+          id="main-content"
+          tabIndex={-1}
+          className={`page-content${hideNavigation ? ' page-content--full' : ''}`}
+        >
           <Routes>
             {/* DEFAULT */}
             <Route path="/" element={<Navigate to="/welcomepage" replace />} />
@@ -124,7 +139,7 @@ function App() {
             <Route path="/review-program" element={user ? <ReviewProgram /> : <Navigate to="/welcomepage" replace />} />
             <Route path="/logger" element={protectedRoute(<Logger />)} />
           </Routes>
-        </div>
+        </main>
       </WorkoutProvider>
     </div>
   )

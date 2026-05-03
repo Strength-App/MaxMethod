@@ -218,28 +218,38 @@ function Onboarding() {
       <h1 className="onboarding-title">Welcome!</h1>
       <p className="onboarding-subtitle">{stepTitle}</p>
 
-      <div className="ob-stepper" aria-label="Onboarding progress">
+      <ol className="ob-stepper" aria-label="Onboarding progress">
         {[1, 2, 3].map((n) => (
-          <div
+          <li
             key={n}
             className={`ob-step-dot${step === n ? " active" : ""}${step > n ? " done" : ""}`}
+            aria-current={step === n ? 'step' : undefined}
           >
-            <span>{n}</span>
-          </div>
+            <span aria-hidden="true">{n}</span>
+            <span className="sr-only">
+              Step {n} of 3{step === n ? ', current' : step > n ? ', completed' : ''}
+            </span>
+          </li>
         ))}
-      </div>
+      </ol>
 
       <form className="onboarding-card" onSubmit={(e) => e.preventDefault()}>
 
         {step === 1 && (
           <>
             <div className="ob-section">
-              <div className="ob-section-label">Gender</div>
-              <div className="ob-btn-group">
+              <div className="ob-section-label" id="ob-gender-label">Gender</div>
+              <div
+                className="ob-btn-group"
+                role="radiogroup"
+                aria-labelledby="ob-gender-label"
+              >
                 {["male", "female", "other"].map((g) => (
                   <button
                     key={g}
                     type="button"
+                    role="radio"
+                    aria-checked={formData.gender === g}
                     className={`ob-toggle-btn${formData.gender === g ? " active" : ""}`}
                     onClick={() => set("gender", g)}
                   >
@@ -249,10 +259,10 @@ function Onboarding() {
               </div>
             </div>
 
-            <div className="ob-divider" />
+            <div className="ob-divider" aria-hidden="true" />
 
             <div className="ob-section">
-              <div className="ob-section-label">Body Weight</div>
+              <div className="ob-section-label" id="ob-bw-label">Body Weight</div>
               <div className="ob-input-grid ob-input-grid--single">
                 <div className="ob-input-group">
                   <div className="ob-input-wrap">
@@ -264,8 +274,11 @@ function Onboarding() {
                       onChange={handleInput}
                       placeholder="Enter weight"
                       min="0"
+                      inputMode="numeric"
+                      aria-labelledby="ob-bw-label"
+                      aria-describedby="ob-bw-unit"
                     />
-                    <span className="ob-input-unit">LBS</span>
+                    <span className="ob-input-unit" id="ob-bw-unit">LBS</span>
                   </div>
                 </div>
               </div>
@@ -309,12 +322,14 @@ function Onboarding() {
                 <div className="ob-mode-desc">Use bodyweight defaults</div>
               </button>
 
+              {/* "Skip for now" is an action (immediately advances out of step 2),
+                   not a baseline-mode toggle. Removed role="radio" so screen readers
+                   announce it as a button rather than an unchecked option. */}
               <button
                 type="button"
-                role="radio"
-                aria-checked={false}
                 className="ob-mode-card"
                 onClick={() => selectMode("skip")}
+                aria-label="Skip strength baseline and use generic defaults"
               >
                 <svg className="ob-mode-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <polygon points="5 4 15 12 5 20 5 4" />
@@ -375,12 +390,18 @@ function Onboarding() {
         {step === 3 && (
           <>
             <div className="ob-section">
-              <div className="ob-section-label">How many days do you train each week?</div>
-              <div className="ob-btn-group">
+              <div className="ob-section-label" id="ob-days-label">How many days do you train each week?</div>
+              <div
+                className="ob-btn-group"
+                role="radiogroup"
+                aria-labelledby="ob-days-label"
+              >
                 {["3", "4", "5"].map((d) => (
                   <button
                     key={d}
                     type="button"
+                    role="radio"
+                    aria-checked={formData.daysPerWeek === d}
                     className={`ob-toggle-btn${formData.daysPerWeek === d ? " active" : ""}`}
                     onClick={() => set("daysPerWeek", d)}
                   >
@@ -390,26 +411,46 @@ function Onboarding() {
               </div>
             </div>
 
-            <div className="ob-divider" />
+            <div className="ob-divider" aria-hidden="true" />
 
             <div className="ob-section">
-              <div className="ob-section-label">Training Focus</div>
-              <div className="ob-focus-grid">
-                {focusOptions.map(({ val, label, icon, desc }) => (
-                  <div
-                    key={val}
-                    className={`ob-focus-card${formData.goalSelection === val ? " active" : ""}`}
-                    onClick={() => set("goalSelection", val)}
-                  >
-                    <div className="ob-focus-img">
-                      <span className="ob-focus-icon">{icon}</span>
+              <div className="ob-section-label" id="ob-focus-label">Training Focus</div>
+              <div
+                className="ob-focus-grid"
+                role="radiogroup"
+                aria-labelledby="ob-focus-label"
+              >
+                {focusOptions.map(({ val, label, icon, desc }) => {
+                  const selected = formData.goalSelection === val;
+                  const onActivate = () => set("goalSelection", val);
+                  const onKeyDown = (e) => {
+                    if (e.key === ' ' || e.key === 'Enter') {
+                      e.preventDefault();
+                      onActivate();
+                    }
+                  };
+                  return (
+                    <div
+                      key={val}
+                      role="radio"
+                      tabIndex={0}
+                      aria-checked={selected}
+                      aria-labelledby={`ob-focus-name-${val}`}
+                      aria-describedby={`ob-focus-desc-${val}`}
+                      className={`ob-focus-card${selected ? " active" : ""}`}
+                      onClick={onActivate}
+                      onKeyDown={onKeyDown}
+                    >
+                      <div className="ob-focus-img">
+                        <span className="ob-focus-icon" aria-hidden="true">{icon}</span>
+                      </div>
+                      <div className="ob-focus-body">
+                        <div className="ob-focus-name" id={`ob-focus-name-${val}`}>{label}</div>
+                        <p className="ob-focus-desc" id={`ob-focus-desc-${val}`}>{desc}</p>
+                      </div>
                     </div>
-                    <div className="ob-focus-body">
-                      <div className="ob-focus-name">{label}</div>
-                      <p className="ob-focus-desc">{desc}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </>
@@ -418,15 +459,15 @@ function Onboarding() {
         <div className="ob-step-nav">
           {step > 1 ? (
             <button type="button" className="ob-back-btn" onClick={goBack}>
-              ← Back
+              <span aria-hidden="true">←</span> Back
             </button>
           ) : (
-            <span />
+            <span aria-hidden="true" />
           )}
 
           {step < 3 ? (
             <button key="ob-next" type="button" className="ob-submit-btn ob-next-btn" onClick={goNext}>
-              Continue →
+              Continue <span aria-hidden="true">→</span>
             </button>
           ) : (
             <button key="ob-submit" type="button" className="ob-submit-btn" onClick={handleSubmit}>

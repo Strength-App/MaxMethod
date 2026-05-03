@@ -30,16 +30,28 @@ function RestTimer({ initialSeconds, onSkip }) {
   const secs = seconds % 60;
 
   return (
-    <div className="rest-timer">
-      <div className="rest-timer-label">Rest Timer</div>
-      <div className="rest-timer-display">{mins}:{String(secs).padStart(2, '0')}</div>
+    <div className="rest-timer" role="timer" aria-label={`Rest timer: ${mins} minutes ${secs} seconds remaining`}>
+      <div className="rest-timer-label" aria-hidden="true">Rest Timer</div>
+      {/* aria-live="off" intentional: announcing every second would spam SR.
+          A 10-second milestone announcement would require new state — flagged
+          as a post-audit follow-up. */}
+      <div className="rest-timer-display" aria-live="off">{mins}:{String(secs).padStart(2, '0')}</div>
       <div className="rest-timer-controls">
-        <button className="rest-timer-btn" onClick={() => adjust(-30)}>-30s</button>
-        <button className="rest-timer-btn rest-timer-btn--pause" onClick={() => setPaused(p => !p)}>
+        <button className="rest-timer-btn" onClick={() => adjust(-30)} aria-label="Subtract 30 seconds">
+          <span aria-hidden="true">-30s</span>
+        </button>
+        <button
+          className="rest-timer-btn rest-timer-btn--pause"
+          onClick={() => setPaused(p => !p)}
+          aria-label={paused ? 'Resume timer' : 'Pause timer'}
+          aria-pressed={paused}
+        >
           {paused ? 'Resume' : 'Pause'}
         </button>
-        <button className="rest-timer-btn rest-timer-btn--skip" onClick={onSkip}>Skip</button>
-        <button className="rest-timer-btn" onClick={() => adjust(30)}>+30s</button>
+        <button className="rest-timer-btn rest-timer-btn--skip" onClick={onSkip} aria-label="Skip rest">Skip</button>
+        <button className="rest-timer-btn" onClick={() => adjust(30)} aria-label="Add 30 seconds">
+          <span aria-hidden="true">+30s</span>
+        </button>
       </div>
     </div>
   );
@@ -218,12 +230,12 @@ function Day() {
     });
   }, [workout, log]);
 
-  if (loading) return <div className="day-page"><p className="status-msg">Loading workout...</p></div>;
-  if (error) return <div className="day-page"><p className="status-msg status-msg--error">Error loading workout: {error}</p></div>;
+  if (loading) return <div className="day-page"><p className="status-msg" role="status" aria-live="polite">Loading workout…</p></div>;
+  if (error) return <div className="day-page"><p className="status-msg status-msg--error" role="alert">Error loading workout: {error}</p></div>;
 
   if (!day) return (
     <div className="day-page">
-      <p>No workout found for Week {weekNum}, Day {dayNum}.</p>
+      <p role="alert">No workout found for Week {weekNum}, Day {dayNum}.</p>
       <button className="btn-back" onClick={() => navigate('/home')}>Back to Home</button>
     </div>
   );
@@ -457,15 +469,30 @@ function Day() {
     const displayPb = maxActual > Number(pb ?? 0) ? maxActual : pb;
     const isNewPbThisSession = maxActual > Number(pb ?? 0);
 
+    const headerToggle = () => { setEditingSlot(null); toggleCard(gi); };
+    const headerKeyDown = (e) => {
+      if (e.key === ' ' || e.key === 'Enter') {
+        e.preventDefault();
+        headerToggle();
+      }
+    };
+
     return (
       <div
         key={gi}
         className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}
       >
-        {/* Card Header */}
+        {/* Card Header — keyboard-accessible toggle (mirrors existing onClick).
+            onKeyDown adds Space/Enter activation; existing onClick preserved
+            verbatim. */}
         <div
           className="ex-card-header"
-          onClick={() => { setEditingSlot(null); toggleCard(gi); }}
+          onClick={headerToggle}
+          onKeyDown={headerKeyDown}
+          role="button"
+          tabIndex={0}
+          aria-expanded={isOpen}
+          aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${exercise || 'exercise'} card, ${groupDoneCount} of ${groupSetCount} sets done`}
         >
           <div className="ex-card-title-block">
             {firstSlot.fixed || isViewingPast ? (
@@ -475,7 +502,9 @@ function Day() {
                 autoFocus
                 className="exercise-select"
                 value={exercise}
+                aria-label={`Choose exercise for ${firstSlot.label || 'slot'}`}
                 onClick={e => e.stopPropagation()}
+                onKeyDown={e => e.stopPropagation()}
                 onChange={e => {
                   items.forEach(({ si }) => setExercise(di, si, e.target.value));
                   setEditingSlot(null);
@@ -497,11 +526,12 @@ function Day() {
               <button
                 className="ex-card-name-btn"
                 onClick={e => { e.stopPropagation(); setEditingSlot(firstSi); }}
-                title="Tap to change exercise"
+                onKeyDown={e => e.stopPropagation()}
+                aria-label={`Change exercise (currently ${exercise})`}
               >
                 <span className="ex-card-name">{exercise}</span>
-                <span className="exercise-edit-icon">
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                <span className="exercise-edit-icon" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </span>
               </button>
             )}
@@ -509,24 +539,28 @@ function Day() {
 
           <div className="ex-card-stats">
             <div className="stat-chip">
-              <div className="stat-chip-val">{groupSetCount}</div>
-              <div className="stat-chip-lbl">Sets</div>
+              <div className="stat-chip-val" aria-hidden="true">{groupSetCount}</div>
+              <div className="stat-chip-lbl" aria-hidden="true">Sets</div>
+              <span className="sr-only">{groupSetCount} {groupSetCount === 1 ? 'set' : 'sets'}</span>
             </div>
             <div className="stat-chip stat-chip--done">
-              <div className="stat-chip-val">{groupDoneCount}/{groupSetCount}</div>
-              <div className="stat-chip-lbl">Done</div>
+              <div className="stat-chip-val" aria-hidden="true">{groupDoneCount}/{groupSetCount}</div>
+              <div className="stat-chip-lbl" aria-hidden="true">Done</div>
+              <span className="sr-only">{groupDoneCount} of {groupSetCount} done</span>
             </div>
           </div>
 
           {!isCardio && (displayPb ? (
               <div className={`stat-chip stat-chip--pb${isNewPbThisSession ? ' stat-chip--pb-new' : ''}`}>
-                <div className="stat-chip-val">🏆 {displayPb}</div>
-                <div className="stat-chip-lbl">{isNewPbThisSession ? 'New PR!' : 'Current PR'}</div>
+                <div className="stat-chip-val" aria-hidden="true"><span aria-hidden="true">🏆 </span>{displayPb}</div>
+                <div className="stat-chip-lbl" aria-hidden="true">{isNewPbThisSession ? 'New PR!' : 'Current PR'}</div>
+                <span className="sr-only">{isNewPbThisSession ? 'New personal record' : 'Personal record'}: {displayPb} pounds</span>
               </div>
           ) : (
               <div className="stat-chip stat-chip--pb">
-                <div className="stat-chip-val">—</div>
-                <div className="stat-chip-lbl">No PR yet</div>
+                <div className="stat-chip-val" aria-hidden="true">—</div>
+                <div className="stat-chip-lbl" aria-hidden="true">No PR yet</div>
+                <span className="sr-only">No personal record yet</span>
               </div>
           ))}
 
@@ -550,7 +584,10 @@ function Day() {
                 {firstSlot.cardioNote && <span className="cardio-note">{firstSlot.cardioNote}</span>}
               </div>
             )}
-            <div className={`ex-sets-col-header${isCardio ? ' ex-sets-col-header--cardio' : ''}`}>
+            {/* Column header is visual reference; per-cell aria-labels below
+                give screen readers richer context, so we hide this row from AT
+                to avoid duplicate "Set Set Reps Reps Target Target" announcements. */}
+            <div className={`ex-sets-col-header${isCardio ? ' ex-sets-col-header--cardio' : ''}`} aria-hidden="true">
               <span className="ex-col-lbl">Set</span>
               {isCardio ? (
                 <>
@@ -616,35 +653,39 @@ function Day() {
                     ? parseInt(s.actual) >= parseInt(target)
                     : s.actual > 0);
 
+                  const setLabel = `${exercise}, set ${globalSetNum}`;
                   rows.push(
-                    <div key={`${si}-${j}`} className={`ex-set-row${isCardio ? ' ex-set-row--cardio' : ''}${s.done ? ' ex-set-row--done' : ''}`}>
-                      <div className={`set-num${s.done ? ' set-num--done' : ''}`}>{globalSetNum}</div>
+                    <div key={`${si}-${j}`} className={`ex-set-row${isCardio ? ' ex-set-row--cardio' : ''}${s.done ? ' ex-set-row--done' : ''}`} role="group" aria-label={setLabel}>
+                      <div className={`set-num${s.done ? ' set-num--done' : ''}`} aria-hidden="true">{globalSetNum}</div>
                       {isCardio ? (
                         <>
-                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.distance ?? slot.cardioSets?.[j]?.maxEffort ?? slot.cardioSets?.[j]?.time ?? '—'}</div>
-                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.recovery ?? (slot.cardioSets?.[j]?.intensity === 'Max Effort' ? slot.cardioSets?.[j]?.time : '—')}</div>
-                          <div className="cardio-prescribed">{slot.cardioSets?.[j]?.intensity ?? (slot.cardioSets?.[j]?.maxEffort ? 'Max Effort' : '—')}</div>
+                          <div className="cardio-prescribed" aria-label={`Time or distance: ${slot.cardioSets?.[j]?.distance ?? slot.cardioSets?.[j]?.maxEffort ?? slot.cardioSets?.[j]?.time ?? 'not set'}`}>{slot.cardioSets?.[j]?.distance ?? slot.cardioSets?.[j]?.maxEffort ?? slot.cardioSets?.[j]?.time ?? '—'}</div>
+                          <div className="cardio-prescribed" aria-label={`Recovery: ${slot.cardioSets?.[j]?.recovery ?? (slot.cardioSets?.[j]?.intensity === 'Max Effort' ? slot.cardioSets?.[j]?.time : 'not set')}`}>{slot.cardioSets?.[j]?.recovery ?? (slot.cardioSets?.[j]?.intensity === 'Max Effort' ? slot.cardioSets?.[j]?.time : '—')}</div>
+                          <div className="cardio-prescribed" aria-label={`Intensity: ${slot.cardioSets?.[j]?.intensity ?? (slot.cardioSets?.[j]?.maxEffort ? 'Max Effort' : 'not set')}`}>{slot.cardioSets?.[j]?.intensity ?? (slot.cardioSets?.[j]?.maxEffort ? 'Max Effort' : '—')}</div>
                         </>
                       ) : (
                         <>
-                          <div className="set-reps">{getReps(j) ?? '—'}</div>
-                          <div className="stepper-wrap">
+                          <div className="set-reps" aria-label={`Target reps: ${getReps(j) ?? 'not set'}`}>{getReps(j) ?? '—'}</div>
+                          <div className="stepper-wrap" role="group" aria-label={`Actual reps for ${setLabel}`}>
                             <button
                               type="button"
                               className="stepper-btn stepper-btn--dec"
                               disabled={isViewingPast}
+                              aria-label={`Decrease actual reps for ${setLabel}`}
                               onClick={() => {
                                 const next = Math.max(0, (Number(s.actualReps) || 0) - 1);
                                 updateSet(si, j, { actualReps: next });
                                 updateLog(wi, di, si, j, 'actualReps', next);
                               }}
-                            >−</button>
+                            ><span aria-hidden="true">−</span></button>
                             <input
                               className="actual-input"
                               type="number"
                               min="0"
                               step="1"
                               placeholder="0"
+                              inputMode="numeric"
+                              aria-label={`Actual reps for ${setLabel}`}
                               value={s.actualReps ?? ''}
                               disabled={isViewingPast}
                               onChange={e => {
@@ -657,17 +698,18 @@ function Day() {
                               type="button"
                               className="stepper-btn stepper-btn--inc"
                               disabled={isViewingPast}
+                              aria-label={`Increase actual reps for ${setLabel}`}
                               onClick={() => {
                                 const next = (Number(s.actualReps) || 0) + 1;
                                 updateSet(si, j, { actualReps: next });
                                 updateLog(wi, di, si, j, 'actualReps', next);
                               }}
-                            >+</button>
+                            ><span aria-hidden="true">+</span></button>
                           </div>
-                          <div className="set-target">
+                          <div className="set-target" aria-label={hasTarget ? `Target weight: ${target} pounds` : 'No target weight set'}>
                             {hasTarget
                               ? <><span className="target-wt">{target}</span><span className="target-unit"> lbs</span></>
-                              : <span className="target-dash">—</span>
+                              : <span className="target-dash" aria-hidden="true">—</span>
                             }
                           </div>
                           <input
@@ -676,6 +718,8 @@ function Day() {
                             min="0"
                             step="5"
                             placeholder="0"
+                            inputMode="numeric"
+                            aria-label={`Actual weight in pounds for ${setLabel}`}
                             value={s.actual}
                             disabled={isViewingPast}
                             onChange={e => {
@@ -702,9 +746,10 @@ function Day() {
                           }
                         }}
                         disabled={isViewingPast}
-                        title="Mark set done"
+                        aria-label={`Mark ${setLabel} ${s.done ? 'incomplete' : 'complete'}`}
+                        aria-pressed={s.done}
                       >
-                        {s.done ? '✓' : ''}
+                        <span aria-hidden="true">{s.done ? '✓' : ''}</span>
                       </button>
                     </div>
                   );
@@ -721,16 +766,18 @@ function Day() {
               />
             )}
             {allDone && (
-              <div className="ex-complete-banner">
-                <span>✓</span> All sets complete — nice work!
+              <div className="ex-complete-banner" role="status" aria-live="polite">
+                <span aria-hidden="true">✓</span> All sets complete — nice work!
               </div>
             )}
 
             <div className="ex-notes-row">
-              <span className="ex-notes-label">Notes</span>
+              <label className="ex-notes-label" htmlFor={`notes-${gi}`}>Notes</label>
               <input
+                id={`notes-${gi}`}
                 className="notes-input"
                 placeholder="notes..."
+                aria-label={`Notes for ${exercise}`}
                 value={(log[wi]?.[di]?.[firstSi] ?? {}).notes ?? ''}
                 onChange={e => updateLog(wi, di, firstSi, null, 'notes', e.target.value)}
               />
@@ -762,24 +809,28 @@ function Day() {
           )}
 
           {/* Rounds completed tracker */}
-          <div className="amrap-rounds-row">
-            <span className="amrap-rounds-label">Rounds Completed</span>
-            <div className="stepper-wrap">
+          <div className="amrap-rounds-row" role="group" aria-label="Rounds completed">
+            <label className="amrap-rounds-label" htmlFor={`amrap-rounds-${si}`}>Rounds Completed</label>
+            <div className="stepper-wrap" role="group" aria-label="Rounds counter">
               <button
                 type="button"
                 className="stepper-btn stepper-btn--dec"
                 disabled={isViewingPast}
+                aria-label="Decrease rounds"
                 onClick={() => {
                   const next = Math.max(0, (Number(circuitState.rounds) || 0) - 1);
                   setSetData(prev => ({ ...prev, [`${si}-circuit`]: { ...(prev[`${si}-circuit`] ?? {}), rounds: next } }));
                 }}
-              >−</button>
+              ><span aria-hidden="true">−</span></button>
               <input
+                id={`amrap-rounds-${si}`}
                 className="actual-input"
                 type="number"
                 min="0"
                 step="1"
                 placeholder="0"
+                inputMode="numeric"
+                aria-label="Rounds completed"
                 value={circuitState.rounds ?? ''}
                 disabled={isViewingPast}
                 onChange={e => setSetData(prev => ({ ...prev, [`${si}-circuit`]: { ...(prev[`${si}-circuit`] ?? {}), rounds: e.target.value } }))}
@@ -788,22 +839,24 @@ function Day() {
                 type="button"
                 className="stepper-btn stepper-btn--inc"
                 disabled={isViewingPast}
+                aria-label="Increase rounds"
                 onClick={() => {
                   const next = (Number(circuitState.rounds) || 0) + 1;
                   setSetData(prev => ({ ...prev, [`${si}-circuit`]: { ...(prev[`${si}-circuit`] ?? {}), rounds: next } }));
                 }}
-              >+</button>
+              ><span aria-hidden="true">+</span></button>
             </div>
             <button
               className={`check-btn${circuitState.done ? ' check-btn--checked' : ''}`}
               disabled={isViewingPast}
+              aria-label={`Mark circuit ${circuitState.done ? 'incomplete' : 'complete'}`}
+              aria-pressed={circuitState.done}
               onClick={() => {
                 if (isViewingPast) return;
                 setSetData(prev => ({ ...prev, [`${si}-circuit`]: { ...(prev[`${si}-circuit`] ?? {}), done: !circuitState.done } }));
               }}
-              title="Mark circuit done"
             >
-              {circuitState.done ? '✓' : ''}
+              <span aria-hidden="true">{circuitState.done ? '✓' : ''}</span>
             </button>
           </div>
 
@@ -819,9 +872,21 @@ function Day() {
             const updateExState = (patch) =>
               setSetData(prev => ({ ...prev, [`${si}-amrap-${ei}`]: { ...(prev[`${si}-amrap-${ei}`] ?? {}), ...patch } }));
 
+            const amrapHeaderToggle = () => toggleCard(cardKey);
+            const amrapHeaderKeyDown = (e) => {
+              if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); amrapHeaderToggle(); }
+            };
             return (
               <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${circuitState.done ? ' ex-card--done' : ''}`}>
-                <div className="ex-card-header" onClick={() => toggleCard(cardKey)}>
+                <div
+                  className="ex-card-header"
+                  onClick={amrapHeaderToggle}
+                  onKeyDown={amrapHeaderKeyDown}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isOpen}
+                  aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${exName} card`}
+                >
                   <div className="ex-card-title-block">
                     <div className="ex-card-name ex-card-name--fixed">{exName}</div>
                   </div>
@@ -941,31 +1006,45 @@ function Day() {
           const displayPb = maxActual > Number(pb ?? 0) ? maxActual : pb;
           const isNewPb = maxActual > Number(pb ?? 0);
 
+          const cTog = () => toggleCard(cardKey);
+          const cKey = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cTog(); } };
           return (
             <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
-              <div className="ex-card-header" onClick={() => toggleCard(cardKey)}>
+              <div
+                className="ex-card-header"
+                onClick={cTog}
+                onKeyDown={cKey}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isOpen}
+                aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${exName} card, ${doneCount} of ${setCount} sets done`}
+              >
                 <div className="ex-card-title-block">
                   <div className="ex-card-name ex-card-name--fixed">{exName}</div>
                 </div>
                 <div className="ex-card-stats">
                   <div className="stat-chip">
-                    <div className="stat-chip-val">{setCount}</div>
-                    <div className="stat-chip-lbl">Sets</div>
+                    <div className="stat-chip-val" aria-hidden="true">{setCount}</div>
+                    <div className="stat-chip-lbl" aria-hidden="true">Sets</div>
+                    <span className="sr-only">{setCount} {setCount === 1 ? 'set' : 'sets'}</span>
                   </div>
                   <div className="stat-chip stat-chip--done">
-                    <div className="stat-chip-val">{doneCount}/{setCount}</div>
-                    <div className="stat-chip-lbl">Done</div>
+                    <div className="stat-chip-val" aria-hidden="true">{doneCount}/{setCount}</div>
+                    <div className="stat-chip-lbl" aria-hidden="true">Done</div>
+                    <span className="sr-only">{doneCount} of {setCount} done</span>
                   </div>
                 </div>
                 {displayPb ? (
                   <div className={`stat-chip stat-chip--pb${isNewPb ? ' stat-chip--pb-new' : ''}`}>
-                    <div className="stat-chip-val">🏆 {displayPb}</div>
-                    <div className="stat-chip-lbl">{isNewPb ? 'New PR!' : 'Current PR'}</div>
+                    <div className="stat-chip-val" aria-hidden="true"><span aria-hidden="true">🏆 </span>{displayPb}</div>
+                    <div className="stat-chip-lbl" aria-hidden="true">{isNewPb ? 'New PR!' : 'Current PR'}</div>
+                    <span className="sr-only">{isNewPb ? 'New personal record' : 'Personal record'}: {displayPb} pounds</span>
                   </div>
                 ) : (
                   <div className="stat-chip stat-chip--pb">
-                    <div className="stat-chip-val">—</div>
-                    <div className="stat-chip-lbl">No PR yet</div>
+                    <div className="stat-chip-val" aria-hidden="true">—</div>
+                    <div className="stat-chip-lbl" aria-hidden="true">No PR yet</div>
+                    <span className="sr-only">No personal record yet</span>
                   </div>
                 )}
                 <div className="ex-card-chevron" aria-hidden="true">▼</div>
@@ -1103,18 +1182,21 @@ function Day() {
       </div>
 
       {/* Summary Bar */}
-      <div className="workout-summary-bar">
+      <div className="workout-summary-bar" role="group" aria-label="Day progress summary">
         <div className="summary-pill">
-          <div className="summary-pill-val">{doneSets}</div>
-          <div className="summary-pill-lbl">Sets Done</div>
+          <div className="summary-pill-val" aria-hidden="true">{doneSets}</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Sets Done</div>
+          <span className="sr-only">{doneSets} sets done</span>
         </div>
         <div className="summary-pill">
-          <div className="summary-pill-val summary-pill-val--accent">{totalSets}</div>
-          <div className="summary-pill-lbl">Total Sets</div>
+          <div className="summary-pill-val summary-pill-val--accent" aria-hidden="true">{totalSets}</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Total Sets</div>
+          <span className="sr-only">{totalSets} total sets</span>
         </div>
         <div className="summary-pill">
-          <div className="summary-pill-val summary-pill-val--green">{completionPct}%</div>
-          <div className="summary-pill-lbl">Complete</div>
+          <div className="summary-pill-val summary-pill-val--green" aria-hidden="true">{completionPct}%</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Complete</div>
+          <span className="sr-only">{completionPct} percent complete</span>
         </div>
       </div>
 
@@ -1125,20 +1207,32 @@ function Day() {
           const allDone = ex.sets.length > 0 && doneCount === ex.sets.length;
           const progPct = ex.sets.length > 0 ? Math.round((doneCount / ex.sets.length) * 100) : 0;
           const isOpen = openCards[ei] ?? true;
+          const cwTog = () => toggleCard(ei);
+          const cwKey = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cwTog(); } };
           return (
             <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
-              <div className="ex-card-header" onClick={() => toggleCard(ei)}>
+              <div
+                className="ex-card-header"
+                onClick={cwTog}
+                onKeyDown={cwKey}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isOpen}
+                aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${ex.name} card, ${doneCount} of ${ex.sets.length} sets done`}
+              >
                 <div className="ex-card-title-block">
                   <div className="ex-card-name ex-card-name--fixed">{ex.name}</div>
                 </div>
                 <div className="ex-card-stats">
                   <div className="stat-chip">
-                    <div className="stat-chip-val">{ex.sets.length}</div>
-                    <div className="stat-chip-lbl">Sets</div>
+                    <div className="stat-chip-val" aria-hidden="true">{ex.sets.length}</div>
+                    <div className="stat-chip-lbl" aria-hidden="true">Sets</div>
+                    <span className="sr-only">{ex.sets.length} {ex.sets.length === 1 ? 'set' : 'sets'}</span>
                   </div>
                   <div className="stat-chip stat-chip--done">
-                    <div className="stat-chip-val">{doneCount}/{ex.sets.length}</div>
-                    <div className="stat-chip-lbl">Done</div>
+                    <div className="stat-chip-val" aria-hidden="true">{doneCount}/{ex.sets.length}</div>
+                    <div className="stat-chip-lbl" aria-hidden="true">Done</div>
+                    <span className="sr-only">{doneCount} of {ex.sets.length} done</span>
                   </div>
                 </div>
                 <div className="ex-card-chevron" aria-hidden="true">▼</div>
@@ -1248,29 +1342,39 @@ function Day() {
         })}
       </div>
 
-      {/* Post-Workout Modal */}
+      {/* Post-Workout Modal — backdrop click closes; Esc + focus-trap need
+          useModalA11y wiring (functional change) and are deferred as follow-up. */}
       {postWorkoutData && (
         <div className="post-workout-overlay" onClick={() => { setPostWorkoutData(null); navigate('/home'); }}>
-          <div className="post-workout-modal" onClick={e => e.stopPropagation()}>
-            <div className="post-workout-handle" />
+          <div
+            className="post-workout-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="post-workout-title"
+            aria-describedby="post-workout-subtitle"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="post-workout-handle" aria-hidden="true" />
             <div className="post-workout-header">
-              <div className="post-workout-title">Workout Complete</div>
-              <div className="post-workout-subtitle">{day.title ?? `Day ${dayNum}`}</div>
+              <div className="post-workout-title" id="post-workout-title">Workout Complete</div>
+              <div className="post-workout-subtitle" id="post-workout-subtitle">{day.title ?? `Day ${dayNum}`}</div>
             </div>
-            <div className="post-workout-stats-row">
+            <div className="post-workout-stats-row" role="group" aria-label="Workout totals">
               <div className="post-workout-volume-block">
-                <div className="post-workout-volume-val">
+                <div className="post-workout-volume-val" aria-hidden="true">
                   {postWorkoutData.totalVolume > 0
                     ? postWorkoutData.totalVolume.toLocaleString()
                     : '—'}
                 </div>
-                <div className="post-workout-volume-lbl">Total Volume (lbs)</div>
+                <div className="post-workout-volume-lbl" aria-hidden="true">Total Volume (lbs)</div>
+                <span className="sr-only">Total volume: {postWorkoutData.totalVolume > 0 ? `${postWorkoutData.totalVolume.toLocaleString()} pounds` : 'none recorded'}</span>
               </div>
               <div className="post-workout-volume-block">
-                <div className="post-workout-volume-val">
+                <div className="post-workout-volume-val" aria-hidden="true">
                   {postWorkoutData.totalSets ?? '—'}
                 </div>
-                <div className="post-workout-volume-lbl">Total Sets</div>
+                <div className="post-workout-volume-lbl" aria-hidden="true">Total Sets</div>
+                <span className="sr-only">Total sets: {postWorkoutData.totalSets ?? 'none recorded'}</span>
               </div>
             </div>
             {postWorkoutData.breakdown.length > 0 && (
@@ -1308,18 +1412,18 @@ function Day() {
       {/* Footer */}
       <div className="day-footer">
         <button className="btn-back" onClick={() => isExternalWorkout ? navigate(-1) : navigate('/home')}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><polyline points="15 18 9 12 15 6"/></svg>
           {isExternalWorkout ? 'Back' : 'Back to Home'}
         </button>
         {!day.completed && !isExternalWorkout && (
           <button className="btn-complete" onClick={handleCompleteDay}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><polyline points="20 6 9 17 4 12"/></svg>
             Mark Day Complete
           </button>
         )}
         {day.completed && (
-          <span className="day-completed-label">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ marginRight: '5px', verticalAlign: 'middle' }}><polyline points="20 6 9 17 4 12"/></svg>
+          <span className="day-completed-label" role="status">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" style={{ marginRight: '5px', verticalAlign: 'middle' }}><polyline points="20 6 9 17 4 12"/></svg>
             Day Completed
           </span>
         )}

@@ -12,13 +12,13 @@ function Home() {
     if (userId) fetchWorkout(userId);
   }, []);
 
-  if (loading) return <p className="status-msg">Loading your program...</p>;
-  if (error) return <p className="status-msg status-msg--error">Error loading workout: {error}</p>;
+  if (loading) return <p className="status-msg" role="status" aria-live="polite">Loading your program…</p>;
+  if (error) return <p className="status-msg status-msg--error" role="alert">Error loading workout: {error}</p>;
   if (!displayWorkout) {
     return (
       <div className="home-page-container">
         <div className="home-empty-state">
-          <svg width="56" height="56" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.4 }}>
+          <svg width="56" height="56" viewBox="0 0 40 40" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ opacity: 0.4 }} aria-hidden="true" focusable="false">
             <rect x="6" y="8" width="28" height="26" rx="3"/>
             <path d="M13 8V5M27 8V5M6 16h28"/>
             <path d="M13 23h14M13 29h8"/>
@@ -73,18 +73,26 @@ function Home() {
       )}
 
       {/* Program summary bar */}
-      <div className="workout-summary-bar" style={{ marginBottom: '40px' }}>
+      <div
+        className="workout-summary-bar"
+        role="group"
+        aria-label="Program progress summary"
+        style={{ marginBottom: '40px' }}
+      >
         <div className="summary-pill">
-          <div className="summary-pill-val">{completedDays}</div>
-          <div className="summary-pill-lbl">Days Done</div>
+          <div className="summary-pill-val" aria-hidden="true">{completedDays}</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Days Done</div>
+          <span className="sr-only">{completedDays} days done</span>
         </div>
         <div className="summary-pill">
-          <div className="summary-pill-val summary-pill-val--accent">{totalDays}</div>
-          <div className="summary-pill-lbl">Total Days</div>
+          <div className="summary-pill-val summary-pill-val--accent" aria-hidden="true">{totalDays}</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Total Days</div>
+          <span className="sr-only">{totalDays} total days</span>
         </div>
         <div className="summary-pill">
-          <div className="summary-pill-val summary-pill-val--green">{overallPct}%</div>
-          <div className="summary-pill-lbl">Complete</div>
+          <div className="summary-pill-val summary-pill-val--green" aria-hidden="true">{overallPct}%</div>
+          <div className="summary-pill-lbl" aria-hidden="true">Complete</div>
+          <span className="sr-only">{overallPct} percent complete</span>
         </div>
       </div>
 
@@ -96,12 +104,19 @@ function Home() {
           const weekPct = weekTotal > 0 ? Math.round((weekDone / weekTotal) * 100) : 0;
 
           return (
-            <div key={weekNum} className="schedule-week">
+            <section key={weekNum} className="schedule-week" aria-labelledby={`home-week-${weekNum}-h`}>
               <div className="week-heading-row">
-                <h2 className="week-heading">Week {weekNum}</h2>
+                <h2 className="week-heading" id={`home-week-${weekNum}-h`}>Week {weekNum}</h2>
                 <div className="week-stats">
-                  <span className="week-stat">{weekDone}/{weekTotal} days</span>
-                  <div className="week-progress-bar">
+                  <span className="week-stat" aria-hidden="true">{weekDone}/{weekTotal} days</span>
+                  <div
+                    className="week-progress-bar"
+                    role="progressbar"
+                    aria-valuenow={weekPct}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label={`Week ${weekNum} progress: ${weekDone} of ${weekTotal} days complete`}
+                  >
                     <div
                       className={`week-progress-fill${weekDone === weekTotal && weekTotal > 0 ? ' week-progress-fill--full' : ''}`}
                       style={{ width: `${weekPct}%` }}
@@ -110,19 +125,28 @@ function Home() {
                 </div>
               </div>
               <div className="week-days">
-                {week.days.filter(d => d?.title != null).map((day, di) => (
-                  <button
-                    key={di}
-                    type="button"
-                    className={`day-cell ${day.completed ? 'day-cell--completed' : ''}`}
-                    onClick={() => handleDayClick(weekNum, di)}
-                  >
-                    {day.title ?? `Day ${di + 1}`}
-                    {day.completed && <span className="completed-badge">✓</span>}
-                  </button>
-                ))}
+                {week.days.filter(d => d?.title != null).map((day, di) => {
+                  const dayLabel = day.title ?? `Day ${di + 1}`;
+                  return (
+                    <button
+                      key={di}
+                      type="button"
+                      className={`day-cell ${day.completed ? 'day-cell--completed' : ''}`}
+                      onClick={() => handleDayClick(weekNum, di)}
+                      aria-label={`Open ${dayLabel} of week ${weekNum}${day.completed ? ', completed' : ''}`}
+                    >
+                      {dayLabel}
+                      {day.completed && (
+                        <>
+                          <span className="completed-badge" aria-hidden="true">✓</span>
+                          <span className="sr-only">Completed</span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>

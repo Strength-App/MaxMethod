@@ -76,29 +76,39 @@ function Goals() {
         {classificationData && (
           <>
             <div className="ob-section">
-              <div className="ob-section-label">Your Strength Profile</div>
-              <div className="rp-classification-banner">
+              <div className="ob-section-label" id="goals-classification-label">Your Strength Profile</div>
+              <div
+                className="rp-classification-banner"
+                role="group"
+                aria-labelledby="goals-classification-label"
+              >
                 <span className="rp-classification-label">Classification</span>
                 <span className="rp-classification-value">{classificationData.classification}</span>
               </div>
               {classificationData.totalOneRepMax != null && (
-                <p style={{ marginTop: "0.5rem", color: "var(--text-secondary, #aaa)", fontSize: "0.85rem" }}>
-                  Combined 1RM Total: <strong style={{ color: "var(--text-primary, #fff)" }}>{classificationData.totalOneRepMax} lbs</strong>
+                <p style={{ marginTop: "0.5rem", color: "var(--muted)", fontSize: "0.85rem" }}>
+                  Combined 1RM Total: <strong style={{ color: "var(--text)" }}>{classificationData.totalOneRepMax} lbs</strong>
                 </p>
               )}
             </div>
-            <div className="ob-divider" />
+            <div className="ob-divider" aria-hidden="true" />
           </>
         )}
 
         {/* ── DAYS PER WEEK ── */}
         <div className="ob-section">
-          <div className="ob-section-label">How many days do you train each week?</div>
-          <div className="ob-btn-group">
+          <div className="ob-section-label" id="goals-days-label">How many days do you train each week?</div>
+          <div
+            className="ob-btn-group"
+            role="radiogroup"
+            aria-labelledby="goals-days-label"
+          >
             {["3", "4", "5"].map((d) => (
               <button
                 key={d}
                 type="button"
+                role="radio"
+                aria-checked={formData.daysPerWeek === d}
                 className={`ob-toggle-btn${formData.daysPerWeek === d ? " active" : ""}`}
                 onClick={() => set("daysPerWeek", d)}
               >
@@ -108,31 +118,51 @@ function Goals() {
           </div>
         </div>
 
-        <div className="ob-divider" />
+        <div className="ob-divider" aria-hidden="true" />
 
         {/* ── TRAINING FOCUS ── */}
         <div className="ob-section">
-          <div className="ob-section-label">Training Focus</div>
-          <div className="ob-focus-grid">
-            {focusOptions.map(({ val, label, icon, desc }) => (
-              <div
-                key={val}
-                className={`ob-focus-card${formData.goalSelection === val ? " active" : ""}`}
-                onClick={() => set("goalSelection", val)}
-              >
-                <div className="ob-focus-img">
-                  <span className="ob-focus-icon">{icon}</span>
+          <div className="ob-section-label" id="goals-focus-label">Training Focus</div>
+          <div
+            className="ob-focus-grid"
+            role="radiogroup"
+            aria-labelledby="goals-focus-label"
+          >
+            {focusOptions.map(({ val, label, icon, desc }) => {
+              const selected = formData.goalSelection === val;
+              const onActivate = () => set("goalSelection", val);
+              const onKeyDown = (e) => {
+                if (e.key === ' ' || e.key === 'Enter') {
+                  e.preventDefault();
+                  onActivate();
+                }
+              };
+              return (
+                <div
+                  key={val}
+                  role="radio"
+                  tabIndex={0}
+                  aria-checked={selected}
+                  aria-labelledby={`goals-focus-name-${val}`}
+                  aria-describedby={`goals-focus-desc-${val}`}
+                  className={`ob-focus-card${selected ? " active" : ""}`}
+                  onClick={onActivate}
+                  onKeyDown={onKeyDown}
+                >
+                  <div className="ob-focus-img">
+                    <span className="ob-focus-icon" aria-hidden="true">{icon}</span>
+                  </div>
+                  <div className="ob-focus-body">
+                    <div className="ob-focus-name" id={`goals-focus-name-${val}`}>{label}</div>
+                    <p className="ob-focus-desc" id={`goals-focus-desc-${val}`}>{desc}</p>
+                  </div>
                 </div>
-                <div className="ob-focus-body">
-                  <div className="ob-focus-name">{label}</div>
-                  <p className="ob-focus-desc">{desc}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        <div className="ob-divider" />
+        <div className="ob-divider" aria-hidden="true" />
 
         {/* ── SUBMIT ── */}
         <div className="ob-section">

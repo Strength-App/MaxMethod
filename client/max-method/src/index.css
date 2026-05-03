@@ -6,7 +6,6 @@
   font-weight: 400;
   color-scheme: dark;
   color: #ffffff;
-  background-color: #6b2020;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -24,7 +23,19 @@ html, body {
 }
 
 body {
-  background-color: #6b2020;
+  background-color: #0d0d0d;
+  background-image:
+    linear-gradient(rgba(230, 57, 70, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230, 57, 70, 0.04) 1px, transparent 1px),
+    linear-gradient(180deg,
+      #0d0d0d 0%,
+      #2a0a0e 25%,
+      #0d0d0d 50%,
+      #2a0a0e 75%,
+      #0d0d0d 100%);
+  background-size: 60px 60px, 60px 60px, 100% 100vh;
+  background-repeat: repeat, repeat, no-repeat;
+  background-attachment: fixed;
   color: #ffffff;
   font-family: 'Manrope', sans-serif;
 }
@@ -36,6 +47,13 @@ a {
 }
 a:hover {
   color: rgba(204, 4, 4, 0.75);
+}
+/* Ensure all interactive elements expose a pointer cursor. */
+a, button, [role="button"], summary {
+  cursor: pointer;
+}
+button[disabled], [aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 h1, h2, h3, h4, h5, h6 {

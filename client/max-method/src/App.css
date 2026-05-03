@@ -1,12 +1,13 @@
 /* ═══════════════════════════════════════════════════════════════════
    MAX METHOD — Design System
-   Background: #6b2020  |  Nav: #000  |  Text: #FFF  |  Accent: #cc0404
+   Background: #0d0d0d (layered) | Nav: #000 | Text: #FFF | Accent: #cc0404
    Fonts: Permanent Marker (heading) · Space Grotesk (sub) · Manrope (body)
 ═══════════════════════════════════════════════════════════════════ */
 
 /* ── CSS Variables ──────────────────────────────────────────────── */
 :root {
-  --bg:             #6b2020;
+  --bg:             #0d0d0d;
+  --bg-maroon:      #2a0a0e;
   --nav-bg:         #000000;
   --text:           #ffffff;
   --accent:         #cc0404;
@@ -14,18 +15,116 @@
   --accent-border:  rgba(204, 4, 4, 0.40);
   --accent-glow:    0 0 16px rgba(204, 4, 4, 0.40), 0 0 32px rgba(204, 4, 4, 0.18);
   --accent-glow-sm: 0 0 8px rgba(204, 4, 4, 0.35);
-  --surface:        rgba(0, 0, 0, 0.28);
-  --surface-hover:  rgba(0, 0, 0, 0.45);
-  --surface-deep:   rgba(0, 0, 0, 0.55);
+  /* Surface stratification flipped to translucent-white (lift) so cards
+     read against the near-black base. 0.04/0.07/0.10 matches the dark-theme
+     elevation overlay convention. */
+  --surface:        rgba(255, 255, 255, 0.04);
+  --surface-hover:  rgba(255, 255, 255, 0.07);
+  --surface-deep:   rgba(255, 255, 255, 0.10);
+  /* Resolves T-flag regressions: JSX inline styles using
+     var(--card-bg, #1a1a1a) and var(--input-bg, #1a1a1a) fallbacks
+     dropped to 1.12:1 on near-black. These tokens override the dead
+     fallbacks. Aliased to --surface-deep for tier consistency. */
+  --card-bg:        rgba(255, 255, 255, 0.10);
+  --input-bg:       rgba(255, 255, 255, 0.10);
   --border:         rgba(255, 255, 255, 0.10);
   --border-strong:  rgba(255, 255, 255, 0.18);
-  --muted:          rgba(255, 255, 255, 0.50);
+  /* WCAG (vs --bg #0d0d0d): 0.72α → ~10:1 (AAA), 0.50α → ~5.3:1 (AA).
+     Both improved vs prior #6b2020 calibration. The 0.72 value is now
+     overdetermined; intentionally retained to avoid touching audited contracts. */
+  --muted:          rgba(255, 255, 255, 0.72);
+  --muted-decor:    rgba(255, 255, 255, 0.50);
   --transition:     150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-md:  250ms cubic-bezier(0.4, 0, 0.2, 1);
   --font-heading:   'Permanent Marker', cursive;
   --font-sub:       'Space Grotesk', sans-serif;
   --font-body:      'Manrope', sans-serif;
+  /* z-index scale (use these tokens for new layered UI). */
+  --z-nav:          100;
+  --z-sticky:       200;
+  --z-overlay:      900;
+  --z-modal:        1000;
+  --z-toast:        1100;
+  --z-skiplink:     2000;
+  /* Keyboard focus ring — visible 2px white ring with 2px gap (offset) so it
+     reads against any background (maroon, black, surface, accent). Approved
+     option F2-C. Implemented with outline+offset for best compatibility with
+     elements that own their box-shadow (inputs, glow buttons). */
+  --focus-ring:     2px solid var(--text);
+  --focus-offset:   2px;
   color-scheme: dark;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   ACCESSIBILITY UTILITIES
+   - .sr-only       : visually-hidden text for screen readers
+   - .skip-link     : keyboard-only "Skip to main content" affordance
+   - :focus-visible : global keyboard focus ring (does NOT trigger on mouse)
+═══════════════════════════════════════════════════════════════════ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 8px;
+  z-index: var(--z-skiplink);
+  background: var(--text);
+  color: var(--bg);
+  padding: 12px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  transition: top var(--transition);
+}
+
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 8px;
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+/* The <main> element receives programmatic focus when the skip link is
+   activated. Suppress the focus ring on the wrapper so we don't draw a
+   page-sized outline; downstream focusable content keeps its own ring. */
+main#main-content:focus,
+main#main-content:focus-visible {
+  outline: none;
+}
+
+/* Global keyboard focus indicator. Mouse clicks on most elements do NOT
+   trigger :focus-visible, so this ring only appears for keyboard users.
+   Inputs already have an accent box-shadow on :focus — that ruleset stays;
+   this adds a high-contrast outline ring on top, harmless overlap. */
+:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+  border-radius: 2px;
+}
+
+/* Some buttons/links explicitly remove default outline; ensure :focus-visible
+   wins on them. */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="option"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="radio"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 /* ── Status / Loading Messages ──────────────────────────────────── */
@@ -53,7 +152,9 @@
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-color: var(--bg);
+  /* Page bg lives on <body> as a viewport-fixed layered gradient.
+     .App must be transparent so the gradient shows through. */
+  background-color: transparent;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -69,7 +170,7 @@
   position: fixed;
   left: 0;
   top: 0;
-  border-right: 1px solid rgba(204, 4, 4, 0.18);
+  border-right: 1px solid rgba(204, 4, 4, 0.32);
   z-index: 100;
   overflow: hidden;
 }
@@ -223,11 +324,12 @@ input::placeholder {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  background: transparent;
   z-index: 50;
   padding: 2rem;
 }
 
+/* Retained post-logo-replacement for safety; not currently rendered */
 .welcome-page h1 {
   font-size: clamp(52px, 11vw, 88px);
   color: var(--text);
@@ -298,6 +400,50 @@ input::placeholder {
   color: var(--text);
   border-color: var(--accent-border);
   background: rgba(204, 4, 4, 0.06);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MAX METHOD LOGO — shared between welcome + create-account
+═══════════════════════════════════════════════════════════════════ */
+.mm-logo {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  margin: 0 auto 8px;
+}
+
+/* Static instance: zero animation-duration lands the final keyframe
+   instantly. Mirrors the global prefers-reduced-motion mechanism at
+   the bottom of this file — same fill-mode: forwards path applies. */
+.mm-logo--static * {
+  animation-duration: 0.01ms !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CREATE ACCOUNT PAGE — mirrors welcome-page layout for matched-pair feel
+═══════════════════════════════════════════════════════════════════ */
+.create-account-page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  z-index: 50;
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.create-account-page > p {
+  font-family: var(--font-sub);
+  font-size: 13px;
+  color: var(--muted);
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  margin: 0 0 44px;
+  text-align: center;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -665,7 +811,7 @@ input::placeholder {
   margin-bottom: 8px;
 }
 
-.classification-page main,
+.classification-page .classification-section,
 .pick-new-program-page main {
   display: flex;
   flex-direction: column;
@@ -1108,8 +1254,13 @@ input::placeholder {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #000000;
-  background: var(--accent-dim);
+  /* Pre-swap this rule was color:#000 on accent-dim (effective #771d1d) — already
+     a 1.98:1 AA failure (audit miss). On the new #0d0d0d bg the pill collapsed
+     to ~1.13:1 with bg ≈ #240c0c. Switched to --surface lift + --text white
+     (~17.9:1 vs body #0d0d0d, ~17.6:1 over the gradient maroon band).
+     Accent-border + accent-glow-sm retained to preserve pill identity. */
+  color: var(--text);
+  background: var(--surface);
   border: 1px solid var(--accent-border);
   padding: 6px 16px;
   border-radius: 20px;
@@ -2152,7 +2303,7 @@ input::placeholder {
 .loading-page {
   position: fixed;
   inset: 0;
-  background: var(--bg);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2495,6 +2646,9 @@ input::placeholder {
   font-family: var(--font-heading);
   font-size: 1.25rem;
   color: var(--text);
+  /* margin-top: 0 keeps the visual identical now that this element is an <h2>
+     (browser default would otherwise add ~21px above each month block). */
+  margin-top: 0;
   margin-bottom: 16px;
   display: flex;
   align-items: center;
@@ -2700,7 +2854,7 @@ input::placeholder {
 .hist-modal-stat-lbl { font-family: var(--font-sub); font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 
 .hist-modal-body { padding: 16px 20px 24px; }
-.hist-modal-section-title { font-family: var(--font-sub); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+.hist-modal-section-title { font-family: var(--font-sub); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-top: 0; margin-bottom: 10px; }
 
 .hist-exercise-log { display: flex; flex-direction: column; gap: 8px; }
 .hist-log-item { background: var(--surface-deep); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
@@ -3002,7 +3156,7 @@ button,
     left: 0;
     right: 0;
     border-right: none;
-    border-top: 1px solid rgba(204, 4, 4, 0.18);
+    border-top: 1px solid rgba(204, 4, 4, 0.32);
     padding: 0 8px;
     gap: 0;
     overflow: visible;
@@ -3046,6 +3200,14 @@ button,
 
   .welcome-page {
     padding: 1.5rem;
+  }
+
+  .create-account-page {
+    padding: 1.5rem;
+  }
+
+  .mm-logo {
+    max-width: 85vw;
   }
 
   .classification-page,
@@ -3121,7 +3283,7 @@ button,
   inset: 0;
   z-index: 50;
   overflow-y: auto;
-  background: var(--bg);
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3434,6 +3596,10 @@ button,
   justify-content: center;
   gap: 14px;
   margin-bottom: 36px;
+  /* Reset <ol> defaults so the visual treatment is unchanged after promoting
+     the stepper to a semantic list. */
+  list-style: none;
+  padding: 0;
 }
 .ob-step-dot {
   width: 32px;
@@ -3677,7 +3843,11 @@ button,
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   REDUCED MOTION — Respect user preference (per skill guideline)
+   REDUCED MOTION — Respect user preference (WCAG 2.3.3 + 2.2.2)
+   Approved option F4-A: collapse animation/transition durations to ~0,
+   neutralize transform-based hover lifts so layout doesn't shift.
+   Opacity-only end states are preserved (content still appears), but motion
+   is removed for vestibular-sensitive users.
 ═══════════════════════════════════════════════════════════════════ */
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -3695,8 +3865,22 @@ button,
   .classification-submit button:hover,
   .pick-new-program-submit button:hover,
   .goals-submit button:hover,
-  .welcome-form button:hover {
-    transform: none;
+  .welcome-form button:hover,
+  .programs-section-card:hover,
+  .ex-card:hover,
+  .hist-tl-session:hover,
+  .ob-goal-card:hover,
+  .ob-days-btn:hover,
+  .programs-gender-btn:hover {
+    transform: none !important;
+  }
+
+  /* Neutralize pulsing/ambient glow effects */
+  .selected,
+  .programs-btn-primary,
+  .accent-glow,
+  .accent-glow-sm {
+    text-shadow: none !important;
   }
 }
 

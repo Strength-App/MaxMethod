@@ -193,10 +193,16 @@ function Classification({ formData, setFormData }) {
   return (
     <div className="classification-page">
 
-        <main>
-          <p className="subheading">Gender</p>
+        <section className="classification-section" aria-labelledby="cls-page-heading">
+          <h2 id="cls-page-heading" className="sr-only">Strength baseline</h2>
 
-          <div className="classification-gender-options">
+          <h2 id="cls-gender-heading" className="subheading">Gender</h2>
+
+          <div
+            className="classification-gender-options"
+            role="radiogroup"
+            aria-labelledby="cls-gender-heading"
+          >
             <label>
               <input
                 type="radio"
@@ -232,10 +238,11 @@ function Classification({ formData, setFormData }) {
           </div>
 
           <div className="classification-data-grid">
-            <div className="lift-row">
+            <div className="lift-row" role="group" aria-labelledby="cls-bench-group">
+              <h3 id="cls-bench-group" className="sr-only">Bench press</h3>
 
               <div className="classification-data">
-                <p>Bench Press Weight</p>
+                <p id="cls-bp-weight">Bench Press Weight</p>
                 <div className="input-unit">
                   <input
                     type="number"
@@ -244,14 +251,17 @@ function Classification({ formData, setFormData }) {
                     onChange={handleChange}
                     placeholder="Enter weight"
                     min="0"
+                    inputMode="numeric"
+                    aria-labelledby="cls-bp-weight"
+                    aria-describedby="cls-bp-weight-unit"
                     required
                   />
-                  <span>lbs</span>
+                  <span id="cls-bp-weight-unit">lbs</span>
                 </div>
               </div>
 
               <div className="classification-data">
-                <p>Bench Press Reps</p>
+                <p id="cls-bp-reps">Bench Press Reps</p>
                 <div className="input-unit">
                   <input
                     type="number"
@@ -261,27 +271,37 @@ function Classification({ formData, setFormData }) {
                     placeholder="Enter reps"
                     min="0"
                     max="15"
+                    inputMode="numeric"
+                    aria-labelledby="cls-bp-reps"
+                    aria-describedby="cls-bp-reps-unit"
                     required
                   />
-                  <span>reps</span>
+                  <span id="cls-bp-reps-unit">reps</span>
                 </div>
               </div>
 
               <div className="classification-data">
-                <p>Estimated Bench Press One Rep Max</p>
+                <p id="cls-bp-1rm">Estimated Bench Press One Rep Max</p>
                 <div className="input-unit">
-                  <input type="text" value={formData.benchPress} readOnly />
-                  <span>lbs</span>
+                  <input
+                    type="text"
+                    value={formData.benchPress}
+                    readOnly
+                    aria-labelledby="cls-bp-1rm"
+                    aria-describedby="cls-bp-1rm-unit"
+                  />
+                  <span id="cls-bp-1rm-unit">lbs</span>
                 </div>
               </div>
 
             </div>
-            
 
-            <div className="lift-row">
+
+            <div className="lift-row" role="group" aria-labelledby="cls-dl-group">
+              <h3 id="cls-dl-group" className="sr-only">Deadlift</h3>
 
               <div className="classification-data">
-                <p>Deadlift Weight</p>
+                <p id="cls-dl-weight">Deadlift Weight</p>
                 <div className="input-unit">
                   <input
                     type="number"
@@ -290,14 +310,17 @@ function Classification({ formData, setFormData }) {
                     onChange={handleChange}
                     placeholder="Enter weight"
                     min="0"
+                    inputMode="numeric"
+                    aria-labelledby="cls-dl-weight"
+                    aria-describedby="cls-dl-weight-unit"
                     required
                   />
-                  <span>lbs</span>
+                  <span id="cls-dl-weight-unit">lbs</span>
                 </div>
               </div>
 
               <div className="classification-data">
-                <p>Deadlift Reps</p>
+                <p id="cls-dl-reps">Deadlift Reps</p>
                 <div className="input-unit">
                   <input
                     type="number"
@@ -307,24 +330,35 @@ function Classification({ formData, setFormData }) {
                     placeholder="Enter reps"
                     min="0"
                     max="15"
+                    inputMode="numeric"
+                    aria-labelledby="cls-dl-reps"
+                    aria-describedby="cls-dl-reps-unit"
                     required
                   />
-                  <span>reps</span>
+                  <span id="cls-dl-reps-unit">reps</span>
                 </div>
               </div>
 
               <div className="classification-data">
-                <p>Estimated Deadlift One Rep Max</p>
+                <p id="cls-dl-1rm">Estimated Deadlift One Rep Max</p>
                 <div className="input-unit">
-                  <input type="text" value={formData.deadlift} readOnly />
-                  <span>lbs</span>
+                  <input
+                    type="text"
+                    value={formData.deadlift}
+                    readOnly
+                    aria-labelledby="cls-dl-1rm"
+                    aria-describedby="cls-dl-1rm-unit"
+                  />
+                  <span id="cls-dl-1rm-unit">lbs</span>
                 </div>
               </div>
             </div>
 
-            <div className="lift-row"> 
+            <div className="lift-row" role="group" aria-labelledby="cls-sq-group">
+              <h3 id="cls-sq-group" className="sr-only">Squat</h3>
+
               <div className="classification-data">
-                <p>Squat Weight</p>
+                <p id="cls-sq-weight">Squat Weight</p>
                 <div className="input-unit">
                   <input
                     type="number"
@@ -333,14 +367,17 @@ function Classification({ formData, setFormData }) {
                     onChange={handleChange}
                     placeholder="Enter weight"
                     min="0"
+                    inputMode="numeric"
+                    aria-labelledby="cls-sq-weight"
+                    aria-describedby="cls-sq-weight-unit"
                     required
                   />
-                  <span>lbs</span>
+                  <span id="cls-sq-weight-unit">lbs</span>
                 </div>
               </div>
 
               <div className="classification-data">
-                <p>Squat Reps</p>
+                <p id="cls-sq-reps">Squat Reps</p>
                 <div className="input-unit">
                   <input
                     type="number"
@@ -350,23 +387,32 @@ function Classification({ formData, setFormData }) {
                     placeholder="Enter reps"
                     min="0"
                     max="15"
+                    inputMode="numeric"
+                    aria-labelledby="cls-sq-reps"
+                    aria-describedby="cls-sq-reps-unit"
                     required
                   />
-                  <span>reps</span>
+                  <span id="cls-sq-reps-unit">reps</span>
                 </div>
               </div>
 
               <div className="classification-data">
-                <p>Estimated Squat One Rep Max</p>
+                <p id="cls-sq-1rm">Estimated Squat One Rep Max</p>
                 <div className="input-unit">
-                  <input type="text" value={formData.squat} readOnly />
-                  <span>lbs</span>
+                  <input
+                    type="text"
+                    value={formData.squat}
+                    readOnly
+                    aria-labelledby="cls-sq-1rm"
+                    aria-describedby="cls-sq-1rm-unit"
+                  />
+                  <span id="cls-sq-1rm-unit">lbs</span>
                 </div>
               </div>
             </div>
 
             <div className="classification-data">
-              <p>Body Weight</p>
+              <p id="cls-bw-label">Body Weight</p>
               <div className="input-unit">
                 <input
                   type="number"
@@ -375,14 +421,17 @@ function Classification({ formData, setFormData }) {
                   onChange={handleChange}
                   placeholder="Enter weight"
                   min="0"
+                  inputMode="numeric"
+                  aria-labelledby="cls-bw-label"
+                  aria-describedby="cls-bw-unit"
                   required
                 />
-                <span>lbs</span>
+                <span id="cls-bw-unit">lbs</span>
               </div>
             </div>
           </div>
 
-        </main>
+        </section>
     </div>
   );
 }

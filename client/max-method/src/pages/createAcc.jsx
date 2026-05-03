@@ -4,6 +4,7 @@ import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import axios from "axios";
 import { API_URL } from '../config/api';
+import MaxMethodLogo from '../components/MaxMethodLogo';
 
 function CreateAcc() {
   const [firstName, setFirstName] = useState('');
@@ -46,46 +47,62 @@ function CreateAcc() {
 
   return (
     <div className="create-account-page">
-      <h1>Create Account</h1>
+      <MaxMethodLogo />
+      <p>Create your account</p>
 
-      <form onSubmit={handleSubmit} className="create-account">
+      <form
+        onSubmit={handleSubmit}
+        className="welcome-form"
+        noValidate
+        aria-busy={isSubmitting || undefined}
+      >
+        <label htmlFor="ca-first-name" className="sr-only">First name</label>
         <input
+          id="ca-first-name"
           type="text"
           placeholder="First Name"
+          autoComplete="given-name"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           required
           disabled={isSubmitting}
         />
-        <br />
+        <label htmlFor="ca-last-name" className="sr-only">Last name</label>
         <input
+          id="ca-last-name"
           type="text"
           placeholder="Last Name"
+          autoComplete="family-name"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
           required
           disabled={isSubmitting}
         />
-        <br />
+        <label htmlFor="ca-email" className="sr-only">Email</label>
         <input
+          id="ca-email"
           type="email"
           placeholder="Email"
+          autoComplete="email"
+          inputMode="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
           disabled={isSubmitting}
         />
-        <br />
+        <label htmlFor="ca-password" className="sr-only">Password</label>
         <input
+          id="ca-password"
           type="password"
           placeholder="Password"
+          autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
           disabled={isSubmitting}
         />
 
-        <button className="history-button" type="submit" disabled={isSubmitting}>
+        <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? 'Creating account...' : 'Create Account'}
         </button>
       </form>

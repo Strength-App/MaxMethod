@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useId } from 'react'
 import { useUser } from '../context/UserContext'
 import {
     ResponsiveContainer,
@@ -32,7 +32,11 @@ function Settings() {
     const [deadliftOpen, setDeadliftOpen] = useState(false)
 
     // 🚨 guard against null user
-    if (!user) return <p>Not logged in</p>
+    // NOTE: pre-existing rules-of-hooks issue — this conditional return sits
+    // BEFORE the useEffect below. If `user` flips between null and non-null,
+    // hook-call counts diverge across renders. Flagged for follow-up; not
+    // restructured in this audit pass.
+    if (!user) return <p role="alert">Not logged in</p>
 
     useEffect(() => {
         const fetchUser = async () => {
@@ -69,7 +73,7 @@ function Settings() {
         }
     }, [user])
 
-    if (loading) return <p>Loading...</p>
+    if (loading) return <p role="status" aria-live="polite">Loading…</p>
 
     // Chart data is chronological (oldest → newest); rows are reversed (newest first)
     const classificationChartData = [...classificationHistory].reverse()
@@ -205,10 +209,34 @@ function formatDateShort(dateStr) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+function buildChartSummary(data, dataKey, label) {
+    const points = (data || []).filter(d => d && d[dataKey] != null && !isNaN(Number(d[dataKey])))
+    if (points.length === 0) return `${label}: insufficient data for trend`
+    if (points.length === 1) {
+        const only = points[0]
+        return `${label}: single entry of ${only[dataKey]} pounds on ${formatDate(only.date)}`
+    }
+    const first = points[0]
+    const last = points[points.length - 1]
+    const start = Number(first[dataKey])
+    const end = Number(last[dataKey])
+    const delta = end - start
+    if (delta === 0) {
+        return `${label}: unchanged at ${start} pounds from ${formatDate(first.date)} to ${formatDate(last.date)}`
+    }
+    const sign = delta > 0 ? '+' : ''
+    return `${label} trend: ${start} to ${end} pounds from ${formatDate(first.date)} to ${formatDate(last.date)}, ${sign}${delta} pound change`
+}
+
 function StatChart({ data, dataKey, label, color = '#cc0404' }) {
     if (!data || data.length < 2) return null
+    const summary = buildChartSummary(data, dataKey, label)
     return (
-        <div className="profile-chart">
+        <div
+            className="profile-chart"
+            role="img"
+            aria-label={summary}
+        >
             <ResponsiveContainer width="100%" height={180}>
                 <LineChart data={data} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
@@ -252,13 +280,33 @@ function StatChart({ data, dataKey, label, color = '#cc0404' }) {
 }
 
 function CollapsibleSection({ title, open, setOpen, children }) {
+    // Stable IDs for accordion ARIA wiring (button ⇄ region).
+    const baseId = useId()
+    const headerId = `${baseId}-header`
+    const bodyId = `${baseId}-body`
+
     return (
         <div className="collapsible-section">
-            <button className="collapsible-header" onClick={() => setOpen(o => !o)}>
+            <button
+                id={headerId}
+                className="collapsible-header"
+                onClick={() => setOpen(o => !o)}
+                aria-expanded={open}
+                aria-controls={bodyId}
+            >
                 <span>{title}</span>
-                <span className={`collapsible-chevron${open ? ' open' : ''}`}>▾</span>
+                <span className={`collapsible-chevron${open ? ' open' : ''}`} aria-hidden="true">▾</span>
             </button>
-            {open && <div className="collapsible-body">{children}</div>}
+            {open && (
+                <div
+                    id={bodyId}
+                    role="region"
+                    aria-labelledby={headerId}
+                    className="collapsible-body"
+                >
+                    {children}
+                </div>
+            )}
         </div>
     )
 }
@@ -298,26 +346,32 @@ function UserName({ firstName, lastName, userId, setFirstName, setLastName }) {
 
     return (
         <div className="user-setting">
-            <p>Name:</p>
+            <p id="settings-name-label">Name:</p>
 
             {isEditing ? (
                 <>
+                    <label htmlFor="settings-first-name" className="sr-only">First name</label>
                     <input
+                        id="settings-first-name"
                         value={tempFirst}
                         onChange={(e) => setTempFirst(e.target.value)}
                         placeholder="First Name"
+                        autoComplete="given-name"
                     />
+                    <label htmlFor="settings-last-name" className="sr-only">Last name</label>
                     <input
+                        id="settings-last-name"
                         value={tempLast}
                         onChange={(e) => setTempLast(e.target.value)}
                         placeholder="Last Name"
+                        autoComplete="family-name"
                     />
-                    <button onClick={handleSave}>Save</button>
+                    <button onClick={handleSave} aria-label="Save name">Save</button>
                 </>
             ) : (
                 <>
-                    <span>{firstName} {lastName}</span>
-                    <button onClick={() => setIsEditing(true)}>Edit</button>
+                    <span aria-labelledby="settings-name-label">{firstName} {lastName}</span>
+                    <button onClick={() => setIsEditing(true)} aria-label="Edit name">Edit</button>
                 </>
             )}
         </div>
@@ -353,20 +407,25 @@ function UserEmail({ email, userId, setEmail }) {
 
     return (
         <div className="user-setting">
-            <p>Email:</p>
+            <p id="settings-email-label">Email:</p>
 
             {isEditing ? (
                 <>
+                    <label htmlFor="settings-email-input" className="sr-only">Email</label>
                     <input
+                        id="settings-email-input"
+                        type="email"
                         value={tempEmail}
                         onChange={(e) => setTempEmail(e.target.value)}
+                        autoComplete="email"
+                        inputMode="email"
                     />
-                    <button onClick={handleSave}>Save</button>
+                    <button onClick={handleSave} aria-label="Save email">Save</button>
                 </>
             ) : (
                 <>
-                    <span>{email}</span>
-                    <button onClick={() => setIsEditing(true)}>Edit</button>
+                    <span aria-labelledby="settings-email-label">{email}</span>
+                    <button onClick={() => setIsEditing(true)} aria-label="Edit email">Edit</button>
                 </>
             )}
         </div>
@@ -399,46 +458,51 @@ function UserGender({ gender, userId, setGender }) {
 
     return (
         <div className="user-setting">
-            <p>Gender:</p>
+            <p id="settings-gender-label">Gender:</p>
 
             {isEditing ? (
                 <>
-                    <label>
-                        <input
-                            type="radio"
-                            value="male"
-                            checked={tempGender === "male"}
-                            onChange={(e) => setTempGender(e.target.value)}
-                        />
-                        Male
-                    </label>
+                    <div role="radiogroup" aria-labelledby="settings-gender-label" style={{ display: 'contents' }}>
+                        <label>
+                            <input
+                                type="radio"
+                                name="settings-gender"
+                                value="male"
+                                checked={tempGender === "male"}
+                                onChange={(e) => setTempGender(e.target.value)}
+                            />
+                            Male
+                        </label>
 
-                    <label>
-                        <input
-                            type="radio"
-                            value="female"
-                            checked={tempGender === "female"}
-                            onChange={(e) => setTempGender(e.target.value)}
-                        />
-                        Female
-                    </label>
+                        <label>
+                            <input
+                                type="radio"
+                                name="settings-gender"
+                                value="female"
+                                checked={tempGender === "female"}
+                                onChange={(e) => setTempGender(e.target.value)}
+                            />
+                            Female
+                        </label>
 
-                    <label>
-                        <input
-                            type="radio"
-                            value="other"
-                            checked={tempGender === "other"}
-                            onChange={(e) => setTempGender(e.target.value)}
-                        />
-                        Other
-                    </label>
+                        <label>
+                            <input
+                                type="radio"
+                                name="settings-gender"
+                                value="other"
+                                checked={tempGender === "other"}
+                                onChange={(e) => setTempGender(e.target.value)}
+                            />
+                            Other
+                        </label>
+                    </div>
 
-                    <button onClick={handleSave}>Save</button>
+                    <button onClick={handleSave} aria-label="Save gender">Save</button>
                 </>
             ) : (
                 <>
-                    <span>{gender || "Not set"}</span>
-                    <button onClick={() => setIsEditing(true)}>Edit</button>
+                    <span aria-labelledby="settings-gender-label">{gender || "Not set"}</span>
+                    <button onClick={() => setIsEditing(true)} aria-label="Edit gender">Edit</button>
                 </>
             )}
         </div>
@@ -478,27 +542,33 @@ function ChangePassword({ userId }) {
 
     return (
         <div className="user-setting">
-            <p>Change Password</p>
+            <p id="settings-pwd-label">Change Password</p>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate aria-labelledby="settings-pwd-label">
+                <label htmlFor="settings-current-pwd" className="sr-only">Current password</label>
                 <input
+                    id="settings-current-pwd"
                     type="password"
                     placeholder="Current Password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
+                    autoComplete="current-password"
                 />
 
+                <label htmlFor="settings-new-pwd" className="sr-only">New password</label>
                 <input
+                    id="settings-new-pwd"
                     type="password"
                     placeholder="New Password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="new-password"
                 />
 
-                <button type="submit">Update</button>
+                <button type="submit" aria-label="Update password">Update</button>
             </form>
 
-            {message && <p>{message}</p>}
+            {message && <p role="alert">{message}</p>}
         </div>
     )
 }
@@ -519,14 +589,15 @@ function RestTimerToggle() {
 
     return (
         <div className="user-setting">
-            <p>Rest Timer</p>
-            <span>{enabled ? 'On' : 'Off'}</span>
+            <p id="settings-rest-timer-label">Rest Timer</p>
+            <span aria-hidden="true">{enabled ? 'On' : 'Off'}</span>
             <button
                 className={`toggle-btn${enabled ? ' toggle-btn--on' : ''}`}
                 onClick={toggle}
                 aria-pressed={enabled}
+                aria-labelledby="settings-rest-timer-label"
             >
-                <span className="toggle-knob" />
+                <span className="toggle-knob" aria-hidden="true" />
             </button>
         </div>
     )
