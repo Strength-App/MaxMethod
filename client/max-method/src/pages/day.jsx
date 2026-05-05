@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
+import ContextMenu from '../components/ContextMenu';
+import EquipmentSelect from '../components/EquipmentSelect';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(exerciseName) {
@@ -109,6 +111,79 @@ const DISTANCE_EXERCISES = new Set(["Farmer Carries", "Suitcase Carries"]);
 const isTimedSlot = (slot) => slot.repsType === "time" || TIMED_EXERCISES.has(slot.exercise ?? '');
 const isDistanceSlot = (slot) => slot.repsType === "distance" || DISTANCE_EXERCISES.has(slot.exercise ?? '');
 
+// Mirrors reviewProgram.jsx EXERCISE_EQUIPMENT — duplicated intentionally per
+// the no-refactor rule for this task. Powers the equipment pills shown in the
+// "Swap for today" dropdown so the swap UX matches reviewProgram visually.
+// If a third consumer appears, extract to a shared module then.
+const EXERCISE_EQUIPMENT = {
+  'Bench Press': 'Barbell', 'Incline Bench Press': 'Barbell', 'Decline Bench Press': 'Barbell', 'Floor Press': 'Barbell',
+  'Military Press': 'Barbell', 'Seated Military Press': 'Barbell', 'Push Press': 'Barbell',
+  'DB Incline Bench': 'Dumbbell', 'DB Flat Bench': 'Dumbbell', 'DB Shoulder Press': 'Dumbbell', 'Arnold Press': 'Dumbbell', 'DB Floor Press': 'Dumbbell',
+  'Dips': 'Bodyweight', 'Weighted Dips': 'Dumbbell', 'Skullcrushers': 'Barbell', 'Tricep Pushdowns': 'Cable',
+  'Tricep Extensions': 'Cable', 'Dip Machine': 'Machine', 'Overhead Tricep Extensions': 'Cable',
+  'One Arm Extensions': 'Dumbbell', 'Close Grip Bench Press': 'Barbell',
+  'Front Raises': 'Dumbbell', 'Lateral Raises': 'Dumbbell', 'Cable Lateral Raises': 'Cable',
+  'Upright Rows': 'Barbell', 'Face Pulls': 'Cable', 'Band Pull Aparts': 'Dumbbell',
+  'Chest Fly Machine': 'Machine', 'DB Chest Flys': 'Dumbbell', 'Pushups': 'Bodyweight', 'Weighted Pushups': 'Dumbbell',
+  'Floor Chest Flys': 'Dumbbell', 'Incline Chest Flys': 'Dumbbell', 'Cable Chest Flys': 'Cable', 'Low to High Cable Flys': 'Cable',
+  'Chest Press Machine': 'Machine', 'Shoulder Press Machine': 'Machine', 'Decline Press Machine': 'Machine', 'Incline Press Machine': 'Machine',
+  'Neutral Grip Pullups': 'Bodyweight', 'Weighted Neutral Grip Pullups': 'Dumbbell', 'Pullups': 'Bodyweight', 'Weighted Pull Ups': 'Dumbbell',
+  'Chin Ups': 'Bodyweight', 'Weighted Chin Ups': 'Dumbbell', 'Lat Pulldowns': 'Cable', 'Close Grip Lat Pulldowns': 'Cable',
+  'Wide Grip Lat Pulldowns': 'Cable', 'Single Arm Pulldowns': 'Cable',
+  'Barbell Row': 'Barbell', 'Underhand Barbell Row': 'Barbell', 'Cable Row': 'Cable', 'T Bar Rows': 'Barbell',
+  'Single Arm Cable Rows': 'Cable', 'Single Arm Dumbbell Rows': 'Dumbbell', 'Chest Supported Row': 'Machine',
+  'Seal Row': 'Barbell', 'Pendlay Row': 'Barbell',
+  'Scarecrows': 'Dumbbell', 'Rear Delt Flys': 'Dumbbell', 'Machine Rear Delt Flys': 'Machine', 'Pullovers': 'Dumbbell',
+  'Cable Pullovers': 'Cable', 'Shrugs': 'Barbell', 'DB Shrugs': 'Dumbbell', 'Trap Bar Shrugs': 'Barbell', 'YTWLs': 'Dumbbell',
+  'DB Curls': 'Dumbbell', 'Barbell Curls': 'Barbell', 'Ez Bar Curls': 'Barbell', 'Hammer Curls': 'Dumbbell',
+  'Preacher Curls': 'Barbell', 'Cable Curls': 'Cable', 'Rope Curls': 'Cable', 'Incline DB Curls': 'Dumbbell',
+  'Concentration Curls': 'Dumbbell', 'Cross Body Hammer Curls': 'Dumbbell',
+  'Hip Thrusts': 'Barbell', 'Bodyweight Hip Thrusts': 'Bodyweight', 'RDLs': 'Barbell', 'Trap Bar Deadlifts': 'Barbell',
+  'Barbell Glute Bridges': 'Barbell', 'Bodyweight Glute Bridges': 'Bodyweight', 'Single Leg RDLs': 'Dumbbell',
+  'Sumo Deadlift': 'Barbell', 'Good Mornings': 'Barbell',
+  'Front Squat': 'Barbell', 'SSB Squats': 'Barbell', 'Squats': 'Barbell', 'Back Squat': 'Barbell', 'Box Squats': 'Barbell',
+  'Bodyweight Squat': 'Bodyweight', 'Pendulum Squat': 'Machine', 'Leg Press': 'Machine', 'Goblet Squat': 'Dumbbell', 'Zercher Squat': 'Barbell',
+  'Back Extensions': 'Machine', 'Bodyweight Back Extensions': 'Bodyweight', 'Nordics': 'Bodyweight', 'Reverse Hypers': 'Machine',
+  'GHD Raises': 'Bodyweight', 'Single Leg Hip Thrusts': 'Barbell',
+  'Bulgarians': 'Dumbbell', 'Bodyweight Bulgarians': 'Bodyweight', 'Walking Lunges': 'Dumbbell', 'Bodyweight Lunges': 'Bodyweight',
+  'ATG Lunges': 'Dumbbell', 'Bodyweight ATG Lunges': 'Bodyweight', 'Reverse Lunges': 'Dumbbell', 'Step Ups': 'Dumbbell',
+  'Leg Extensions': 'Machine', 'Single Leg Extensions': 'Machine', 'Seated Leg Curls': 'Machine', 'Lying Leg Curls': 'Machine',
+  'Abductor Machine': 'Machine', 'Adductor Machine': 'Machine',
+  'Single Leg Calf Raises': 'Dumbbell', 'Calf Raise Machine': 'Machine', 'Seated Calf Raises': 'Machine', 'Bodyweight Calf Raises': 'Bodyweight',
+  'Weighted Calf Raises': 'Dumbbell', 'Donkey Calf Raises': 'Machine', 'Tibia Raises': 'Bodyweight', 'Tibia Curls': 'Machine', 'Banded Tibia Curls': 'Bodyweight',
+  'Hack Squat': 'Machine', 'Hack Squat Machine': 'Machine', 'Reverse Hack Squat': 'Machine',
+  'Plank': 'Bodyweight', 'Ab Wheel Rollouts': 'Bodyweight', 'Hanging Leg Raises': 'Bodyweight', 'Cable Crunches': 'Cable',
+  'Decline Crunches': 'Bodyweight', 'Pallof Press': 'Cable', 'Dead Bugs': 'Bodyweight', 'Suitcase Carries': 'Dumbbell', 'Farmer Carries': 'Dumbbell',
+  'Treadmill': 'Cardio Machine', 'Curved Treadmill': 'Cardio Machine', 'Assault Bike': 'Cardio Machine', 'Bike': 'Cardio Machine',
+  'Recumbent Bike': 'Cardio Machine', 'Elliptical': 'Cardio Machine', 'Stairmaster': 'Cardio Machine', 'Rowing Machine': 'Cardio Machine', 'Ski Erg': 'Cardio Machine',
+  'Squat': 'Barbell', 'Deadlift': 'Barbell',
+  'Incline Pushups': 'Bodyweight', 'Diamond Pushups': 'Bodyweight', 'Wide Pushups': 'Bodyweight',
+  'Inverted Bodyweight Row': 'Bodyweight', 'Burpees': 'Bodyweight', 'Banded Tibia Raises': 'Bodyweight',
+};
+
+// localStorage-backed per-week+day exercise overrides. Persistence model for
+// "Swap for today": a swap on Week 1 Day 1 affects only Week 1 Day 1, not the
+// program template or other weeks. Key includes workoutLogId so multiple
+// programs (or read-only views of past logs) keep their overrides distinct.
+const swapKey = (workoutLogId, wi, di) => `swapForToday:${workoutLogId}:w${wi}:d${di}`;
+const readDayOverrides = (workoutLogId, wi, di) => {
+  if (!workoutLogId) return {};
+  try { return JSON.parse(localStorage.getItem(swapKey(workoutLogId, wi, di)) || '{}'); }
+  catch { return {}; }
+};
+const writeDayOverride = (workoutLogId, wi, di, slotIdxs, replacementName, originalName) => {
+  if (!workoutLogId) return {};
+  const cur = readDayOverrides(workoutLogId, wi, di);
+  slotIdxs.forEach((si) => {
+    // Picking the original exercise reverts to template — drop the entry
+    // entirely so the override map stays clean.
+    if (replacementName === originalName) delete cur[si];
+    else cur[si] = replacementName;
+  });
+  localStorage.setItem(swapKey(workoutLogId, wi, di), JSON.stringify(cur));
+  return cur;
+};
+
 function Day() {
   const { weekNum, dayNum } = useParams();
   const navigate = useNavigate();
@@ -132,6 +207,24 @@ function Day() {
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
   const [postWorkoutData, setPostWorkoutData] = useState(null); // { totalVolume, breakdown }
   const [sessionPRs, setSessionPRs] = useState([]);
+
+  // ── Right-click / long-press menu + swap-for-today state ────────────────
+  // Active workout-log id for the localStorage override key. Falls back through
+  // editMode's explicit id, the externally-viewed log, then the active program's
+  // log doc. If none exists (shouldn't happen for a real day view), persistence
+  // helpers no-op by checking for null.
+  const activeLogId = workoutLogId ?? viewWorkout?._id ?? displayWorkout?._id ?? null;
+  const [dayOverrides, setDayOverrides] = useState(() => readDayOverrides(activeLogId, wi, di));
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, cardKey, exercise, slotIdxs|null, isFixed }
+  const [swapPanel, setSwapPanel] = useState(null);     // { cardKey, exercise, slotIdxs, alternatives }
+
+  const cardHeaderRefs = useRef(new Map());
+  const longPressTimerRef = useRef(null);
+  const longPressFiredRef = useRef(false);
+  // Mutated synchronously to suppress menu's return-focus when the action that
+  // closes the menu will move focus elsewhere itself (e.g. opening the swap
+  // panel — its EquipmentSelect autoFocuses the trigger).
+  const menuReturnFocusRef = useRef(null);
 
   useEffect(() => {
     const uid = localStorage.getItem('userId');
@@ -230,6 +323,13 @@ function Day() {
     });
   }, [workout, log]);
 
+  // Re-load per-day-instance swap overrides when log/week/day changes. Keeps
+  // the in-memory copy in sync with localStorage if the user navigates between
+  // days during a session.
+  useEffect(() => {
+    setDayOverrides(readDayOverrides(activeLogId, wi, di));
+  }, [activeLogId, wi, di]);
+
   if (loading) return <div className="day-page"><p className="status-msg" role="status" aria-live="polite">Loading workout…</p></div>;
   if (error) return <div className="day-page"><p className="status-msg status-msg--error" role="alert">Error loading workout: {error}</p></div>;
 
@@ -283,6 +383,120 @@ function Day() {
       });
     }
   };
+
+  // ── Right-click / long-press menu handlers ──────────────────────────────
+  const openContextMenu = (cardKey, exerciseName, slotIdxs, isFixedRow, x, y) => {
+    if (!exerciseName || exerciseName === 'Rest') return;
+    menuReturnFocusRef.current = cardHeaderRefs.current.get(cardKey) ?? null;
+    setContextMenu({ x, y, cardKey, exercise: exerciseName, slotIdxs, isFixed: isFixedRow });
+  };
+
+  const handleViewInLibrary = (exerciseName) => {
+    setContextMenu(null);
+    navigate('/exerciseLibrary', { state: { focusExercise: exerciseName } });
+  };
+
+  const handleOpenSwap = (cardKey, exerciseName, slotIdxs) => {
+    // Resolve alternatives the same way reviewProgram does: try slot.label
+    // against movementPatterns first, then scan all patterns for the current
+    // exercise name as a fallback. Empty alternatives → no panel (we still
+    // gate on slotIdxs in the menu items so this should never be empty here).
+    const slot = day.slots?.[slotIdxs[0]];
+    let alternatives = [];
+    if (slot?.label && movementPatterns[slot.label]) {
+      alternatives = movementPatterns[slot.label];
+    } else {
+      for (const exs of Object.values(movementPatterns)) {
+        if (exs.includes(exerciseName)) { alternatives = exs; break; }
+      }
+    }
+    // Suppress menu's default return-focus — the swap panel's EquipmentSelect
+    // autoFocus will move focus directly onto the trigger.
+    menuReturnFocusRef.current = null;
+    setContextMenu(null);
+    setSwapPanel({ cardKey, exercise: exerciseName, slotIdxs, alternatives });
+  };
+
+  const handleSwapSelect = (replacementName) => {
+    if (!swapPanel) return;
+    const { slotIdxs, exercise: original, cardKey } = swapPanel;
+    const next = writeDayOverride(activeLogId, wi, di, slotIdxs, replacementName, original);
+    setDayOverrides(next);
+    setSwapPanel(null);
+    cardHeaderRefs.current.get(cardKey)?.focus();
+  };
+
+  const cancelSwap = () => {
+    const cardKey = swapPanel?.cardKey;
+    setSwapPanel(null);
+    if (cardKey) cardHeaderRefs.current.get(cardKey)?.focus();
+  };
+
+  // Right-click / long-press handler factory for card headers. cardKey is the
+  // refs-map key (string or number); slotIdxs is null for circuit rows (no
+  // swap available).
+  const makeRowMenuHandlers = (cardKey, exerciseName, slotIdxs, isFixedRow) => ({
+    ref: (el) => {
+      if (el) cardHeaderRefs.current.set(cardKey, el);
+      else cardHeaderRefs.current.delete(cardKey);
+    },
+    onContextMenu: (e) => {
+      // Preserve native text-editing context menu on inputs (copy/paste/etc.).
+      if (e.target.closest('input, textarea')) return;
+      if (!exerciseName || exerciseName === 'Rest') return;
+      e.preventDefault();
+      longPressFiredRef.current = false;
+      openContextMenu(cardKey, exerciseName, slotIdxs, isFixedRow, e.clientX, e.clientY);
+    },
+    onPointerDown: () => { longPressFiredRef.current = false; },
+    onTouchStart: (e) => {
+      if (e.target.closest('input, textarea')) return;
+      if (!exerciseName || exerciseName === 'Rest') return;
+      const t = e.touches[0];
+      const cx = t.clientX, cy = t.clientY;
+      longPressFiredRef.current = false;
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = setTimeout(() => {
+        longPressFiredRef.current = true;
+        openContextMenu(cardKey, exerciseName, slotIdxs, isFixedRow, cx, cy);
+      }, 500);
+    },
+    onTouchEnd: () => clearTimeout(longPressTimerRef.current),
+    onTouchMove: () => clearTimeout(longPressTimerRef.current),
+    onTouchCancel: () => clearTimeout(longPressTimerRef.current),
+  });
+
+  // Wrap an existing onClick to suppress the synthetic click iOS dispatches
+  // after a long-press fires. One-shot: the flag is also cleared on the next
+  // pointerdown so subsequent clicks land normally.
+  const wrapLongPressClick = (originalOnClick) => (e) => {
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      e.preventDefault();
+      return;
+    }
+    originalOnClick(e);
+  };
+
+  // Build menu items based on the currently-open menu's row context. Circuit
+  // rows (slotIdxs == null) and read-only views (history navigation) drop
+  // "Swap for today". Fixed core lifts (slot.fixed) DO get swap — matches
+  // reviewProgram's actual behavior, where the swap button is gated only on
+  // alternatives.length > 0, not on slot.fixed. ReviewProgram's subtitle
+  // claims fixed lifts can't be swapped, but the code doesn't enforce that —
+  // tracked as a follow-up to reconcile copy vs. behavior.
+  const menuItems = !contextMenu ? [] : [
+    {
+      label: 'View in Exercise Library',
+      onSelect: () => handleViewInLibrary(contextMenu.exercise),
+    },
+    ...((contextMenu.slotIdxs && !isReadOnly) ? [{
+      label: 'Swap for today',
+      onSelect: () => handleOpenSwap(contextMenu.cardKey, contextMenu.exercise, contextMenu.slotIdxs),
+    }] : []),
+  ];
+
+  const TOUCH_NO_CALLOUT_STYLE = { WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' };
 
   // Summary counts
   let totalSets = 0, doneSets = 0;
@@ -379,7 +593,9 @@ function Day() {
         groups.push({ circuit: true, slot, si, items: [] });
         return;
       }
-      const exercise = assignments[di]?.[si] ?? slot.exercise ?? '';
+      // Override resolution: per-day swap > in-memory edit > template default.
+      // dayOverrides is the localStorage-backed map keyed by slotIdx.
+      const exercise = dayOverrides[si] ?? assignments[di]?.[si] ?? slot.exercise ?? '';
       if (isCardioSlot(slot)) {
         // Cardio slots are always standalone — never merge with adjacent slots
         groups.push({ exercise, items: [{ slot, si }], superset: false, supersetGroup: null });
@@ -477,6 +693,11 @@ function Day() {
       }
     };
 
+    const cardKey = `g-${gi}`;
+    const slotIdxs = items.map(({ si }) => si);
+    const isFixedRow = !!firstSlot.fixed;
+    const rowMenuHandlers = makeRowMenuHandlers(cardKey, exercise, slotIdxs, isFixedRow);
+
     return (
       <div
         key={gi}
@@ -484,15 +705,24 @@ function Day() {
       >
         {/* Card Header — keyboard-accessible toggle (mirrors existing onClick).
             onKeyDown adds Space/Enter activation; existing onClick preserved
-            verbatim. */}
+            verbatim. Right-click + long-press open the row context menu. */}
         <div
           className="ex-card-header"
-          onClick={headerToggle}
+          ref={rowMenuHandlers.ref}
+          onClick={wrapLongPressClick(headerToggle)}
           onKeyDown={headerKeyDown}
+          onContextMenu={rowMenuHandlers.onContextMenu}
+          onPointerDown={rowMenuHandlers.onPointerDown}
+          onTouchStart={rowMenuHandlers.onTouchStart}
+          onTouchEnd={rowMenuHandlers.onTouchEnd}
+          onTouchMove={rowMenuHandlers.onTouchMove}
+          onTouchCancel={rowMenuHandlers.onTouchCancel}
           role="button"
           tabIndex={0}
           aria-expanded={isOpen}
+          aria-haspopup="menu"
           aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${exercise || 'exercise'} card, ${groupDoneCount} of ${groupSetCount} sets done`}
+          style={TOUCH_NO_CALLOUT_STYLE}
         >
           <div className="ex-card-title-block">
             {firstSlot.fixed || isViewingPast ? (
@@ -574,6 +804,34 @@ function Day() {
             style={{ width: `${progPct}%` }}
           />
         </div>
+
+        {/* Swap-for-today panel — opened from the row context menu's
+            "Swap for today" item. Reuses reviewProgram's .rp-swap-dropdown
+            class and EquipmentSelect; copy distinguishes "today only" from
+            reviewProgram's "across all weeks". */}
+        {swapPanel?.cardKey === cardKey && (
+          <div className="rp-swap-dropdown" id={`day-swap-dd-${cardKey}`}>
+            <EquipmentSelect
+              id={`day-swap-${cardKey}`}
+              value={swapPanel.exercise}
+              options={swapPanel.alternatives}
+              equipment={EXERCISE_EQUIPMENT}
+              onChange={handleSwapSelect}
+              ariaLabel={`Replacement for ${swapPanel.exercise} (today only)`}
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+            />
+            <span className="rp-swap-hint">Pick a replacement — applied to today only</span>
+            <button
+              type="button"
+              className="btn-back"
+              style={{ marginTop: '8px' }}
+              onClick={cancelSwap}
+            >
+              Cancel
+            </button>
+          </div>
+        )}
 
         {/* Sets Panel */}
         {isOpen && (
@@ -876,16 +1134,28 @@ function Day() {
             const amrapHeaderKeyDown = (e) => {
               if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); amrapHeaderToggle(); }
             };
+            // Circuits don't get "Swap for today" — slotIdxs=null gates it off
+            // in menuItems; "View in Library" still works.
+            const amrapMenuHandlers = makeRowMenuHandlers(`c-amrap-${si}-${ei}`, exName, null, true);
             return (
               <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${circuitState.done ? ' ex-card--done' : ''}`}>
                 <div
                   className="ex-card-header"
-                  onClick={amrapHeaderToggle}
+                  ref={amrapMenuHandlers.ref}
+                  onClick={wrapLongPressClick(amrapHeaderToggle)}
                   onKeyDown={amrapHeaderKeyDown}
+                  onContextMenu={amrapMenuHandlers.onContextMenu}
+                  onPointerDown={amrapMenuHandlers.onPointerDown}
+                  onTouchStart={amrapMenuHandlers.onTouchStart}
+                  onTouchEnd={amrapMenuHandlers.onTouchEnd}
+                  onTouchMove={amrapMenuHandlers.onTouchMove}
+                  onTouchCancel={amrapMenuHandlers.onTouchCancel}
                   role="button"
                   tabIndex={0}
                   aria-expanded={isOpen}
+                  aria-haspopup="menu"
                   aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${exName} card`}
+                  style={TOUCH_NO_CALLOUT_STYLE}
                 >
                   <div className="ex-card-title-block">
                     <div className="ex-card-name ex-card-name--fixed">{exName}</div>
@@ -1008,16 +1278,27 @@ function Day() {
 
           const cTog = () => toggleCard(cardKey);
           const cKey = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cTog(); } };
+          // Circuits don't get "Swap for today" — slotIdxs=null gates it off.
+          const circMenuHandlers = makeRowMenuHandlers(`c-circ-${gi}-${ei}`, exName, null, true);
           return (
             <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
               <div
                 className="ex-card-header"
-                onClick={cTog}
+                ref={circMenuHandlers.ref}
+                onClick={wrapLongPressClick(cTog)}
                 onKeyDown={cKey}
+                onContextMenu={circMenuHandlers.onContextMenu}
+                onPointerDown={circMenuHandlers.onPointerDown}
+                onTouchStart={circMenuHandlers.onTouchStart}
+                onTouchEnd={circMenuHandlers.onTouchEnd}
+                onTouchMove={circMenuHandlers.onTouchMove}
+                onTouchCancel={circMenuHandlers.onTouchCancel}
                 role="button"
                 tabIndex={0}
                 aria-expanded={isOpen}
+                aria-haspopup="menu"
                 aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${exName} card, ${doneCount} of ${setCount} sets done`}
+                style={TOUCH_NO_CALLOUT_STYLE}
               >
                 <div className="ex-card-title-block">
                   <div className="ex-card-name ex-card-name--fixed">{exName}</div>
@@ -1428,6 +1709,15 @@ function Day() {
           </span>
         )}
       </div>
+
+      <ContextMenu
+        open={!!contextMenu}
+        x={contextMenu?.x ?? 0}
+        y={contextMenu?.y ?? 0}
+        items={menuItems}
+        onClose={() => setContextMenu(null)}
+        returnFocusRef={menuReturnFocusRef}
+      />
     </div>
   );
 }

@@ -20,7 +20,7 @@ export default function MaxMethodLogo({ animated = false }) {
             35% { transform: translateY(0); }
             100% { transform: translateY(0); opacity: 1; }
           }
-          .mm-bar { animation: mm-bar-drop 13s ease-out forwards; }
+          .mm-bar { animation: mm-bar-drop 6s ease-out forwards; }
 
           @keyframes mm-plate-inner-left {
             0%, 35% { transform: translateX(-300px); opacity: 0; }
@@ -36,8 +36,8 @@ export default function MaxMethodLogo({ animated = false }) {
             53% { transform: translateX(0); }
             100% { transform: translateX(0); opacity: 1; }
           }
-          .mm-plate-inner-l { animation: mm-plate-inner-left 13s ease-out forwards; }
-          .mm-plate-inner-r { animation: mm-plate-inner-right 13s ease-out forwards; }
+          .mm-plate-inner-l { animation: mm-plate-inner-left 6s ease-out forwards; }
+          .mm-plate-inner-r { animation: mm-plate-inner-right 6s ease-out forwards; }
 
           @keyframes mm-plate-outer-left {
             0%, 45% { transform: translateX(-350px); opacity: 0; }
@@ -53,8 +53,8 @@ export default function MaxMethodLogo({ animated = false }) {
             61% { transform: translateX(0); }
             100% { transform: translateX(0); opacity: 1; }
           }
-          .mm-plate-outer-l { animation: mm-plate-outer-left 13s ease-out forwards; }
-          .mm-plate-outer-r { animation: mm-plate-outer-right 13s ease-out forwards; }
+          .mm-plate-outer-l { animation: mm-plate-outer-left 6s ease-out forwards; }
+          .mm-plate-outer-r { animation: mm-plate-outer-right 6s ease-out forwards; }
 
           @keyframes mm-collar-snap-left {
             0%, 53% { transform: translateX(-400px); opacity: 0; }
@@ -66,8 +66,8 @@ export default function MaxMethodLogo({ animated = false }) {
             62% { transform: translateX(0); opacity: 1; }
             100% { transform: translateX(0); opacity: 1; }
           }
-          .mm-collar-l { animation: mm-collar-snap-left 13s ease-out forwards; }
-          .mm-collar-r { animation: mm-collar-snap-right 13s ease-out forwards; }
+          .mm-collar-l { animation: mm-collar-snap-left 6s ease-out forwards; }
+          .mm-collar-r { animation: mm-collar-snap-right 6s ease-out forwards; }
 
           @keyframes mm-stamp-in {
             0%, 62% { opacity: 0; transform: scale(1.4); filter: blur(4px); }
@@ -79,7 +79,7 @@ export default function MaxMethodLogo({ animated = false }) {
           .mm-wordmark {
             transform-origin: 340px 195px;
             transform-box: fill-box;
-            animation: mm-stamp-in 13s ease-out forwards;
+            animation: mm-stamp-in 6s ease-out forwards;
           }
 
           @keyframes mm-rule-sweep {
@@ -89,11 +89,11 @@ export default function MaxMethodLogo({ animated = false }) {
           }
           .mm-rule-left {
             transform-origin: 195px 256px;
-            animation: mm-rule-sweep 13s ease-out forwards;
+            animation: mm-rule-sweep 6s ease-out forwards;
           }
           .mm-rule-right {
             transform-origin: 485px 256px;
-            animation: mm-rule-sweep 13s ease-out forwards;
+            animation: mm-rule-sweep 6s ease-out forwards;
           }
 
           @keyframes mm-tagline-fade {
@@ -101,7 +101,7 @@ export default function MaxMethodLogo({ animated = false }) {
             77% { opacity: 0.9; letter-spacing: 6px; }
             100% { opacity: 0.9; letter-spacing: 6px; }
           }
-          .mm-tagline { animation: mm-tagline-fade 13s ease-out forwards; }
+          .mm-tagline { animation: mm-tagline-fade 6s ease-out forwards; }
         `}</style>
       </defs>
 

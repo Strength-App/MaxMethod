@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import MuxPlayer from '@mux/mux-player-react'
 import { useWorkout } from '../context/WorkoutContext'
 import './exerciseLibrary.css'
@@ -1227,6 +1228,8 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
 export const ALL_EXERCISES = buildExerciseList()
 
 function ExerciseLibrary() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab]       = useState('all')
   const [search, setSearch]             = useState('')
   const [selected, setSelected]         = useState(null)
@@ -1239,6 +1242,32 @@ function ExerciseLibrary() {
       .then(data => setVideos(Array.isArray(data) ? data : []))
       .catch(() => setVideos([]))
   }, [])
+
+  // Inbound nav: when arriving with location.state.focusExercise, pre-select
+  // that exercise's detail view. Match against ALL_EXERCISES (case-insensitive)
+  // first, then fall back to custom exercises (localStorage list). If neither
+  // matches (typo, removed exercise), silently land on the list — the user
+  // can still search.
+  //
+  // After consumption, clear the state via replace so revisiting the page (or
+  // back-navigating to it) doesn't re-trigger the auto-select.
+  useEffect(() => {
+    const focus = location.state?.focusExercise
+    if (!focus) return
+    const match = ALL_EXERCISES.find(
+      ex => ex.name.toLowerCase() === focus.toLowerCase()
+    )
+    if (match) {
+      setSelected(match)
+    } else {
+      let customs = []
+      try { customs = JSON.parse(localStorage.getItem('customExercises') || '[]') } catch { /* noop */ }
+      if (customs.some(n => n.toLowerCase() === focus.toLowerCase())) {
+        setCustomSelected(focus)
+      }
+    }
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.state?.focusExercise])
 
   const lookupPlaybackId = useMemo(() => buildVideoLookup(videos), [videos])
 

@@ -26,6 +26,7 @@ export default function EquipmentSelect({
   onChange,
   id,
   ariaLabel,
+  autoFocus = false,
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(null);
@@ -33,6 +34,17 @@ export default function EquipmentSelect({
 
   const triggerRef = useRef(null);
   const popupRef = useRef(null);
+
+  // Opt-in autofocus on mount. Used by consumers that mount this component in
+  // response to a user action elsewhere (e.g. a context-menu "Swap" item) and
+  // need focus to land directly on the trigger without a double focus shift.
+  // Defaults to false so existing consumers (reviewProgram) are unaffected.
+  // autoFocus is intentionally read on mount only — re-running on prop change
+  // would steal focus during normal interaction.
+  useEffect(() => {
+    if (autoFocus) triggerRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const listboxId = `${id}-listbox`;
   const optionId = (idx) => `${id}-option-${idx}`;

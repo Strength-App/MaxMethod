@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ALL_EXERCISES } from './exerciseLibrary';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
+import ContextMenu from '../components/ContextMenu';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(name) {
@@ -88,6 +89,16 @@ function Logger() {
   const [postWorkoutData, setPostWorkoutData] = useState(null);
   const [sessionPRs, setSessionPRs] = useState([]);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
+
+  // ── Right-click / long-press menu state ─────────────────────────────────
+  // Logger only offers "View in Exercise Library" (ad-hoc rows have no slot
+  // template to swap from). Same long-press / right-click discipline as
+  // day.jsx — see day.jsx for shared rationale.
+  const [contextMenu, setContextMenu] = useState(null); // { x, y, ei, exerciseName }
+  const cardHeaderRefs = useRef(new Map());
+  const longPressTimerRef = useRef(null);
+  const longPressFiredRef = useRef(false);
+  const menuReturnFocusRef = useRef(null);
 
   // Combined options for the autocomplete listbox: matches OR (when none and
   // the user typed something) a single "+ Add to Custom Exercises" affordance.
@@ -253,6 +264,69 @@ function Logger() {
     setPostWorkoutData({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs });
   };
 
+  // ── Right-click / long-press menu handlers ──────────────────────────────
+  const openContextMenu = (ei, exerciseName, x, y) => {
+    if (!exerciseName) return; // empty input — nothing to look up
+    menuReturnFocusRef.current = cardHeaderRefs.current.get(ei) ?? null;
+    setContextMenu({ x, y, ei, exerciseName });
+  };
+
+  const handleViewInLibrary = (exerciseName) => {
+    setContextMenu(null);
+    navigate('/exerciseLibrary', { state: { focusExercise: exerciseName } });
+  };
+
+  // Same factory shape as day.jsx — see there for shared rationale.
+  const makeRowMenuHandlers = (ei, exerciseName) => ({
+    ref: (el) => {
+      if (el) cardHeaderRefs.current.set(ei, el);
+      else cardHeaderRefs.current.delete(ei);
+    },
+    onContextMenu: (e) => {
+      // Preserve native text-editing context menu on inputs (copy/paste/etc.).
+      if (e.target.closest('input, textarea')) return;
+      if (!exerciseName) return;
+      e.preventDefault();
+      longPressFiredRef.current = false;
+      openContextMenu(ei, exerciseName, e.clientX, e.clientY);
+    },
+    onPointerDown: () => { longPressFiredRef.current = false; },
+    onTouchStart: (e) => {
+      if (e.target.closest('input, textarea')) return;
+      if (!exerciseName) return;
+      const t = e.touches[0];
+      const cx = t.clientX, cy = t.clientY;
+      longPressFiredRef.current = false;
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = setTimeout(() => {
+        longPressFiredRef.current = true;
+        openContextMenu(ei, exerciseName, cx, cy);
+      }, 500);
+    },
+    onTouchEnd: () => clearTimeout(longPressTimerRef.current),
+    onTouchMove: () => clearTimeout(longPressTimerRef.current),
+    onTouchCancel: () => clearTimeout(longPressTimerRef.current),
+  });
+
+  // Suppress the synthetic click iOS dispatches after a long-press fires.
+  const wrapLongPressClick = (originalOnClick) => (e) => {
+    if (longPressFiredRef.current) {
+      longPressFiredRef.current = false;
+      e.preventDefault();
+      return;
+    }
+    originalOnClick(e);
+  };
+
+  const menuItems = !contextMenu ? [] : [
+    {
+      label: 'View in Exercise Library',
+      onSelect: () => handleViewInLibrary(contextMenu.exerciseName),
+    },
+  ];
+
+  const TOUCH_NO_CALLOUT_STYLE = { WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' };
+
   return (
     <div className="day-page">
       <div className="day-header">
@@ -322,16 +396,26 @@ function Logger() {
           };
           const exerciseLabel = ex.name?.trim() || `unnamed exercise ${ei + 1}`;
 
+          const rowMenuHandlers = makeRowMenuHandlers(ei, ex.name?.trim() || '');
           return (
             <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
               <div
                 className="ex-card-header"
-                onClick={headerToggle}
+                ref={rowMenuHandlers.ref}
+                onClick={wrapLongPressClick(headerToggle)}
                 onKeyDown={headerKeyDown}
+                onContextMenu={rowMenuHandlers.onContextMenu}
+                onPointerDown={rowMenuHandlers.onPointerDown}
+                onTouchStart={rowMenuHandlers.onTouchStart}
+                onTouchEnd={rowMenuHandlers.onTouchEnd}
+                onTouchMove={rowMenuHandlers.onTouchMove}
+                onTouchCancel={rowMenuHandlers.onTouchCancel}
                 role="button"
                 tabIndex={0}
                 aria-expanded={isOpen}
+                aria-haspopup="menu"
                 aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${exerciseLabel} card, ${doneCount} of ${ex.sets.length} sets done`}
+                style={TOUCH_NO_CALLOUT_STYLE}
               >
                 <div className="ex-card-title-block" style={{ position: 'relative', flex: 1 }}>
                   <label htmlFor={`lg-name-${ei}`} className="sr-only">Exercise name</label>
@@ -653,6 +737,15 @@ function Logger() {
           Finish Workout
         </button>
       </div>
+
+      <ContextMenu
+        open={!!contextMenu}
+        x={contextMenu?.x ?? 0}
+        y={contextMenu?.y ?? 0}
+        items={menuItems}
+        onClose={() => setContextMenu(null)}
+        returnFocusRef={menuReturnFocusRef}
+      />
     </div>
   );
 }
