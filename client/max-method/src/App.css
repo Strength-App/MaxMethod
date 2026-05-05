@@ -1642,10 +1642,12 @@ input::placeholder {
   user-select: none;
 }
 
-.ex-card-header:hover .ex-card-name { color: var(--accent); }
-
 .ex-card-title-block { flex: 1; min-width: 0; }
 
+/* Exercise name color is uniformly var(--text) across all states on
+   day/customDay/logger card headers. Fixed-lift vs accessory distinction
+   is signaled via the pencil-icon hover (.exercise-edit-icon below) and
+   reviewProgram's separate copy, not by name color. */
 .ex-card-name {
   font-family: var(--font-sub);
   font-size: 16px;
@@ -1654,8 +1656,6 @@ input::placeholder {
   letter-spacing: 0.03em;
   transition: color 0.15s;
 }
-
-.ex-card-name--fixed { color: var(--accent); }
 
 .ex-card-name-btn {
   background: none;
@@ -1674,7 +1674,6 @@ input::placeholder {
   transition: color 0.15s;
 }
 
-.ex-card-name-btn:hover .ex-card-name { color: var(--accent); }
 .ex-card-name-btn:hover .exercise-edit-icon { color: var(--accent); opacity: 1; }
 
 .ex-card-type {

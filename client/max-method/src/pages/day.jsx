@@ -686,7 +686,12 @@ function Day() {
     const isNewPbThisSession = maxActual > Number(pb ?? 0);
 
     const headerToggle = () => { setEditingSlot(null); toggleCard(gi); };
+    // Only handle keys dispatched directly to the header — ignore events
+    // bubbled up from child elements. Future-proof: any future child with
+    // its own keyboard handlers (inline picker, input, button) won't need
+    // a stopPropagation handshake to coexist.
     const headerKeyDown = (e) => {
+      if (e.target !== e.currentTarget) return;
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
         headerToggle();
@@ -728,30 +733,40 @@ function Day() {
             {firstSlot.fixed || isViewingPast ? (
               <div className="ex-card-name ex-card-name--fixed">{exercise}</div>
             ) : isEditing ? (
-              <select
-                autoFocus
-                className="exercise-select"
-                value={exercise}
-                aria-label={`Choose exercise for ${firstSlot.label || 'slot'}`}
+              // Wrapper detects "focus left the entire EquipmentSelect subtree"
+              // (relatedTarget pattern) to preserve the implicit click-outside-
+              // to-cancel UX the native <select>'s onBlur provided. Gap: clicks
+              // on truly inert (non-focusable) elements don't trigger blur, so
+              // the picker collapses to its trigger but edit mode persists.
+              // Most clickable surface here is focusable, so the gap is rare.
+              <div
                 onClick={e => e.stopPropagation()}
                 onKeyDown={e => e.stopPropagation()}
-                onChange={e => {
-                  items.forEach(({ si }) => setExercise(di, si, e.target.value));
-                  setEditingSlot(null);
-                  if (editMode && workoutLogId) {
-                    items.forEach(({ si }) =>
-                      fetch(`${API_URL}/api/users/workout-log/${workoutLogId}/slot-exercise`, {
-                        method: 'PATCH',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ weekNum: wi + 1, dayNum: di + 1, slotIdx: si, exercise: e.target.value })
-                      }).catch(err => console.error('Failed to save exercise:', err))
-                    );
-                  }
-                }}
-                onBlur={() => setEditingSlot(null)}
+                onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setEditingSlot(null); }}
               >
-                {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-              </select>
+                <EquipmentSelect
+                  id={`day-edit-${cardKey}`}
+                  value={exercise}
+                  options={options}
+                  equipment={EXERCISE_EQUIPMENT}
+                  ariaLabel={`Choose exercise for ${firstSlot.label || 'slot'}`}
+                  onChange={(value) => {
+                    items.forEach(({ si }) => setExercise(di, si, value));
+                    setEditingSlot(null);
+                    if (editMode && workoutLogId) {
+                      items.forEach(({ si }) =>
+                        fetch(`${API_URL}/api/users/workout-log/${workoutLogId}/slot-exercise`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ weekNum: wi + 1, dayNum: di + 1, slotIdx: si, exercise: value })
+                        }).catch(err => console.error('Failed to save exercise:', err))
+                      );
+                    }
+                  }}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus
+                  autoFocus
+                />
+              </div>
             ) : (
               <button
                 className="ex-card-name-btn"
@@ -1131,7 +1146,12 @@ function Day() {
               setSetData(prev => ({ ...prev, [`${si}-amrap-${ei}`]: { ...(prev[`${si}-amrap-${ei}`] ?? {}), ...patch } }));
 
             const amrapHeaderToggle = () => toggleCard(cardKey);
+            // Only handle keys dispatched directly to the header — ignore events
+            // bubbled up from child elements. Future-proof: any future child with
+            // its own keyboard handlers (inline picker, input, button) won't need
+            // a stopPropagation handshake to coexist.
             const amrapHeaderKeyDown = (e) => {
+              if (e.target !== e.currentTarget) return;
               if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); amrapHeaderToggle(); }
             };
             // Circuits don't get "Swap for today" — slotIdxs=null gates it off
@@ -1277,7 +1297,14 @@ function Day() {
           const isNewPb = maxActual > Number(pb ?? 0);
 
           const cTog = () => toggleCard(cardKey);
-          const cKey = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cTog(); } };
+          // Only handle keys dispatched directly to the header — ignore events
+          // bubbled up from child elements. Future-proof: any future child with
+          // its own keyboard handlers (inline picker, input, button) won't need
+          // a stopPropagation handshake to coexist.
+          const cKey = (e) => {
+            if (e.target !== e.currentTarget) return;
+            if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cTog(); }
+          };
           // Circuits don't get "Swap for today" — slotIdxs=null gates it off.
           const circMenuHandlers = makeRowMenuHandlers(`c-circ-${gi}-${ei}`, exName, null, true);
           return (
@@ -1489,17 +1516,34 @@ function Day() {
           const progPct = ex.sets.length > 0 ? Math.round((doneCount / ex.sets.length) * 100) : 0;
           const isOpen = openCards[ei] ?? true;
           const cwTog = () => toggleCard(ei);
-          const cwKey = (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cwTog(); } };
+          // Only handle keys dispatched directly to the header — ignore events
+          // bubbled up from child elements. Future-proof: any future child with
+          // its own keyboard handlers (inline picker, input, button) won't need
+          // a stopPropagation handshake to coexist.
+          const cwKey = (e) => {
+            if (e.target !== e.currentTarget) return;
+            if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cwTog(); }
+          };
+          const cwMenuHandlers = makeRowMenuHandlers(`c-cw-${ei}`, ex.name, null, true);
           return (
             <div key={ei} className={`ex-card${isOpen ? ' ex-card--open' : ''}${allDone ? ' ex-card--done' : ''}`}>
               <div
                 className="ex-card-header"
-                onClick={cwTog}
+                ref={cwMenuHandlers.ref}
+                onClick={wrapLongPressClick(cwTog)}
                 onKeyDown={cwKey}
+                onContextMenu={cwMenuHandlers.onContextMenu}
+                onPointerDown={cwMenuHandlers.onPointerDown}
+                onTouchStart={cwMenuHandlers.onTouchStart}
+                onTouchEnd={cwMenuHandlers.onTouchEnd}
+                onTouchMove={cwMenuHandlers.onTouchMove}
+                onTouchCancel={cwMenuHandlers.onTouchCancel}
                 role="button"
                 tabIndex={0}
                 aria-expanded={isOpen}
+                aria-haspopup="menu"
                 aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${ex.name} card, ${doneCount} of ${ex.sets.length} sets done`}
+                style={TOUCH_NO_CALLOUT_STYLE}
               >
                 <div className="ex-card-title-block">
                   <div className="ex-card-name ex-card-name--fixed">{ex.name}</div>

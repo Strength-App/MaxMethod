@@ -435,7 +435,7 @@ function Logger() {
                     aria-expanded={isDropdownOpen}
                     aria-controls={listboxId}
                     aria-activedescendant={activeOptionId}
-                    style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--accent)', fontWeight: 700, fontSize: '1em', width: '100%' }}
+                    style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontWeight: 700, fontSize: '1em', width: '100%' }}
                   />
                   {isDropdownOpen && (
                     // onMouseDown preventDefault on listbox wrapper — keeps focus on
@@ -564,19 +564,29 @@ function Logger() {
                       <div key={si} className="ex-set-row" style={{ gridTemplateColumns: '36px 1fr 1fr 44px' }} role="group" aria-label={setLabel}>
                         <div className="set-num" aria-hidden="true">{si + 1}</div>
 
-                        <div className="actual-input" role="group" aria-label={`Reps for ${setLabel}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 6px', gap: '4px' }}>
+                        <div className="stepper-wrap" role="group" aria-label={`Reps for ${setLabel}`}>
                           <button
                             type="button"
-                            onClick={() => updateSet(ei, si, { reps: Math.max(0, (Number(s.reps) || 0) - 1) })}
+                            className="stepper-btn stepper-btn--dec"
                             aria-label={`Decrease reps for ${setLabel}`}
-                            style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                            onClick={() => updateSet(ei, si, { reps: Math.max(0, (Number(s.reps) || 0) - 1) })}
                           ><span aria-hidden="true">−</span></button>
-                          <span style={{ textAlign: 'center', fontSize: '14px', color: 'var(--text)' }} aria-live="off">{s.reps || 0}</span>
+                          <input
+                            className="actual-input"
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="0"
+                            inputMode="numeric"
+                            aria-label={`Reps for ${setLabel}`}
+                            value={s.reps ?? ''}
+                            onChange={e => updateSet(ei, si, { reps: e.target.value })}
+                          />
                           <button
                             type="button"
-                            onClick={() => updateSet(ei, si, { reps: (Number(s.reps) || 0) + 1 })}
+                            className="stepper-btn stepper-btn--inc"
                             aria-label={`Increase reps for ${setLabel}`}
-                            style={{ background: 'transparent', border: 'none', color: 'var(--text)', cursor: 'pointer', fontSize: '16px', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+                            onClick={() => updateSet(ei, si, { reps: (Number(s.reps) || 0) + 1 })}
                           ><span aria-hidden="true">+</span></button>
                         </div>
 

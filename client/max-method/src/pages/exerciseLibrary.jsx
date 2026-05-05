@@ -29,6 +29,15 @@ const VIDEO_NAME_ALIASES = {
   'Close Grip Lat Pulldowns': 'Close Grip Pulldowns',
 }
 
+// Legacy / synonymous exercise names that should resolve to a single canonical
+// library card. Applied when navigating into the library (e.g. from a workout
+// day) so that older program entries like "Squats" or "Back Squat" still land
+// on the consolidated "Squat" card.
+const EXERCISE_NAME_ALIASES = {
+  'squats':     'Squat',
+  'back squat': 'Squat',
+}
+
 function buildVideoLookup(videos) {
   const byNorm = {}
   const bySorted = {}
@@ -57,8 +66,8 @@ const MOVEMENT_PATTERNS = {
   'Horizontal Pull':             ['Barbell Row','Underhand Barbell Row','Cable Row','T Bar Rows','Single Arm Cable Rows','Single Arm Dumbbell Rows','Chest Supported Row','Seal Row','Pendlay Row'],
   'Posterior Upper Accessory':   ['Scarecrows','Rear Delt Flys','Machine Rear Delt Flys','Pullovers','Cable Pullovers','Shrugs','DB Shrugs','Trap Bar Shrugs','YTWLs'],
   'Bicep Accessory':             ['DB Curls','Barbell Curls','Ez Bar Curls','Hammer Curls','Preacher Curls','Cable Curls','Rope Curls','Incline DB Curls','Concentration Curls','Cross Body Hammer Curls'],
-  'Hinge':                       ['Hip Thrusts','Bodyweight Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Bodyweight Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
-  'Squat Pattern':               ['Front Squat','SSB Squats','Squats','Back Squat','Box Squats','Bodyweight Squat','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
+  'Hinge':                       ['Deadlift','Hip Thrusts','Bodyweight Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Bodyweight Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
+  'Squat Pattern':               ['Squat','Front Squat','SSB Squats','Box Squats','Bodyweight Squat','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
   'Posterior Chain Accessory':   ['Back Extensions','Bodyweight Back Extensions','Nordics','Reverse Hypers','GHD Raises','Single Leg Hip Thrusts'],
   'Unilateral Lower':            ['Bulgarians','Bodyweight Bulgarians','Walking Lunges','Bodyweight Lunges','ATG Lunges','Bodyweight ATG Lunges','Reverse Lunges','Step Ups'],
   'Isolation Lower':             ['Leg Extensions','Single Leg Extensions','Seated Leg Curls','Lying Leg Curls','Abductor Machine','Adductor Machine'],
@@ -353,7 +362,7 @@ const EXERCISE_EQUIPMENT = {
   'Barbell Glute Bridges': 'Barbell', 'Bodyweight Glute Bridges': 'Bodyweight', 'Single Leg RDLs': 'Dumbbell',
   'Sumo Deadlift': 'Barbell', 'Good Mornings': 'Barbell',
   // Squat Pattern
-  'Front Squat': 'Barbell', 'SSB Squats': 'Barbell', 'Squats': 'Barbell', 'Back Squat': 'Barbell', 'Box Squats': 'Barbell',
+  'Squat': 'Barbell', 'Front Squat': 'Barbell', 'SSB Squats': 'Barbell', 'Box Squats': 'Barbell',
   'Bodyweight Squat': 'Bodyweight', 'Pendulum Squat': 'Machine', 'Leg Press': 'Machine', 'Goblet Squat': 'Dumbbell', 'Zercher Squat': 'Barbell',
   // Posterior Chain Accessory
   'Back Extensions': 'Machine', 'Bodyweight Back Extensions': 'Bodyweight', 'Nordics': 'Bodyweight', 'Reverse Hypers': 'Machine',
@@ -376,7 +385,7 @@ const EXERCISE_EQUIPMENT = {
   'Treadmill': 'Cardio Machine', 'Curved Treadmill': 'Cardio Machine', 'Assault Bike': 'Cardio Machine', 'Bike': 'Cardio Machine',
   'Recumbent Bike': 'Cardio Machine', 'Elliptical': 'Cardio Machine', 'Stairmaster': 'Cardio Machine', 'Rowing Machine': 'Cardio Machine', 'Ski Erg': 'Cardio Machine',
   // Fixed template exercises
-  'Squat': 'Barbell', 'Back Squat': 'Barbell', 'Deadlift': 'Barbell',
+  'Deadlift': 'Barbell',
   // Bodyweight exercises
   'Pullups': 'Bodyweight', 'Chin Ups': 'Bodyweight', 'Neutral Grip Pullups': 'Bodyweight',
   'Dips': 'Bodyweight', 'Pushups': 'Bodyweight',
@@ -1243,31 +1252,42 @@ function ExerciseLibrary() {
       .catch(() => setVideos([]))
   }, [])
 
-  // Inbound nav: when arriving with location.state.focusExercise, pre-select
-  // that exercise's detail view. Match against ALL_EXERCISES (case-insensitive)
-  // first, then fall back to custom exercises (localStorage list). If neither
-  // matches (typo, removed exercise), silently land on the list — the user
-  // can still search.
+  // Inbound nav signals (mutually exclusive; focusExercise wins on collision):
+  //   - location.state.focusExercise: pre-select that exercise's detail view.
+  //     Match against ALL_EXERCISES (case-insensitive) first, then fall back
+  //     to custom exercises (localStorage list). If neither matches (typo,
+  //     removed exercise), silently land on the list.
+  //   - location.state.resetToList: exit any open detail card and return to
+  //     the list view. Sent by the nav-bar Exercise Library link so clicking
+  //     it from a detail card resets to list (otherwise React Router treats
+  //     same-path nav as a no-op and the detail stays open).
   //
   // After consumption, clear the state via replace so revisiting the page (or
-  // back-navigating to it) doesn't re-trigger the auto-select.
+  // back-navigating to it) doesn't re-trigger the signal.
   useEffect(() => {
     const focus = location.state?.focusExercise
-    if (!focus) return
-    const match = ALL_EXERCISES.find(
-      ex => ex.name.toLowerCase() === focus.toLowerCase()
-    )
-    if (match) {
-      setSelected(match)
-    } else {
-      let customs = []
-      try { customs = JSON.parse(localStorage.getItem('customExercises') || '[]') } catch { /* noop */ }
-      if (customs.some(n => n.toLowerCase() === focus.toLowerCase())) {
-        setCustomSelected(focus)
+    const reset = location.state?.resetToList
+    if (focus) {
+      const aliased = EXERCISE_NAME_ALIASES[focus.toLowerCase()] || focus
+      const match = ALL_EXERCISES.find(
+        ex => ex.name.toLowerCase() === aliased.toLowerCase()
+      )
+      if (match) {
+        setSelected(match)
+      } else {
+        let customs = []
+        try { customs = JSON.parse(localStorage.getItem('customExercises') || '[]') } catch { /* noop */ }
+        if (customs.some(n => n.toLowerCase() === focus.toLowerCase())) {
+          setCustomSelected(focus)
+        }
       }
+      navigate(location.pathname, { replace: true, state: null })
+    } else if (reset) {
+      setSelected(null)
+      setCustomSelected(null)
+      navigate(location.pathname, { replace: true, state: null })
     }
-    navigate(location.pathname, { replace: true, state: null })
-  }, [location.state?.focusExercise])
+  }, [location.state?.focusExercise, location.state?.resetToList])
 
   const lookupPlaybackId = useMemo(() => buildVideoLookup(videos), [videos])
 

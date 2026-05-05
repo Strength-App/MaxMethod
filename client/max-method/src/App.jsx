@@ -67,7 +67,7 @@ function Navigation() {
       <Link to="/home" className={location.pathname === '/home' ? "selected" : "nav-link"} aria-current={location.pathname === '/home' ? 'page' : undefined}>Home</Link>
       <Link to="/pickNewProgram" className={onPrograms ? "selected" : "nav-link"} aria-current={onPrograms ? 'page' : undefined}>Programs</Link>
       <Link to="/history" className={location.pathname === '/history' ? "selected" : "nav-link"} aria-current={location.pathname === '/history' ? 'page' : undefined}>History</Link>
-      <Link to="/exerciseLibrary" className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"} aria-current={location.pathname === '/exerciseLibrary' ? 'page' : undefined}>Exercise Library</Link>
+      <Link to="/exerciseLibrary" state={{ resetToList: true }} className={location.pathname === '/exerciseLibrary' ? "selected" : "nav-link"} aria-current={location.pathname === '/exerciseLibrary' ? 'page' : undefined}>Exercise Library</Link>
       <Link to="/settings" className={location.pathname === '/settings' ? "selected" : "nav-link"} aria-current={location.pathname === '/settings' ? 'page' : undefined}>Profile</Link>
 
       <button onClick={handleLogout} className="logout-btn">
