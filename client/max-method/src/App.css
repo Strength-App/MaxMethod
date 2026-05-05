@@ -4160,6 +4160,15 @@ button,
   box-shadow: var(--accent-glow-sm);
 }
 
+/* Native <option> children don't composite the translucent parent bg —
+   without explicit styling browsers paint the popup panel solid white,
+   making white text invisible. Solid --bg + --text gives 19.5:1 contrast.
+   OS-controlled hover/selected highlight is preserved on top. */
+.rp-select option {
+  background: var(--bg);
+  color: var(--text);
+}
+
 .rp-swap-hint {
   font-size: 10px;
   color: var(--muted);
@@ -4276,4 +4285,129 @@ button,
 
 @keyframes rp-spin {
   to { transform: rotate(360deg); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   EQUIPMENT SELECT — Custom combobox replacing native <select> in
+   reviewProgram swap dropdowns. Renders colored equipment pills
+   (.rp-equipment-tag) inline inside trigger and option rows.
+═══════════════════════════════════════════════════════════════════ */
+.es-root {
+  position: relative;
+  width: 100%;
+}
+
+.es-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: var(--surface-deep);
+  border: 1px solid var(--accent-border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 6px 10px;
+  cursor: pointer;
+  outline: none;
+  text-align: left;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.es-trigger:focus-visible,
+.es-trigger--open {
+  border-color: var(--accent);
+  box-shadow: var(--accent-glow-sm);
+}
+
+.es-trigger-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.es-trigger-name {
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.es-trigger-caret {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 10px;
+  transition: transform 150ms ease;
+}
+
+.es-trigger--open .es-trigger-caret {
+  transform: rotate(180deg);
+}
+
+.es-popup {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin: 4px 0 0;
+  list-style: none;
+  padding: 4px;
+  /* Solid bg (not translucent --surface) — floating popups need opaque
+     backgrounds to prevent bleed-through from underlying card content
+     and pills. Same pattern as .rp-select option fix in bg-swap-followup #2. */
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: var(--z-overlay);
+}
+
+.es-popup--up {
+  top: auto;
+  bottom: 100%;
+  margin: 0 0 4px;
+}
+
+.es-option {
+  display: flex;
+  align-items: center;
+  min-height: 44px; /* Touch-target compliance — applied unconditionally per spec */
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 100ms ease;
+}
+
+.es-option--highlighted {
+  background: var(--surface-hover);
+}
+
+.es-option--selected {
+  border-left: 2px solid var(--accent);
+  padding-left: 10px;
+}
+
+.es-option-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.es-option-name {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text);
+  flex: 0 1 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

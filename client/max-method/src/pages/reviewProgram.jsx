@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
+import EquipmentSelect from '../components/EquipmentSelect';
 
 // Equipment map (mirrors exerciseLibrary.jsx)
 const EXERCISE_EQUIPMENT = {
@@ -99,8 +100,7 @@ function CircuitExRow({ ex, exIdx, slotIdx, dayIdx, onSwap }) {
     return [];
   }, [ex.label, ex.exercise, ex.fixed]);
 
-  const handleSelect = (e) => {
-    const val = e.target.value;
+  const handleSelect = (val) => {
     setSelected(val);
     onSwap(dayIdx, [slotIdx], val, exIdx);
     setOpen(false);
@@ -133,18 +133,14 @@ function CircuitExRow({ ex, exIdx, slotIdx, dayIdx, onSwap }) {
       </div>
       {open && (
         <div className="rp-swap-dropdown" id={dropdownId}>
-          <label htmlFor={`${dropdownId}-select`} className="sr-only">Replacement for {displayName}</label>
-          <select
+          <EquipmentSelect
             id={`${dropdownId}-select`}
             value={selected}
+            options={alternatives}
+            equipment={EXERCISE_EQUIPMENT}
             onChange={handleSelect}
-            className="rp-select"
-            aria-label={`Replacement for ${displayName}`}
-          >
-            {alternatives.map(a => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </select>
+            ariaLabel={`Replacement for ${displayName}`}
+          />
           <span className="rp-swap-hint">Pick a replacement — applied across all weeks</span>
         </div>
       )}
@@ -199,8 +195,7 @@ function SlotRow({ slot, dayIdx, onSwap }) {
     return [];
   }, [slot.label, slot.exercise]);
 
-  const handleSelect = (e) => {
-    const val = e.target.value;
+  const handleSelect = (val) => {
     setSelected(val);
     onSwap(dayIdx, slot.slotIdxs, val);
     setOpen(false);
@@ -236,18 +231,14 @@ function SlotRow({ slot, dayIdx, onSwap }) {
       </div>
       {open && (
         <div className="rp-swap-dropdown" id={dropdownId}>
-          <label htmlFor={`${dropdownId}-select`} className="sr-only">Replacement for {slot.exercise}</label>
-          <select
+          <EquipmentSelect
             id={`${dropdownId}-select`}
             value={selected}
+            options={alternatives}
+            equipment={EXERCISE_EQUIPMENT}
             onChange={handleSelect}
-            className="rp-select"
-            aria-label={`Replacement for ${slot.exercise}`}
-          >
-            {alternatives.map(ex => (
-              <option key={ex} value={ex}>{ex}</option>
-            ))}
-          </select>
+            ariaLabel={`Replacement for ${slot.exercise}`}
+          />
           <span className="rp-swap-hint">Pick a replacement — applied across all weeks</span>
         </div>
       )}
