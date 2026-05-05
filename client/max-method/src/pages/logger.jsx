@@ -145,6 +145,11 @@ function Logger() {
         setHighlightedIndex(opts.length - 1);
         return;
       }
+      // Note: Space is intentionally NOT handled here. This is a text-input-
+      // trigger combobox per WAI-ARIA — Space is text entry, not a UI command.
+      // Enter alone selects the highlighted option (matches Google search,
+      // browser address bars, IDE autocomplete). Diverges from EquipmentSelect's
+      // button-trigger combobox where Space-to-select is correct.
       case 'Enter': {
         if (!open || opts.length === 0 || highlightedIndex == null) return;
         const opt = opts[highlightedIndex];
@@ -303,6 +308,13 @@ function Logger() {
             : undefined;
           const headerToggle = () => toggleCard(ei);
           const headerKeyDown = (e) => {
+            // Only handle keys dispatched directly to the header — ignore events
+            // bubbled up from child elements (the typeahead input, dropdown options,
+            // delete button, etc.). Without this guard, Space typed in the search
+            // input would preventDefault here and collapse the card instead of
+            // typing a space character. Future-proof: any future child elements
+            // won't need their own stopPropagation handshake to coexist.
+            if (e.target !== e.currentTarget) return;
             if (e.key === ' ' || e.key === 'Enter') {
               e.preventDefault();
               headerToggle();
@@ -342,12 +354,23 @@ function Logger() {
                     style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--accent)', fontWeight: 700, fontSize: '1em', width: '100%' }}
                   />
                   {isDropdownOpen && (
+                    // onMouseDown preventDefault on listbox wrapper — keeps focus on
+                    // the input when user clicks the scrollbar or dead space inside
+                    // the listbox. Without this, the input's blur fires, the 150ms
+                    // timeout in onBlur closes the dropdown, and the user can't drag.
+                    // Option selection still works because each option has its own
+                    // onMouseDown that fires first via event bubbling order; this
+                    // wrapper-level preventDefault then runs on a focus shift that's
+                    // already moot (listbox is unmounting). Click-outside closes
+                    // still work because clicks outside the wrapper never reach this
+                    // handler at all.
                     <div
                       id={listboxId}
                       role="listbox"
                       aria-label="Exercise suggestions"
                       onClick={e => e.stopPropagation()}
-                      style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg, #1a1a1a)', border: '1px solid var(--border, #333)', borderRadius: '8px', zIndex: 100, overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
+                      onMouseDown={e => e.preventDefault()}
+                      style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--bg)', border: '1px solid var(--border, #333)', borderRadius: '8px', zIndex: 100, maxHeight: '280px', overflowY: 'auto', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
                     >
                       {options.map((opt, optIdx) => {
                         const highlighted = highlightedIndex === optIdx;
@@ -361,7 +384,7 @@ function Logger() {
                               onMouseDown={() => { updateName(ei, opt.name); closeDropdown(); }}
                               onMouseEnter={() => setHighlightedIndex(optIdx)}
                               onMouseLeave={() => setHighlightedIndex(null)}
-                              style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '13px', color: 'var(--text)', borderBottom: '1px solid var(--border, #333)', background: highlighted ? 'var(--border, #333)' : 'transparent' }}
+                              style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '13px', color: 'var(--text)', borderBottom: '1px solid var(--border, #333)', background: highlighted ? 'var(--surface-hover)' : 'transparent' }}
                             >
                               {opt.name}
                             </div>
@@ -377,7 +400,7 @@ function Logger() {
                             onMouseDown={() => { addToCustomExercises(opt.name); closeDropdown(); }}
                             onMouseEnter={() => setHighlightedIndex(optIdx)}
                             onMouseLeave={() => setHighlightedIndex(null)}
-                            style={{ padding: '10px 12px', fontSize: '13px', cursor: 'pointer', background: highlighted ? 'var(--border, #333)' : 'transparent' }}
+                            style={{ padding: '10px 12px', fontSize: '13px', cursor: 'pointer', background: highlighted ? 'var(--surface-hover)' : 'transparent' }}
                           >
                             <div style={{ color: '#ff5555', marginBottom: '8px' }}>"{ex.name}" is not in the exercise library</div>
                             <div style={{ display: 'inline-block', padding: '5px 12px', background: 'rgba(250,204,21,0.15)', color: '#facc15', borderRadius: '6px', fontSize: '12px', fontWeight: 600 }}>
