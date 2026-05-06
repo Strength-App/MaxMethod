@@ -589,16 +589,12 @@ export default function History() {
   const today = new Date(); today.setHours(0,0,0,0);
   const thisMonth = sessions.filter(s => s.date >= new Date(today.getFullYear(), today.getMonth(), 1)).length;
 
-  const streak = useMemo(() => {
-    if (!sessions.length) return 0;
-    let count = 0;
-    const check = new Date(today);
-    const keys = new Set(sessions.map(s => dateKey(s.date)));
-    while (keys.has(dateKey(check))) {
-      count++;
-      check.setDate(check.getDate() - 1);
-    }
-    return count;
+  const daysThisWeek = useMemo(() => {
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay()); // 0=Sun → no shift
+    const keys = new Set();
+    sessions.forEach(s => { if (s.date >= weekStart) keys.add(dateKey(s.date)); });
+    return keys.size;
   }, [sessions]);
 
   // Group sessions by month for timeline
@@ -799,7 +795,7 @@ export default function History() {
       : `${API_URL}/api/users/workout-log/${sessionRef.workoutLogId}/log`;
     const userId = localStorage.getItem('userId');
 
-    const requests = cells.map(cell => {
+    const requests = cells.map(async cell => {
       const fields = direction === 'forward' ? cell.after : cell.before;
       const body = sessionRef.isQuickSession
         ? { userId, exerciseIdx: cell.exerciseIdx, setIdx: cell.setIdx ?? 0, ...fields }
@@ -811,12 +807,14 @@ export default function History() {
             setIdx: cell.setIdx ?? 0,
             ...fields,
           };
-      return fetch(url, {
+      const r = await fetch(url, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      })
-        .then(r => r.json().then(data => ({ ok: r.ok, data })).catch(() => ({ ok: r.ok, data: {} })));
+      });
+      let data;
+      try { data = await r.json(); } catch { data = {}; }
+      return { ok: r.ok, data };
     });
     const results = await Promise.allSettled(requests);
 
@@ -903,10 +901,10 @@ export default function History() {
       );
       const setIdxMap = new Map();
       const setPostResults = await Promise.allSettled(
-        eligibleSetAdds.map(a => {
+        eligibleSetAdds.map(async a => {
           const realSlotIdx = a.slotSentinel ? slotIdxMap.get(a.slotSentinel) : a.slotIdx;
-          return jsonFetch(setUrl(ref), 'POST', buildSetPostBody(ref, a, realSlotIdx, userId))
-            .then(r => ({ ...r, addRecord: a, realSlotIdx }));
+          const r = await jsonFetch(setUrl(ref), 'POST', buildSetPostBody(ref, a, realSlotIdx, userId));
+          return { ...r, addRecord: a, realSlotIdx };
         })
       );
       for (const r of setPostResults) {
@@ -1050,9 +1048,9 @@ export default function History() {
           <span className="sr-only">This month: {thisMonth} {thisMonth === 1 ? 'session' : 'sessions'}</span>
         </div>
         <div className="hist-stat-card">
-          <div className="hist-stat-val" aria-hidden="true"><span>{streak}</span></div>
-          <div className="hist-stat-lbl" aria-hidden="true">Day Streak</div>
-          <span className="sr-only">Day streak: {streak}</span>
+          <div className="hist-stat-val" aria-hidden="true"><span>{daysThisWeek} / 7</span></div>
+          <div className="hist-stat-lbl" aria-hidden="true">Days This Week</div>
+          <span className="sr-only">Days this week: {daysThisWeek} of 7</span>
         </div>
       </div>
 
