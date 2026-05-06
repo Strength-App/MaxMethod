@@ -2837,6 +2837,7 @@ input::placeholder {
   overflow-y: auto;
   animation: histFadeIn .2s ease;
 }
+.hist-modal--editing { border-top: 2px solid var(--accent); }
 @keyframes histFadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 
 .hist-modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border-strong); margin: 12px auto 0; }
@@ -2847,6 +2848,18 @@ input::placeholder {
 }
 .hist-modal-date { font-family: var(--font-sub); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 4px; }
 .hist-modal-title { font-family: var(--font-heading); font-size: 1.6rem; }
+.hist-editing-tag {
+  display: inline-block;
+  margin-left: 8px;
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: middle;
+}
 .hist-modal-stats { display: flex; gap: 16px; margin-top: 12px; }
 .hist-modal-stat { text-align: center; }
 .hist-modal-stat-val { font-family: var(--font-heading); font-size: 1.25rem; color: var(--accent); }
@@ -2861,7 +2874,19 @@ input::placeholder {
 .hist-pr-badge { background: linear-gradient(135deg, #f59e0b, #f97316); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: 0.4px; white-space: nowrap; }
 .hist-log-sets { display: flex; flex-direction: column; gap: 4px; }
 .hist-log-set-row { display: grid; grid-template-columns: 28px 1fr 1fr; gap: 8px; font-size: 11px; align-items: center; }
-.hist-log-set-num { width: 22px; height: 22px; border-radius: 50%; background: var(--accent); color: #fff; font-family: var(--font-sub); font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+.hist-log-set-row--editing { grid-template-columns: 24px 1fr 1fr 36px; }
+.hist-log-set-row--editing-cardio { grid-template-columns: 24px 1fr 1fr 1fr 36px; }
+.hist-log-set-num {
+  width: 24px;
+  font-family: var(--font-sub);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
 .hist-log-set-val { color: var(--muted); font-family: var(--font-sub); }
 .hist-log-set-val span { color: var(--text); font-weight: 600; }
 
@@ -4450,4 +4475,339 @@ button,
 .cm-menu-item:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOAST (generic notification surface)
+═══════════════════════════════════════════════════════════════════ */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  padding: 12px 12px 12px 16px;
+  max-width: 380px;
+  font-family: var(--font-sub);
+  font-size: 13px;
+  color: var(--text);
+  animation: toastSlideIn .2s ease;
+}
+@keyframes toastSlideIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+.toast-content { flex: 1; line-height: 1.4; }
+.toast-content strong { color: var(--text); font-weight: 600; }
+
+.toast-action {
+  margin-top: 8px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 6px 12px;
+  color: var(--accent);
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.toast-action:hover { background: var(--surface-hover); }
+.toast-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.toast-dismiss {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.toast-dismiss:hover { color: var(--text); }
+.toast-dismiss:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 480px) {
+  .toast { left: 12px; right: 12px; top: 12px; max-width: none; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   HISTORY MODAL — EDIT MODE
+═══════════════════════════════════════════════════════════════════ */
+/* Trash button — replaces the Pass A done-toggle. Per-row use for sets;
+   --exercise modifier for the exercise-card-header use. Muted glyph at rest,
+   accent on hover/focus. Toggles aria-pressed on backend items (mark/unmark
+   for save-time DELETE); pending-add items get spliced from local state on
+   click instead — see toggleSlotPendingRemove / toggleSetPendingRemove. */
+.hist-edit-trash-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.hist-edit-trash-btn:hover:not(:disabled),
+.hist-edit-trash-btn:focus-visible { color: var(--accent); outline: none; }
+.hist-edit-trash-btn:focus-visible { box-shadow: 0 0 0 2px rgba(204, 4, 4, 0.25); }
+.hist-edit-trash-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.hist-edit-trash-btn[aria-pressed="true"] { color: var(--accent); }
+.hist-edit-trash-btn--exercise { margin-left: auto; }
+
+/* Pending-remove visual: faded card / row + strikethrough on textual values.
+   Applies to backend slots/sets the user has marked for save-time DELETE.
+   Pending-add items don't fade — clicking trash on them removes from local
+   state immediately (the asymmetry is the right semantic per A.4.D). */
+.hist-log-item--pending-remove,
+.hist-log-set-row--pending-remove { opacity: 0.4; }
+.hist-log-item--pending-remove .hist-log-name,
+.hist-log-set-row--pending-remove .hist-log-set-num,
+.hist-log-set-row--pending-remove .hist-log-set-val,
+.hist-log-set-row--pending-remove .actual-input { text-decoration: line-through; }
+.hist-log-item--pending-remove .hist-edit-add-set-btn { display: none; }
+
+/* Add Set button — final child of each exercise card's set list, edit mode
+   only. Dashed-to-solid border transition matches the muted-to-text color
+   shift on hover/focus. */
+.hist-edit-add-set-btn {
+  width: 100%;
+  height: 32px;
+  margin-top: 4px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, border-style 0.15s;
+}
+.hist-edit-add-set-btn:hover,
+.hist-edit-add-set-btn:focus-visible {
+  color: var(--text);
+  border-color: var(--border-strong);
+  border-style: solid;
+  outline: none;
+}
+.hist-edit-add-set-btn:focus-visible { box-shadow: 0 0 0 2px rgba(204, 4, 4, 0.2); }
+
+/* Add Exercise button — full-width slot below the last exercise card,
+   edit mode only. Hidden while picker is open (Add Exercise picker takes
+   its place). */
+.hist-edit-add-exercise-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 40px;
+  margin-top: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: var(--font-sub);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.hist-edit-add-exercise-btn:hover,
+.hist-edit-add-exercise-btn:focus-visible {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  outline: none;
+}
+.hist-edit-add-exercise-btn:focus-visible { box-shadow: 0 0 0 2px rgba(204, 4, 4, 0.2); }
+.hist-edit-add-exercise-plus { color: var(--accent); margin-right: 6px; font-weight: 700; }
+
+/* Add Exercise typeahead — inline copy of logger.jsx's text-input combobox.
+   Logger.jsx uses inline styles for its typeahead; this newer copy uses
+   proper CSS classes since the .hist-edit-* family is the canonical newer
+   pattern. If logger.jsx ever gets a redesign pass, these rules can migrate
+   to a shared .exercise-typeahead-* family. */
+.hist-edit-typeahead {
+  position: relative;
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.hist-edit-typeahead-input {
+  flex: 1;
+  height: 40px;
+  background: var(--input-bg, rgba(255, 255, 255, 0.07));
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--text);
+  font-family: var(--font-sub);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.hist-edit-typeahead-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(204, 4, 4, 0.12);
+}
+.hist-edit-typeahead-cancel {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 50%;
+  transition: color 0.15s, background 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.hist-edit-typeahead-cancel:hover,
+.hist-edit-typeahead-cancel:focus-visible {
+  color: var(--text);
+  background: var(--surface-hover);
+  outline: none;
+}
+.hist-edit-typeahead-cancel:focus-visible { box-shadow: 0 0 0 2px rgba(204, 4, 4, 0.25); }
+
+.hist-edit-typeahead-listbox {
+  position: absolute;
+  top: 44px;
+  left: 0;
+  right: 44px; /* leave room for the cancel button */
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+.hist-edit-typeahead-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+}
+.hist-edit-typeahead-option:last-child { border-bottom: none; }
+.hist-edit-typeahead-option--highlighted { background: var(--surface-hover); }
+.hist-edit-typeahead-option--add { padding: 10px 12px; cursor: pointer; }
+/* Hardcoded #ff5555 (warn) and #facc15 (info) — same colors as logger.jsx's
+   inline-style version. Promote to --warn / --info tokens if the system ever
+   adds them. */
+.hist-edit-typeahead-add-warn {
+  color: #ff5555;
+  margin-bottom: 6px;
+  font-size: 11px;
+}
+.hist-edit-typeahead-add-action {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(250, 204, 21, 0.15);
+  color: #facc15;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hist-edit-notes {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-top: 8px;
+  color: var(--text);
+  font-family: var(--font-sub);
+  font-size: 12px;
+  resize: vertical;
+  min-height: 48px;
+}
+.hist-edit-notes:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+
+.hist-edit-notes-label {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hist-modal-footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 12px 20px;
+}
+.hist-modal-footer-btn {
+  flex: 1;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 10px;
+  font-family: var(--font-sub);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.hist-modal-footer-btn:hover:not(:disabled) { background: var(--surface-hover); }
+.hist-modal-footer-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hist-modal-footer-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.hist-modal-footer-btn--ghost {
+  flex: 0 0 110px;
+  height: 36px;
+  padding: 0 12px;
+  border-color: var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.hist-modal-footer-btn--ghost:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: transparent;
+}
+
+.hist-modal-footer-btn--primary {
+  height: 44px;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+.hist-modal-footer-btn--primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
