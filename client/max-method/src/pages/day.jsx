@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
+import { useWorkoutStats } from '../hooks/useWorkoutStats';
+import { collapseSetDetails, formatSetLine } from '../utils/setDisplay';
 import ContextMenu from '../components/ContextMenu';
 import EquipmentSelect from '../components/EquipmentSelect';
 
@@ -207,6 +209,9 @@ function Day() {
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
   const [postWorkoutData, setPostWorkoutData] = useState(null); // { totalVolume, breakdown }
   const [sessionPRs, setSessionPRs] = useState([]);
+  // Loaded only when the post-workout modal opens — see effect below.
+  // Powers the streak row's totalSessions / weeksLogged / thisMonth / daysThisWeek.
+  const [historySessions, setHistorySessions] = useState([]);
 
   // ── Right-click / long-press menu + swap-for-today state ────────────────
   // Active workout-log id for the localStorage override key. Falls back through
@@ -234,6 +239,32 @@ function Day() {
       .then(data => { if (data?.current_one_rep_maxes) setUserOneRMs(data.current_one_rep_maxes); })
       .catch(() => {});
   }, []);
+
+  // Lazy-fetch all-history when the post-workout modal opens. day.jsx awaits
+  // completeDay() before opening the modal, so the just-finished session is
+  // already persisted by the time this fires — no synthetic patch needed
+  // (logger.jsx is the asymmetric case and handles its own patch).
+  useEffect(() => {
+    if (!postWorkoutData) return;
+    const uid = localStorage.getItem('userId');
+    if (!uid) return;
+    let cancelled = false;
+    fetch(`${API_URL}/api/users/workout/${uid}/all-history`)
+      .then(r => r.ok ? r.json() : { sessions: [] })
+      .then(data => {
+        if (cancelled) return;
+        setHistorySessions((data.sessions ?? []).map(s => {
+          const date = new Date(s.date);
+          date.setHours(0, 0, 0, 0);
+          return { ...s, date };
+        }));
+      })
+      // Fall through to empty state — streaks render as 0s, no error UI in celebration moment.
+      .catch(() => { if (!cancelled) setHistorySessions([]); });
+    return () => { cancelled = true; };
+  }, [postWorkoutData]);
+
+  const { totalSessions, weeksLogged, thisMonth, daysThisWeek } = useWorkoutStats(historySessions);
 
   const day = workout?.weeks?.[wi]?.days?.[di];
 
@@ -543,19 +574,22 @@ function Day() {
       customExercises.forEach(ex => {
         let vol = 0;
         let sets = 0;
+        const setDetails = [];
         ex.sets.forEach(s => {
           if (!s.done) return;
           const reps = parseInt(s.actualReps || s.reps) || 0;
           const weight = parseFloat(s.actual) || 0;
           vol += reps * weight;
           sets++;
+          setDetails.push({ reps, weight });
         });
-        if (sets > 0) breakdown.push({ name: ex.name, volume: vol, sets });
+        if (sets > 0) breakdown.push({ name: ex.name, volume: vol, sets, setDetails });
       });
     } else {
       groupedSlots.forEach(({ exercise, items }) => {
         let vol = 0;
         let sets = 0;
+        const setDetails = [];
         items.forEach(({ slot, si }) => {
           const setsVal = resolveWeekValue(slot.sets, wi);
           const count = typeof setsVal === 'number' ? setsVal : (parseInt(setsVal) || 0);
@@ -573,9 +607,10 @@ function Day() {
             const reps = parseInt(s.actualReps || targetRepsVal) || 0;
             vol += reps * weight;
             sets++;
+            setDetails.push({ reps, weight });
           }
         });
-        if (sets > 0) breakdown.push({ name: exercise, volume: vol, sets });
+        if (sets > 0) breakdown.push({ name: exercise, volume: vol, sets, setDetails });
       });
     }
     const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
@@ -1684,6 +1719,28 @@ function Day() {
               <div className="post-workout-title" id="post-workout-title">Workout Complete</div>
               <div className="post-workout-subtitle" id="post-workout-subtitle">{day.title ?? `Day ${dayNum}`}</div>
             </div>
+            <div className="post-workout-streak-row" role="group" aria-label="Workout streaks">
+              <div className="post-workout-streak-card">
+                <div className="post-workout-streak-val" aria-hidden="true"><span>{totalSessions}</span></div>
+                <div className="post-workout-streak-lbl" aria-hidden="true">Total Sessions</div>
+                <span className="sr-only">Total sessions: {totalSessions}</span>
+              </div>
+              <div className="post-workout-streak-card">
+                <div className="post-workout-streak-val" aria-hidden="true"><span>{weeksLogged}</span></div>
+                <div className="post-workout-streak-lbl" aria-hidden="true">Weeks Logged</div>
+                <span className="sr-only">Weeks logged: {weeksLogged}</span>
+              </div>
+              <div className="post-workout-streak-card">
+                <div className="post-workout-streak-val" aria-hidden="true"><span>{thisMonth}</span></div>
+                <div className="post-workout-streak-lbl" aria-hidden="true">This Month</div>
+                <span className="sr-only">This month: {thisMonth} {thisMonth === 1 ? 'session' : 'sessions'}</span>
+              </div>
+              <div className="post-workout-streak-card">
+                <div className="post-workout-streak-val" aria-hidden="true"><span>{daysThisWeek} / 7</span></div>
+                <div className="post-workout-streak-lbl" aria-hidden="true">Days This Week</div>
+                <span className="sr-only">Days this week: {daysThisWeek} of 7</span>
+              </div>
+            </div>
             <div className="post-workout-stats-row" role="group" aria-label="Workout totals">
               <div className="post-workout-volume-block">
                 <div className="post-workout-volume-val" aria-hidden="true">
@@ -1706,10 +1763,19 @@ function Day() {
               <div className="post-workout-breakdown">
                 <div className="post-workout-breakdown-title">By Exercise</div>
                 {postWorkoutData.breakdown.map((e, i) => (
-                  <div key={i} className="post-workout-breakdown-row">
-                    <span className="post-workout-breakdown-name">{e.name}</span>
-                    <span className="post-workout-breakdown-sets">{e.sets} {e.sets === 1 ? 'set' : 'sets'}</span>
-                    <span className="post-workout-breakdown-vol">{e.volume > 0 ? `${e.volume.toLocaleString()} lbs` : '—'}</span>
+                  <div key={i} className="post-workout-breakdown-exercise">
+                    <div className="post-workout-breakdown-row">
+                      <span className="post-workout-breakdown-name">{e.name}</span>
+                      <span className="post-workout-breakdown-sets">{e.sets} {e.sets === 1 ? 'set' : 'sets'}</span>
+                      <span className="post-workout-breakdown-vol">{e.volume > 0 ? `${e.volume.toLocaleString()} lbs` : '—'}</span>
+                    </div>
+                    {e.setDetails?.length > 0 && (
+                      <ul className="post-workout-breakdown-set-list" aria-label={`Sets for ${e.name}`}>
+                        {collapseSetDetails(e.setDetails).map((g, gi) => (
+                          <li key={gi} className="post-workout-breakdown-set-line">{formatSetLine(g)}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 ))}
               </div>

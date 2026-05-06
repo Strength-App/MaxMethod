@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ALL_EXERCISES } from './exerciseLibrary';
 import { useWorkout } from '../context/WorkoutContext';
+import { useWorkoutStats } from '../hooks/useWorkoutStats';
+import { collapseSetDetails, formatSetLine } from '../utils/setDisplay';
 import { API_URL } from '../config/api';
 import ContextMenu from '../components/ContextMenu';
 
@@ -89,6 +91,9 @@ function Logger() {
   const [postWorkoutData, setPostWorkoutData] = useState(null);
   const [sessionPRs, setSessionPRs] = useState([]);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
+  // Loaded only when the post-workout modal opens — see effect below.
+  // Powers the streak row's totalSessions / weeksLogged / thisMonth / daysThisWeek.
+  const [historySessions, setHistorySessions] = useState([]);
 
   // ── Right-click / long-press menu state ─────────────────────────────────
   // Logger only offers "View in Exercise Library" (ad-hoc rows have no slot
@@ -250,19 +255,61 @@ function Logger() {
     const breakdown = [];
     exercises.forEach(ex => {
       let vol = 0, sets = 0;
+      const setDetails = [];
       ex.sets.forEach(s => {
         if (!s.done) return;
         const reps = parseInt(s.reps) || 0;
         const weight = parseFloat(s.weight) || 0;
         vol += reps * weight;
         sets++;
+        setDetails.push({ reps, weight });
       });
-      if (sets > 0) breakdown.push({ name: ex.name, volume: vol, sets });
+      if (sets > 0) breakdown.push({ name: ex.name, volume: vol, sets, setDetails });
     });
     const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
     const totalSetsCompleted = breakdown.reduce((sum, e) => sum + e.sets, 0);
     setPostWorkoutData({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs });
   };
+
+  // Lazy-fetch all-history when the post-workout modal opens. Asymmetric
+  // with day.jsx: logger.jsx commits the session via saveAndExit AFTER the
+  // user dismisses the modal, so the fetched list won't include the
+  // just-finished workout yet — the synthetic-session patch in
+  // sessionsForStats below adds it back into the math.
+  useEffect(() => {
+    if (!postWorkoutData) return;
+    const uid = localStorage.getItem('userId');
+    if (!uid) return;
+    let cancelled = false;
+    fetch(`${API_URL}/api/users/workout/${uid}/all-history`)
+      .then(r => r.ok ? r.json() : { sessions: [] })
+      .then(data => {
+        if (cancelled) return;
+        setHistorySessions((data.sessions ?? []).map(s => {
+          const date = new Date(s.date);
+          date.setHours(0, 0, 0, 0);
+          return { ...s, date };
+        }));
+      })
+      // Fall through to empty state — streaks render as 0s, no error UI in celebration moment.
+      .catch(() => { if (!cancelled) setHistorySessions([]); });
+    return () => { cancelled = true; };
+  }, [postWorkoutData]);
+
+  // Synthetic-session patch (Flag #5): the just-finished quick session
+  // hasn't been POSTed to /quick-sessions yet — saveAndExit fires when the
+  // user dismisses this modal. We patch in a same-day session so streaks
+  // reflect the workout the user just visibly completed. Shape-mirrors the
+  // API's quick-session output (programTitle: null, weekNumber: null) so
+  // the bucket key collapses identically with future fetched sessions.
+  // The useMemo stabilizes the array reference so useWorkoutStats's
+  // [sessions] dep doesn't refire every render.
+  const sessionsForStats = useMemo(() => {
+    if (!postWorkoutData) return historySessions;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    return [...historySessions, { date: today, programTitle: null, weekNumber: null }];
+  }, [historySessions, postWorkoutData]);
+  const { totalSessions, weeksLogged, thisMonth, daysThisWeek } = useWorkoutStats(sessionsForStats);
 
   // ── Right-click / long-press menu handlers ──────────────────────────────
   const openContextMenu = (ei, exerciseName, x, y) => {
@@ -682,6 +729,28 @@ function Logger() {
               <div className="post-workout-title" id="lg-post-workout-title">Workout Complete</div>
               <div className="post-workout-subtitle" id="lg-post-workout-subtitle">{title.trim() || defaultTitle}</div>
             </div>
+            <div className="post-workout-streak-row" role="group" aria-label="Workout streaks">
+              <div className="post-workout-streak-card">
+                <div className="post-workout-streak-val" aria-hidden="true"><span>{totalSessions}</span></div>
+                <div className="post-workout-streak-lbl" aria-hidden="true">Total Sessions</div>
+                <span className="sr-only">Total sessions: {totalSessions}</span>
+              </div>
+              <div className="post-workout-streak-card">
+                <div className="post-workout-streak-val" aria-hidden="true"><span>{weeksLogged}</span></div>
+                <div className="post-workout-streak-lbl" aria-hidden="true">Weeks Logged</div>
+                <span className="sr-only">Weeks logged: {weeksLogged}</span>
+              </div>
+              <div className="post-workout-streak-card">
+                <div className="post-workout-streak-val" aria-hidden="true"><span>{thisMonth}</span></div>
+                <div className="post-workout-streak-lbl" aria-hidden="true">This Month</div>
+                <span className="sr-only">This month: {thisMonth} {thisMonth === 1 ? 'session' : 'sessions'}</span>
+              </div>
+              <div className="post-workout-streak-card">
+                <div className="post-workout-streak-val" aria-hidden="true"><span>{daysThisWeek} / 7</span></div>
+                <div className="post-workout-streak-lbl" aria-hidden="true">Days This Week</div>
+                <span className="sr-only">Days this week: {daysThisWeek} of 7</span>
+              </div>
+            </div>
             <div className="post-workout-stats-row" role="group" aria-label="Workout totals">
               <div className="post-workout-volume-block">
                 <div className="post-workout-volume-val" aria-hidden="true">
@@ -700,10 +769,19 @@ function Logger() {
               <div className="post-workout-breakdown">
                 <div className="post-workout-breakdown-title">By Exercise</div>
                 {postWorkoutData.breakdown.map((e, i) => (
-                  <div key={i} className="post-workout-breakdown-row">
-                    <span className="post-workout-breakdown-name">{e.name}</span>
-                    <span className="post-workout-breakdown-sets">{e.sets} {e.sets === 1 ? 'set' : 'sets'}</span>
-                    <span className="post-workout-breakdown-vol">{e.volume > 0 ? `${e.volume.toLocaleString()} lbs` : '—'}</span>
+                  <div key={i} className="post-workout-breakdown-exercise">
+                    <div className="post-workout-breakdown-row">
+                      <span className="post-workout-breakdown-name">{e.name}</span>
+                      <span className="post-workout-breakdown-sets">{e.sets} {e.sets === 1 ? 'set' : 'sets'}</span>
+                      <span className="post-workout-breakdown-vol">{e.volume > 0 ? `${e.volume.toLocaleString()} lbs` : '—'}</span>
+                    </div>
+                    {e.setDetails?.length > 0 && (
+                      <ul className="post-workout-breakdown-set-list" aria-label={`Sets for ${e.name}`}>
+                        {collapseSetDetails(e.setDetails).map((g, gi) => (
+                          <li key={gi} className="post-workout-breakdown-set-line">{formatSetLine(g)}</li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 ))}
               </div>

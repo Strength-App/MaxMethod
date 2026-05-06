@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { API_URL } from '../config/api';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import Toast from '../components/Toast';
 import { ALL_EXERCISES } from './exerciseLibrary';
 
@@ -581,21 +582,11 @@ export default function History() {
     return map;
   }, [sessions]);
 
-  // Stats
-  const totalSessions = sessions.length;
-  const totalWeeks = useMemo(() =>
-    new Set(sessions.map(s => `${s.programTitle ?? 'default'}-${s.weekNumber}`)).size,
-  [sessions]);
+  // today stays — the calendar grid below uses it for isToday checks. The
+  // four headline stats moved into useWorkoutStats so day.jsx and logger.jsx
+  // can share the same Sunday-start / dateKey-dedup conventions.
   const today = new Date(); today.setHours(0,0,0,0);
-  const thisMonth = sessions.filter(s => s.date >= new Date(today.getFullYear(), today.getMonth(), 1)).length;
-
-  const daysThisWeek = useMemo(() => {
-    const weekStart = new Date(today);
-    weekStart.setDate(today.getDate() - today.getDay()); // 0=Sun → no shift
-    const keys = new Set();
-    sessions.forEach(s => { if (s.date >= weekStart) keys.add(dateKey(s.date)); });
-    return keys.size;
-  }, [sessions]);
+  const { totalSessions, weeksLogged, thisMonth, daysThisWeek } = useWorkoutStats(sessions);
 
   // Group sessions by month for timeline
   const grouped = useMemo(() => {
@@ -1038,9 +1029,9 @@ export default function History() {
           <span className="sr-only">Total sessions: {totalSessions}</span>
         </div>
         <div className="hist-stat-card">
-          <div className="hist-stat-val" aria-hidden="true"><span>{totalWeeks}</span></div>
+          <div className="hist-stat-val" aria-hidden="true"><span>{weeksLogged}</span></div>
           <div className="hist-stat-lbl" aria-hidden="true">Weeks Logged</div>
-          <span className="sr-only">Weeks logged: {totalWeeks}</span>
+          <span className="sr-only">Weeks logged: {weeksLogged}</span>
         </div>
         <div className="hist-stat-card">
           <div className="hist-stat-val" aria-hidden="true"><span>{thisMonth}</span></div>

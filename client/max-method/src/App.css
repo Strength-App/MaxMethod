@@ -2490,8 +2490,6 @@ input::placeholder {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--border);
 }
 
 .post-workout-breakdown-name {
@@ -2525,6 +2523,68 @@ input::placeholder {
   font-size: 12px;
   font-weight: 700;
   color: #ffd700;
+}
+
+/* Streak row — sits above Total Volume / Total Sets headline. Four cards
+   scaled down from the history-page .hist-stat-card pattern to fit a
+   560px modal. Parallel namespace, not shared classes — sizing here is
+   independent of the history page's sizing on purpose. */
+.post-workout-streak-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding: 16px 24px 0;
+}
+
+.post-workout-streak-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 8px;
+  text-align: center;
+}
+
+.post-workout-streak-val {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+/* Full numeric value (including any fixed suffix like "/ 7") rendered in
+   accent — matches the history-page precedent of putting the entire
+   numeric span inside one <span> rather than splitting value from suffix. */
+.post-workout-streak-val span { color: var(--accent); }
+
+.post-workout-streak-lbl {
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Per-exercise wrapper — owns the separator that .post-workout-breakdown-row
+   used to own. The row now just lays out the headline (name / sets / volume);
+   the wrapper groups headline + per-set lines together as one exercise unit. */
+.post-workout-breakdown-exercise {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.post-workout-breakdown-set-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+}
+
+.post-workout-breakdown-set-line {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  padding: 2px 0 2px 12px;
+  letter-spacing: .02em;
 }
 
 .post-workout-btn {
