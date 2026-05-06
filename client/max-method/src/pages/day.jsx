@@ -1481,10 +1481,10 @@ function Day() {
           <span className="week-badge">Week {weekNum}</span>
           <h1 className="day-title">{day.title ?? `Day ${dayNum}`}</h1>
         </div>
-        {!isCustom && (
+        {!isCustom && workout?.progression_note && (
           <p className="progression-note">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-            Progression: Add 5 lbs when all sets and reps are completed
+            {workout.progression_note}
           </p>
         )}
       </div>
