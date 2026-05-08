@@ -24,6 +24,10 @@ import Logger from './pages/logger'
 import { WorkoutProvider } from './context/WorkoutContext'
 import { useWorkout } from './context/WorkoutContext'
 
+// Tools context — app-shell concern (timer state, etc.) for cross-page utility surface
+import { ToolsProvider } from './context/ToolsContext'
+import Tools from './components/tools/Tools'
+
 import {
   Routes,
   Route,
@@ -98,48 +102,52 @@ function App() {
   return (
     <div className="App">
       <WorkoutProvider>
-        {/* Skip-to-content link — visible only on keyboard focus. */}
-        {!hideNavigation && (
-          <a href="#main-content" className="skip-link">Skip to main content</a>
-        )}
+        <ToolsProvider>
+          {/* Skip-to-content link — visible only on keyboard focus. */}
+          {!hideNavigation && (
+            <a href="#main-content" className="skip-link">Skip to main content</a>
+          )}
 
-        {/* ONLY SHOW NAV ON NON-AUTH PAGES */}
-        {!hideNavigation && <Navigation />}
+          {/* ONLY SHOW NAV ON NON-AUTH PAGES */}
+          {!hideNavigation && <Navigation />}
 
-        <main
-          id="main-content"
-          tabIndex={-1}
-          className={`page-content${hideNavigation ? ' page-content--full' : ''}`}
-        >
-          <Routes>
-            {/* DEFAULT */}
-            <Route path="/" element={<Navigate to="/welcomepage" replace />} />
+          <main
+            id="main-content"
+            tabIndex={-1}
+            className={`page-content${hideNavigation ? ' page-content--full' : ''}`}
+          >
+            <Routes>
+              {/* DEFAULT */}
+              <Route path="/" element={<Navigate to="/welcomepage" replace />} />
 
-            {/* AUTH PAGES */}
-            <Route path="/welcomepage" element={user ? <Navigate to="/home" replace /> : <Welcomepage />} />
-            <Route path="/create-account" element={user ? <Navigate to="/onboarding" replace /> : <CreateAcc />} />
+              {/* AUTH PAGES */}
+              <Route path="/welcomepage" element={user ? <Navigate to="/home" replace /> : <Welcomepage />} />
+              <Route path="/create-account" element={user ? <Navigate to="/onboarding" replace /> : <CreateAcc />} />
 
-            {/* ONBOARDING — requires login but not onboarding_complete */}
-            <Route path="/classification" element={user ? <Classification /> : <Navigate to="/welcomepage" replace />} />
-            <Route path="/onboarding" element={user ? <Onboarding /> : <Navigate to="/welcomepage" replace />} />
-            <Route path="/loading" element={user ? <LoadingPage /> : <Navigate to="/welcomepage" replace />} />
+              {/* ONBOARDING — requires login but not onboarding_complete */}
+              <Route path="/classification" element={user ? <Classification /> : <Navigate to="/welcomepage" replace />} />
+              <Route path="/onboarding" element={user ? <Onboarding /> : <Navigate to="/welcomepage" replace />} />
+              <Route path="/loading" element={user ? <LoadingPage /> : <Navigate to="/welcomepage" replace />} />
 
-            {/* PROTECTED PAGES — requires login + onboarding_complete */}
-            <Route path="/home" element={protectedRoute(<Home />)} />
-            <Route path="/day/:weekNum/:dayNum" element={protectedRoute(<Day />)} />
-            <Route path="/goals" element={protectedRoute(<Goals />)} />
-            <Route path="/history" element={protectedRoute(<History />)} />
-            <Route path="/exerciseLibrary" element={protectedRoute(<ExerciseLibrary />)} />
-            <Route path="/settings" element={protectedRoute(<Settings />)} />
-            <Route path="/pickNewProgram" element={protectedRoute(<PickNewProgram />)} />
-            <Route path="/customWorkout" element={protectedRoute(<CustomWorkout />)} />
-            <Route path="/customWorkout/:workoutLogId" element={protectedRoute(<CustomWorkout />)} />
-            <Route path="/customDay/:weekNum/:dayNum" element={protectedRoute(<CustomDay />)} />
-            <Route path="/view-program/:programLogId" element={protectedRoute(<ViewProgram />)} />
-            <Route path="/review-program" element={user ? <ReviewProgram /> : <Navigate to="/welcomepage" replace />} />
-            <Route path="/logger" element={protectedRoute(<Logger />)} />
-          </Routes>
-        </main>
+              {/* PROTECTED PAGES — requires login + onboarding_complete */}
+              <Route path="/home" element={protectedRoute(<Home />)} />
+              <Route path="/day/:weekNum/:dayNum" element={protectedRoute(<Day />)} />
+              <Route path="/goals" element={protectedRoute(<Goals />)} />
+              <Route path="/history" element={protectedRoute(<History />)} />
+              <Route path="/exerciseLibrary" element={protectedRoute(<ExerciseLibrary />)} />
+              <Route path="/settings" element={protectedRoute(<Settings />)} />
+              <Route path="/pickNewProgram" element={protectedRoute(<PickNewProgram />)} />
+              <Route path="/customWorkout" element={protectedRoute(<CustomWorkout />)} />
+              <Route path="/customWorkout/:workoutLogId" element={protectedRoute(<CustomWorkout />)} />
+              <Route path="/customDay/:weekNum/:dayNum" element={protectedRoute(<CustomDay />)} />
+              <Route path="/view-program/:programLogId" element={protectedRoute(<ViewProgram />)} />
+              <Route path="/review-program" element={user ? <ReviewProgram /> : <Navigate to="/welcomepage" replace />} />
+              <Route path="/logger" element={protectedRoute(<Logger />)} />
+            </Routes>
+          </main>
+
+          {!hideNavigation && <Tools />}
+        </ToolsProvider>
       </WorkoutProvider>
     </div>
   )

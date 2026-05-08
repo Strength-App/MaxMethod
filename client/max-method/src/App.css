@@ -4871,3 +4871,665 @@ button,
   border-color: var(--accent);
   color: #fff;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   TOOLS — floating-action button + dropdown-style overlay panel
+   FAB: bottom-right, 48px circle, hidden on auth pages and while panel is open.
+   Panel: visual sibling to .post-workout-modal — same overlay/scrim, same
+     surface/border-strong/20px-radius/560px-max/85vh-max rhythm. Uses
+     histFadeIn (the working keyframe) per F1 — see App.css:2901.
+═══════════════════════════════════════════════════════════════════ */
+.tools-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(60px + 16px + env(safe-area-inset-bottom, 0px));
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: var(--z-nav);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  transition: color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.15s, width 0.2s ease, border-radius 0.2s ease;
+}
+
+.tools-fab:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), var(--accent-glow-sm);
+}
+
+.tools-fab:active {
+  transform: scale(0.96);
+}
+
+@media (min-width: 768px) {
+  .tools-fab {
+    right: 24px;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+.tools-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+/* Invisible, full-area button that handles backdrop-click-to-close. Sits
+   underneath .tools-panel; clicks on the panel don't reach it because the
+   panel is a sibling (not a child) of this button. */
+.tools-overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.tools-panel {
+  position: relative;
+  z-index: 1;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 20px;
+  width: 90%;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding-bottom: 24px;
+  animation: histFadeIn 0.2s ease;
+}
+
+.tools-panel-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  margin: 12px auto 0;
+}
+
+.tools-panel-header {
+  position: relative;
+  padding: 16px 24px 12px;
+  text-align: center;
+}
+
+.tools-panel-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  color: var(--text);
+}
+
+.tools-panel-back {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.tools-panel-back:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.tools-menu {
+  list-style: none;
+  margin: 0;
+  padding: 8px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tools-menu-item {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 14px 16px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.tools-menu-item:hover {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+
+.tools-menu-item-title {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.tools-menu-item-subtitle {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.tools-tool-slot {
+  padding: 16px 24px 0;
+}
+
+.tools-tool-placeholder {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  text-align: center;
+  padding: 48px 16px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+}
+
+@media (max-width: 767px) {
+  .tools-panel-header {
+    padding: 14px 16px 10px;
+  }
+  .tools-panel-back {
+    left: 8px;
+    top: 10px;
+    padding: 5px 8px;
+    font-size: 9px;
+  }
+  .tools-menu {
+    padding: 8px 12px 12px;
+  }
+  .tools-menu-item {
+    padding: 12px 14px;
+  }
+}
+
+/* ─── 1RM CALCULATOR ─────────────────────────────────────────────── */
+.onerm-calc {
+  display: flex;
+  flex-direction: column;
+}
+
+.onerm-inputs-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.onerm-input-block {
+  flex: 1;
+  padding: 20px 16px 16px;
+  text-align: center;
+}
+
+.onerm-input-block + .onerm-input-block {
+  border-left: 1px solid var(--border);
+}
+
+.onerm-input-lbl {
+  display: block;
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.onerm-input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--font-sub);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.onerm-input::placeholder {
+  color: var(--muted);
+  opacity: 0.5;
+}
+
+/* Hide native spinner buttons — keeps the input visually consistent across browsers */
+.onerm-input::-webkit-outer-spin-button,
+.onerm-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.onerm-input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+.tool-result-block {
+  text-align: center;
+  padding: 24px 24px 8px;
+}
+
+.tool-result-val {
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  line-height: 1;
+}
+
+.tool-result-val span {
+  color: var(--accent);
+  text-shadow: var(--accent-glow-sm);
+}
+
+.tool-result-lbl {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 8px;
+}
+
+.tool-result-note {
+  margin-top: 12px;
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+@media (max-width: 767px) {
+  .onerm-input-block {
+    padding: 16px 12px 12px;
+  }
+  .onerm-input {
+    font-size: 1.25rem;
+    padding: 9px 10px;
+  }
+  .tool-result-block {
+    padding: 20px 16px 8px;
+  }
+  .tool-result-val {
+    font-size: 3rem;
+  }
+}
+
+/* ─── RPE CALCULATOR ─────────────────────────────────────────────── */
+.rpe-tool {
+  display: flex;
+  flex-direction: column;
+}
+
+.rpe-steppers-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.rpe-stepper-block {
+  flex: 1;
+  padding: 20px 12px 16px;
+  text-align: center;
+}
+
+.rpe-stepper-block + .rpe-stepper-block {
+  border-left: 1px solid var(--border);
+}
+
+.rpe-stepper-lbl {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.rpe-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.rpe-stepper-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-family: var(--font-sub);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.rpe-stepper-btn:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.rpe-stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.rpe-stepper-val {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  color: var(--text);
+  min-width: 56px;
+  line-height: 1;
+}
+
+@media (max-width: 767px) {
+  .rpe-stepper-block {
+    padding: 16px 8px 12px;
+  }
+  .rpe-stepper {
+    gap: 10px;
+  }
+  .rpe-stepper-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .rpe-stepper-val {
+    font-size: 1.5rem;
+    min-width: 48px;
+  }
+}
+
+/* ─── TOOL ACTION BUTTONS (shared) ───────────────────────────────── */
+.tool-action-btn {
+  flex: 1;
+  padding: 14px;
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.15s, border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.tool-action-btn--primary {
+  background: var(--accent);
+  border: none;
+  color: #fff;
+  box-shadow: var(--accent-glow-sm);
+}
+
+.tool-action-btn--primary:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.tool-action-btn--secondary {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+}
+
+.tool-action-btn--secondary:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.tool-action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ─── STOPWATCH ──────────────────────────────────────────────────── */
+.stopwatch {
+  display: flex;
+  flex-direction: column;
+}
+
+.stopwatch-buttons {
+  display: flex;
+  gap: 12px;
+  padding: 0 24px;
+  margin-top: 8px;
+}
+
+@media (max-width: 767px) {
+  .stopwatch-buttons {
+    padding: 0 16px;
+    gap: 10px;
+  }
+  .tool-action-btn {
+    padding: 12px;
+    font-size: 11px;
+  }
+}
+
+/* ─── FAB-AS-INDICATOR (Group 5) ─────────────────────────────────── */
+/* Pill shape — same element as the FAB circle, different shape. Width and
+   border-radius transition (declared on .tools-fab); content swaps from SVG
+   icon to time text. */
+.tools-fab--indicator {
+  width: 96px;
+  border-radius: 24px;
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.tools-fab--indicator:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.tools-fab-indicator-time {
+  font-family: var(--font-heading);
+  font-size: 18px;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.tools-fab--indicator-urgent .tools-fab-indicator-time {
+  color: #ff5050;
+  text-shadow: 0 0 12px rgba(255, 80, 80, 0.6);
+}
+
+.tools-fab--indicator-finished .tools-fab-indicator-time {
+  color: var(--accent);
+  text-shadow: 0 0 12px rgba(204, 4, 4, 0.7);
+  filter: brightness(1.2);
+}
+
+/* ─── REST TIMER ─────────────────────────────────────────────────── */
+/* Final-10-seconds urgency — color warming + brighter glow. Used by the
+   in-panel display; FAB indicator uses parallel rules above. */
+.tool-result-block--urgent .tool-result-val span {
+  color: #ff5050;
+  text-shadow: 0 0 16px rgba(255, 80, 80, 0.6);
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+.tool-result-block--finished .tool-result-val span {
+  color: var(--accent);
+  text-shadow: 0 0 20px rgba(204, 4, 4, 0.7);
+  filter: brightness(1.2);
+}
+
+.rest-timer {
+  display: flex;
+  flex-direction: column;
+}
+
+.rest-timer-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px 24px 8px;
+  justify-content: center;
+}
+
+.rest-timer-preset {
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.rest-timer-preset:hover {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.rest-timer-steppers-row {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.rest-timer-stepper-block {
+  flex: 1;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.rest-timer-stepper-block + .rest-timer-stepper-block {
+  border-left: 1px solid var(--border);
+}
+
+.rest-timer-stepper-lbl {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.rest-timer-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.rest-timer-stepper-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+  font-family: var(--font-sub);
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s, opacity 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  /* Disable iOS tap-highlight so hold-to-repeat doesn't flash blue */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.rest-timer-stepper-btn:hover:not(:disabled) {
+  border-color: var(--accent-border);
+  color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.rest-timer-stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.rest-timer-stepper-val {
+  font-family: var(--font-heading);
+  font-size: 1.75rem;
+  color: var(--text);
+  min-width: 56px;
+  line-height: 1;
+}
+
+.rest-timer-buttons {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px 0;
+}
+
+@media (max-width: 767px) {
+  .rest-timer-presets {
+    padding: 12px 16px 6px;
+    gap: 6px;
+  }
+  .rest-timer-preset {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+  .rest-timer-stepper-block {
+    padding: 14px 8px;
+  }
+  .rest-timer-stepper-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+  .rest-timer-stepper-val {
+    font-size: 1.5rem;
+    min-width: 48px;
+  }
+  .rest-timer-buttons {
+    padding: 12px 16px 0;
+    gap: 10px;
+  }
+}
