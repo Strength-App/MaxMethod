@@ -2,14 +2,16 @@ import { useEffect, useRef } from 'react';
 import { useModalA11y } from '../../hooks/useModalA11y';
 import OneRMCalc from './OneRMCalc';
 import RPECalc from './RPECalc';
+import PlateCalc from './PlateCalc';
 import Stopwatch from './Stopwatch';
 import Timer from './Timer';
 
 const TOOLS = [
-  { id: '1rm',       title: '1RM Calculator', subtitle: 'Estimate one-rep max' },
-  { id: 'rpe',       title: 'RPE Calculator', subtitle: 'Prescribe weight from RPE' },
-  { id: 'timer',     title: 'Rest Timer',     subtitle: 'Countdown with alarm' },
-  { id: 'stopwatch', title: 'Stopwatch',      subtitle: 'Count up' },
+  { id: '1rm',       title: '1RM Calculator',   subtitle: 'Estimate one-rep max' },
+  { id: 'rpe',       title: 'RPE Calculator',   subtitle: 'Prescribe weight from RPE' },
+  { id: 'plates',    title: 'Plate Calculator', subtitle: 'Visualize plate loading' },
+  { id: 'timer',     title: 'Rest Timer',       subtitle: 'Countdown with alarm' },
+  { id: 'stopwatch', title: 'Stopwatch',        subtitle: 'Count up' },
 ];
 
 // Per-tool render dispatch. Each new group adds a case here. Default is the
@@ -20,6 +22,8 @@ function renderTool(activeTool, tool) {
       return <OneRMCalc />;
     case 'rpe':
       return <RPECalc />;
+    case 'plates':
+      return <PlateCalc />;
     case 'stopwatch':
       return <Stopwatch />;
     case 'timer':

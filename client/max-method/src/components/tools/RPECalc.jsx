@@ -47,11 +47,10 @@ export default function RPECalc() {
 
   return (
     <div className="rpe-tool">
-      {/* 1RM input — full-width row, reuses .onerm-input-* classes from
-          OneRMCalc. Coupling documented in the change summary. */}
-      <div className="onerm-inputs-row">
-        <div className="onerm-input-block">
-          <label className="onerm-input-lbl" htmlFor="rpecalc-1rm">1RM (lbs)</label>
+      {/* 1RM input — full-width row using the shared .tool-num-input-* primitive. */}
+      <div className="tool-num-input-row">
+        <div className="tool-num-input-block">
+          <label className="tool-num-input-lbl" htmlFor="rpecalc-1rm">1RM (lbs)</label>
           <input
             id="rpecalc-1rm"
             type="number"
@@ -59,7 +58,7 @@ export default function RPECalc() {
             step="5"
             min="0"
             placeholder="315"
-            className="onerm-input"
+            className="tool-num-input"
             value={oneRM}
             onChange={e => setOneRM(e.target.value)}
           />

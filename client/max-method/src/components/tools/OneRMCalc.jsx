@@ -26,9 +26,9 @@ export default function OneRMCalc() {
 
   return (
     <div className="onerm-calc">
-      <div className="onerm-inputs-row">
-        <div className="onerm-input-block">
-          <label className="onerm-input-lbl" htmlFor="onerm-weight">Weight (lbs)</label>
+      <div className="tool-num-input-row">
+        <div className="tool-num-input-block">
+          <label className="tool-num-input-lbl" htmlFor="onerm-weight">Weight (lbs)</label>
           <input
             id="onerm-weight"
             type="number"
@@ -36,13 +36,13 @@ export default function OneRMCalc() {
             step="2.5"
             min="0"
             placeholder="225"
-            className="onerm-input"
+            className="tool-num-input"
             value={weight}
             onChange={e => setWeight(e.target.value)}
           />
         </div>
-        <div className="onerm-input-block">
-          <label className="onerm-input-lbl" htmlFor="onerm-reps">Reps</label>
+        <div className="tool-num-input-block">
+          <label className="tool-num-input-lbl" htmlFor="onerm-reps">Reps</label>
           <input
             id="onerm-reps"
             type="number"
@@ -50,7 +50,7 @@ export default function OneRMCalc() {
             step="1"
             min="0"
             placeholder="5"
-            className="onerm-input"
+            className="tool-num-input"
             value={reps}
             onChange={e => setReps(e.target.value)}
           />

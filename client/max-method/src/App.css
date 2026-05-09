@@ -5080,22 +5080,22 @@ button,
   flex-direction: column;
 }
 
-.onerm-inputs-row {
+.tool-num-input-row {
   display: flex;
   border-bottom: 1px solid var(--border);
 }
 
-.onerm-input-block {
+.tool-num-input-block {
   flex: 1;
   padding: 20px 16px 16px;
   text-align: center;
 }
 
-.onerm-input-block + .onerm-input-block {
+.tool-num-input-block + .tool-num-input-block {
   border-left: 1px solid var(--border);
 }
 
-.onerm-input-lbl {
+.tool-num-input-lbl {
   display: block;
   font-family: var(--font-sub);
   font-size: 11px;
@@ -5107,7 +5107,7 @@ button,
   cursor: pointer;
 }
 
-.onerm-input {
+.tool-num-input {
   width: 100%;
   background: transparent;
   border: 1px solid var(--border-strong);
@@ -5121,18 +5121,18 @@ button,
   transition: border-color 0.2s, background 0.2s;
 }
 
-.onerm-input::placeholder {
+.tool-num-input::placeholder {
   color: var(--muted);
   opacity: 0.5;
 }
 
 /* Hide native spinner buttons — keeps the input visually consistent across browsers */
-.onerm-input::-webkit-outer-spin-button,
-.onerm-input::-webkit-inner-spin-button {
+.tool-num-input::-webkit-outer-spin-button,
+.tool-num-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-.onerm-input[type="number"] {
+.tool-num-input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
 }
@@ -5172,10 +5172,10 @@ button,
 }
 
 @media (max-width: 767px) {
-  .onerm-input-block {
+  .tool-num-input-block {
     padding: 16px 12px 12px;
   }
-  .onerm-input {
+  .tool-num-input {
     font-size: 1.25rem;
     padding: 9px 10px;
   }
@@ -5532,4 +5532,29 @@ button,
     padding: 12px 16px 0;
     gap: 10px;
   }
+}
+
+/* ─── PLATE CALCULATOR ───────────────────────────────────────────── */
+.platecalc {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Wrapper around the SVG inside .tool-result-val. Owns horizontal scroll
+   for extreme loads (~20+ plates per side); typical loads fit without it. */
+.platecalc-stack-wrap {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  justify-content: center;
+}
+
+.platecalc-svg {
+  display: block;
+}
+
+.platecalc-bar {
+  fill: var(--border-strong);
 }
