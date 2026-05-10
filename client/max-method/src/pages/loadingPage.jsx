@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { useUser } from '../context/UserContext';
 import { API_URL } from '../config/api';
 
 const MESSAGES = [
@@ -15,6 +16,7 @@ function LoadingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { setUserId, setActiveProgram } = useWorkout();
+  const { user, setUser } = useUser();
   const [msgIndex, setMsgIndex] = useState(0);
   const hasRun = useRef(false);
 
@@ -50,6 +52,26 @@ function LoadingPage() {
           });
           if (!classRes.ok) throw new Error('Classification failed');
           const classData = await classRes.json();
+
+          // Mirror server state into UserContext so home / settings / post-workout
+          // displays render correctly without requiring log-out + log-in. Third
+          // application of the established pattern (pickNewProgram.jsx,
+          // day.jsx + logger.jsx handleContinue, here). Includes gender (onboarding
+          // is the first flow to set it — not in pickNewProgram's precedent shape)
+          // and onboarding_complete: true optimistically (server flips it inside
+          // /goals which fires immediately next).
+          setUser({
+            ...user,
+            gender,
+            current_bodyweight: Number(bodyWeight),
+            current_one_rep_maxes: {
+              bench: Number(benchPress),
+              squat: Number(squat),
+              deadlift: Number(deadlift),
+            },
+            current_classification: classData.classification,
+            onboarding_complete: true,
+          });
 
           const goalsRes = await fetch(`${API_URL}/api/users/goals`, {
             method: 'POST',

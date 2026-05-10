@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
+import UserLevelBadge from '../components/UserLevelBadge';
+import { bigThreeTotal } from '../utils/classification';
 
 const FEATURED = [
   { tag: 'Strength · 12 weeks', name: 'Power Builder',   meta: '4 days/week · Intermediate' },
@@ -13,7 +15,7 @@ const FEATURED = [
 
 function PickNewProgram() {
   const navigate = useNavigate();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const { workout, deselectProgram } = useWorkout();
 
   const [formData, setFormData] = useState({
@@ -93,6 +95,20 @@ function PickNewProgram() {
       const data = await response.json();
       console.log("Reclassified:", data);
 
+      // Refresh UserContext so live fine-level displays (home, settings) reflect
+      // the new bodyweight + PRs without waiting for a re-login. Server already
+      // persisted these fields; we mirror them client-side from the just-submitted form.
+      setUser({
+        ...user,
+        current_classification: data.classification,
+        current_bodyweight: Number(formData.bodyWeight),
+        current_one_rep_maxes: {
+          bench: Number(formData.benchPress),
+          squat: Number(formData.squat),
+          deadlift: Number(formData.deadlift),
+        },
+      });
+
       navigate("/goals", {
         state: {
           classification: data.classification,
@@ -132,15 +148,19 @@ const handleSelectProgram = (p) => {
 
       {/* Generate New Program */}
       <section className="programs-section-card" aria-labelledby="programs-generate-title">
-        {workout?.classification && (
+        {user?.current_bodyweight && (
           <div
             className="programs-classification-banner"
             role="group"
-            aria-label="Current strength classification"
+            aria-label="Current strength level"
             style={{ marginBottom: '20px' }}
           >
-            <span className="programs-classification-label" aria-hidden="true">Current Strength Classification</span>
-            <span className="programs-classification-value">{workout.classification}</span>
+            <UserLevelBadge
+              sex={user?.gender}
+              bodyweight={user?.current_bodyweight}
+              total={bigThreeTotal(user?.current_one_rep_maxes)}
+              showProgress={false}
+            />
           </div>
         )}
         <div className="programs-section-title" id="programs-generate-title">Generate New Program</div>

@@ -242,7 +242,7 @@ function ViewProgram() {
       )}
       {!isCustom && (
         <div className="fitness-level-container">
-          <h2>Fitness Level: {workoutData.classification}</h2>
+          <h2>Program Level: {workoutData.classification}</h2>
         </div>
       )}
 

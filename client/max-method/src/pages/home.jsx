@@ -1,10 +1,14 @@
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { useUser } from '../context/UserContext';
+import UserLevelBadge from '../components/UserLevelBadge';
+import { bigThreeTotal } from '../utils/classification';
 import { useEffect } from 'react';
 
 function Home() {
   const navigate = useNavigate();
   const { displayWorkout, loading, error, fetchWorkout } = useWorkout();
+  const { user } = useUser();
   const userId = localStorage.getItem('userId');
   
   // Re-fetch every time the home page is visited so title/data is always fresh
@@ -68,7 +72,12 @@ function Home() {
       <h1>{programTitle || 'Current Program'}</h1>
       {!isCustom && (
         <div className="fitness-level-container">
-          <h2>Current Fitness Level: {displayWorkout.classification}</h2>
+          <UserLevelBadge
+            sex={user?.gender}
+            bodyweight={user?.current_bodyweight}
+            total={bigThreeTotal(user?.current_one_rep_maxes)}
+            showProgress
+          />
         </div>
       )}
 

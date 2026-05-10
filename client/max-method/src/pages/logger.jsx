@@ -2,10 +2,13 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ALL_EXERCISES } from './exerciseLibrary';
 import { useWorkout } from '../context/WorkoutContext';
+import { useUser } from '../context/UserContext';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import { collapseSetDetails, formatSetLine } from '../utils/setDisplay';
+import { fineLevel } from '../utils/classification';
 import { API_URL } from '../config/api';
 import ContextMenu from '../components/ContextMenu';
+import PostWorkoutScreen2 from '../components/PostWorkoutScreen2';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(name) {
@@ -86,9 +89,14 @@ function Logger() {
   const [finishing, setFinishing] = useState(false);
 
   const { personalBests, refreshPersonalBests } = useWorkout();
+  const { user, setUser } = useUser();
   const userId = localStorage.getItem('userId');
   const defaultTitle = `Quick Workout · ${new Date().toLocaleDateString()}`;
   const [postWorkoutData, setPostWorkoutData] = useState(null);
+  const [modalScreen, setModalScreen] = useState('summary'); // 'summary' | 'classification'
+  // Captured ONCE at first valid render. Logger flow doesn't run inline pb-checks during
+  // the session (PBs only update on saveSession), so the snapshot is naturally clean.
+  const [preFineLevel, setPreFineLevel] = useState(null);
   const [sessionPRs, setSessionPRs] = useState([]);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
   // Loaded only when the post-workout modal opens — see effect below.
@@ -233,9 +241,10 @@ function Logger() {
   const toggleCard = (ei) =>
     setOpenCards(prev => ({ ...prev, [ei]: !prev[ei] }));
 
-  const saveAndExit = async () => {
-    if (!userId) return;
-    setFinishing(true);
+  // Save the in-progress quick session and refresh personal_bests in WorkoutContext.
+  // Does NOT navigate — callers compose navigation around it. Returns true on success.
+  const saveSession = async () => {
+    if (!userId) return false;
     try {
       await fetch(`${API_URL}/api/users/quick-sessions`, {
         method: 'POST',
@@ -243,10 +252,91 @@ function Logger() {
         body: JSON.stringify({ userId, title: title.trim() || defaultTitle, exercises })
       });
       await refreshPersonalBests();
-      navigate('/history');
+      return true;
     } catch (err) {
       console.error('Failed to save session:', err);
+      return false;
+    }
+  };
+
+  // Backdrop-on-screen-1 path: existing "save and exit straight to history"
+  // contract preserved. Internal body now delegates to saveSession().
+  const saveAndExit = async () => {
+    setFinishing(true);
+    const ok = await saveSession();
+    if (ok) {
+      navigate('/history');
+    } else {
       setFinishing(false);
+    }
+  };
+
+  // Capture pre-session fine-level ONCE on first valid render. Logger's
+  // personal_bests don't update mid-session (no inline pb-check), so the
+  // gate (preFineLevel !== null) is mostly defensive — re-renders won't
+  // shift the snapshot.
+  useEffect(() => {
+    if (preFineLevel !== null) return;
+    if (!user?.gender || !user?.current_bodyweight) return;
+    const bench    = personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0;
+    const squat    = personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0;
+    const deadlift = personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0;
+    const total = bench + squat + deadlift;
+    if (total <= 0) return;
+    setPreFineLevel(fineLevel({ sex: user.gender, bodyweight: user.current_bodyweight, total }));
+  }, [user, personalBests, preFineLevel]);
+
+  // Reset to screen 1 every time the modal newly opens.
+  useEffect(() => {
+    if (postWorkoutData) setModalScreen('summary');
+  }, [postWorkoutData]);
+
+  // Screen-1 Continue button handler: save, recompute, advance to screen 2.
+  // Re-fetches /personal-bests after saveSession() to read fresh values without
+  // depending on the closure's stale personalBests reference (refreshPersonalBests
+  // updates WorkoutContext state, but this closure was captured before that).
+  const handleContinue = async () => {
+    if (!userId || !user?._id) return;
+    setFinishing(true);
+    try {
+      const ok = await saveSession();
+      if (!ok) {
+        setFinishing(false);
+        return;
+      }
+      const pbRes = await fetch(`${API_URL}/api/users/workout/${userId}/personal-bests`);
+      const pbData = pbRes.ok ? await pbRes.json() : { personal_bests: personalBests };
+      const pbs = pbData.personal_bests ?? {};
+      const bench    = pbs['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0;
+      const squat    = pbs['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0;
+      const deadlift = pbs['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0;
+
+      const res = await fetch(`${API_URL}/api/users/classification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          gender: user.gender,
+          benchPress: bench,
+          squat,
+          deadlift,
+          bodyWeight: user.current_bodyweight,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser({
+          ...user,
+          current_classification: data.classification,
+          current_bodyweight: user.current_bodyweight,
+          current_one_rep_maxes: { bench, squat, deadlift },
+        });
+      }
+    } catch (err) {
+      console.error('Logger continue flow failed:', err);
+    } finally {
+      setFinishing(false);
+      setModalScreen('classification');
     }
   };
 
@@ -715,16 +805,29 @@ function Logger() {
       {/* Post-workout modal — backdrop click closes; Esc + focus-trap need
           useModalA11y wiring (functional change) and are deferred as follow-up. */}
       {postWorkoutData && (
-        <div className="post-workout-overlay" onClick={() => { setPostWorkoutData(null); saveAndExit(); }}>
+        <div
+          className="post-workout-overlay"
+          onClick={() => {
+            if (modalScreen === 'summary') {
+              setPostWorkoutData(null);
+              saveAndExit();
+            } else {
+              setPostWorkoutData(null);
+              navigate('/history');
+            }
+          }}
+        >
           <div
             className="post-workout-modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="lg-post-workout-title"
-            aria-describedby="lg-post-workout-subtitle"
+            aria-labelledby={modalScreen === 'summary' ? 'lg-post-workout-title' : 'post-workout-screen2-title'}
+            aria-describedby={modalScreen === 'summary' ? 'lg-post-workout-subtitle' : 'post-workout-screen2-subtitle'}
             onClick={e => e.stopPropagation()}
           >
             <div className="post-workout-handle" aria-hidden="true" />
+            {modalScreen === 'summary' ? (
+            <>
             <div className="post-workout-header">
               <div className="post-workout-title" id="lg-post-workout-title">Workout Complete</div>
               <div className="post-workout-subtitle" id="lg-post-workout-subtitle">{title.trim() || defaultTitle}</div>
@@ -801,13 +904,25 @@ function Logger() {
             )}
             <button
               className="post-workout-btn"
-              onClick={saveAndExit}
+              onClick={handleContinue}
               disabled={finishing}
               aria-busy={finishing || undefined}
-              aria-label={finishing ? 'Saving session' : 'Done — save session'}
+              aria-label={finishing ? 'Saving session' : 'Continue to your stats'}
             >
-              {finishing ? 'Saving…' : 'Done'}
+              {finishing ? 'Saving…' : 'Continue'}
             </button>
+            </>
+            ) : (
+              <PostWorkoutScreen2
+                sex={user?.gender}
+                bodyweight={user?.current_bodyweight}
+                oneRMs={user?.current_one_rep_maxes}
+                preFineLevel={preFineLevel}
+                doneLabel="Done"
+                doneDisabled={false}
+                onDone={() => { setPostWorkoutData(null); navigate('/history'); }}
+              />
+            )}
           </div>
         </div>
       )}

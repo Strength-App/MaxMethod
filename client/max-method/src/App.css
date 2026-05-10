@@ -5558,3 +5558,74 @@ button,
 .platecalc-bar {
   fill: var(--border-strong);
 }
+
+.user-level-badge {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.user-level-badge__label {
+  display: inline-block;
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--accent-border);
+  padding: 6px 16px;
+  border-radius: 20px;
+  box-shadow: var(--accent-glow-sm);
+}
+
+.user-level-badge__progress {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+/* Post-workout modal screen 2 — classification section wraps the UserLevelBadge.
+   Centers the badge in the modal width with consistent vertical rhythm. */
+.post-workout-classification-section {
+  display: flex;
+  justify-content: center;
+  padding: 20px 24px 8px;
+}
+
+/* Screen 2 — level-up banner (conditional render). Accent-tinted callout above
+   the badge; visual identity mirrors .rp-classification-banner from the
+   leveling system so the banner reads as part of the project's vocabulary. */
+.post-workout-levelup-banner {
+  margin: 16px 24px 0;
+  padding: 12px 16px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: 8px;
+  text-align: center;
+}
+.post-workout-levelup-line1 {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.post-workout-levelup-line2 {
+  font-family: var(--font-sub);
+  font-size: 13px;
+  color: var(--text);
+}
+
+/* Screen 2 — Big-3 total headline. Numeral and label reuse
+   .post-workout-volume-val / .post-workout-volume-lbl; this wrapper just
+   provides the centered single-block treatment (vs. the 2-block .post-workout-stats-row). */
+.post-workout-big3-total {
+  text-align: center;
+  padding: 16px 24px 8px;
+}

@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
+import { useUser } from '../context/UserContext';
 import { API_URL } from '../config/api';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import { collapseSetDetails, formatSetLine } from '../utils/setDisplay';
+import { fineLevel } from '../utils/classification';
 import ContextMenu from '../components/ContextMenu';
 import EquipmentSelect from '../components/EquipmentSelect';
+import PostWorkoutScreen2 from '../components/PostWorkoutScreen2';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(exerciseName) {
@@ -194,6 +197,7 @@ function Day() {
   const di = parseInt(dayNum, 10) - 1;
 
   const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error, personalBests } = useWorkout();
+  const { user, setUser } = useUser();
   const viewWorkout = location.state?.viewWorkout ?? null;
   const editMode = location.state?.editMode ?? false;
   const workoutLogId = location.state?.workoutLogId ?? null;
@@ -208,6 +212,11 @@ function Day() {
   const [userOneRMs, setUserOneRMs] = useState(null);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
   const [postWorkoutData, setPostWorkoutData] = useState(null); // { totalVolume, breakdown }
+  const [modalScreen, setModalScreen] = useState('summary'); // 'summary' | 'classification'
+  const [continuing, setContinuing] = useState(false);
+  // Captured ONCE at first valid render, before any in-session pb-check raises personal_bests.
+  // The level-up indicator on screen 2 fires when this differs from the post-recompute fine level.
+  const [preFineLevel, setPreFineLevel] = useState(null);
   const [sessionPRs, setSessionPRs] = useState([]);
   // Loaded only when the post-workout modal opens — see effect below.
   // Powers the streak row's totalSessions / weeksLogged / thisMonth / daysThisWeek.
@@ -263,6 +272,64 @@ function Day() {
       .catch(() => { if (!cancelled) setHistorySessions([]); });
     return () => { cancelled = true; };
   }, [postWorkoutData]);
+
+  // Capture pre-session fine-level ONCE on first valid render. The gate
+  // (preFineLevel !== null) locks it in so the inline pb-check raising
+  // personal_bests during the session can't shift the snapshot.
+  useEffect(() => {
+    if (preFineLevel !== null) return;
+    if (!user?.gender || !user?.current_bodyweight) return;
+    const bench    = personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0;
+    const squat    = personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0;
+    const deadlift = personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0;
+    const total = bench + squat + deadlift;
+    if (total <= 0) return;
+    setPreFineLevel(fineLevel({ sex: user.gender, bodyweight: user.current_bodyweight, total }));
+  }, [user, personalBests, preFineLevel]);
+
+  // Reset to screen 1 every time the modal newly opens.
+  useEffect(() => {
+    if (postWorkoutData) setModalScreen('summary');
+  }, [postWorkoutData]);
+
+  const handleContinue = async () => {
+    if (!user?._id) {
+      setModalScreen('classification');
+      return;
+    }
+    setContinuing(true);
+    try {
+      const bench    = personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0;
+      const squat    = personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0;
+      const deadlift = personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0;
+      const res = await fetch(`${API_URL}/api/users/classification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          gender: user.gender,
+          benchPress: bench,
+          squat,
+          deadlift,
+          bodyWeight: user.current_bodyweight,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser({
+          ...user,
+          current_classification: data.classification,
+          current_bodyweight: user.current_bodyweight,
+          current_one_rep_maxes: { bench, squat, deadlift },
+        });
+      }
+    } catch (err) {
+      console.error('Classification recompute failed:', err);
+    } finally {
+      setContinuing(false);
+      setModalScreen('classification');
+    }
+  };
 
   const { totalSessions, weeksLogged, thisMonth, daysThisWeek } = useWorkoutStats(historySessions);
 
@@ -389,7 +456,6 @@ function Day() {
 
   const handleSetComplete = async (exercise, actual, markingDone) => {
     if (markingDone && actual) {
-      const res = async
       await fetch(`${API_URL}/api/users/workout/pb-check`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -1710,11 +1776,13 @@ function Day() {
             className="post-workout-modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="post-workout-title"
-            aria-describedby="post-workout-subtitle"
+            aria-labelledby={modalScreen === 'summary' ? 'post-workout-title' : 'post-workout-screen2-title'}
+            aria-describedby={modalScreen === 'summary' ? 'post-workout-subtitle' : 'post-workout-screen2-subtitle'}
             onClick={e => e.stopPropagation()}
           >
             <div className="post-workout-handle" aria-hidden="true" />
+            {modalScreen === 'summary' ? (
+            <>
             <div className="post-workout-header">
               <div className="post-workout-title" id="post-workout-title">Workout Complete</div>
               <div className="post-workout-subtitle" id="post-workout-subtitle">{day.title ?? `Day ${dayNum}`}</div>
@@ -1793,9 +1861,26 @@ function Day() {
                 ))}
               </div>
             )}
-            <button className="post-workout-btn" onClick={() => { setPostWorkoutData(null); navigate('/home'); }}>
-              Done
+            <button
+              className="post-workout-btn"
+              onClick={handleContinue}
+              disabled={continuing}
+              aria-busy={continuing || undefined}
+            >
+              Continue
             </button>
+            </>
+            ) : (
+              <PostWorkoutScreen2
+                sex={user?.gender}
+                bodyweight={user?.current_bodyweight}
+                oneRMs={user?.current_one_rep_maxes}
+                preFineLevel={preFineLevel}
+                doneLabel="Done"
+                doneDisabled={false}
+                onDone={() => { setPostWorkoutData(null); navigate('/home'); }}
+              />
+            )}
           </div>
         </div>
       )}

@@ -1,5 +1,7 @@
 import { useState, useEffect, useId } from 'react'
 import { useUser } from '../context/UserContext'
+import UserLevelBadge from '../components/UserLevelBadge'
+import { bigThreeTotal } from '../utils/classification'
 import {
     ResponsiveContainer,
     LineChart,
@@ -22,6 +24,8 @@ function Settings() {
     const [classificationHistory, setClassificationHistory] = useState([])
     const [bodyweightHistory, setBodyweightHistory] = useState([])
     const [currentClassification, setCurrentClassification] = useState("")
+    const [currentBodyweight, setCurrentBodyweight] = useState(null)
+    const [currentOneRMs, setCurrentOneRMs] = useState(null)
 
     const [settingsOpen, setSettingsOpen] = useState(false)
     const [classificationsOpen, setClassificationsOpen] = useState(false)
@@ -56,6 +60,8 @@ function Settings() {
                 setEmail(data.email || "")
                 setGender(data.gender || "")
                 setCurrentClassification(data.current_classification || "")
+                setCurrentBodyweight(data.current_bodyweight ?? null)
+                setCurrentOneRMs(data.current_one_rep_maxes ?? null)
                 setClassificationHistory((data.classification_history || []).slice().reverse())
                 setBodyweightHistory((data.bodyweight_history || []).slice().reverse())
 
@@ -84,12 +90,15 @@ function Settings() {
             <h1>Profile</h1>
 
             <CollapsibleSection title="Strength Classifications" open={classificationsOpen} setOpen={setClassificationsOpen}>
-                {currentClassification && (
-                    <div className="profile-stat-row profile-stat-row--current">
-                        <span className="profile-stat-label">Current</span>
-                        <span className="profile-stat-value">{currentClassification}</span>
-                    </div>
-                )}
+                <div className="profile-stat-row profile-stat-row--current">
+                    <span className="profile-stat-label">Current</span>
+                    <UserLevelBadge
+                        sex={gender}
+                        bodyweight={currentBodyweight}
+                        total={bigThreeTotal(currentOneRMs)}
+                        showProgress
+                    />
+                </div>
                 {classificationHistory.length === 0 ? (
                     <p className="profile-empty">No classifications recorded yet.</p>
                 ) : (
