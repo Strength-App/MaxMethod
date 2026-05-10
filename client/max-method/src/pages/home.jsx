@@ -77,6 +77,7 @@ function Home() {
             bodyweight={user?.current_bodyweight}
             total={bigThreeTotal(user?.current_one_rep_maxes)}
             showProgress
+            wide
           />
         </div>
       )}

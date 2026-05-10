@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import UserLevelBadge from './UserLevelBadge';
 import { levelProgress } from '../utils/classification';
 
-function PostWorkoutScreen2({ sex, bodyweight, oneRMs, preFineLevel, doneLabel, doneDisabled, onDone }) {
+function PostWorkoutScreen2({ sex, bodyweight, oneRMs, preFineLevel, preTotal, doneLabel, doneDisabled, onDone }) {
   const squat = Number(oneRMs?.squat ?? 0);
   const bench = Number(oneRMs?.bench ?? 0);
   const deadlift = Number(oneRMs?.deadlift ?? 0);
@@ -12,6 +13,12 @@ function PostWorkoutScreen2({ sex, bodyweight, oneRMs, preFineLevel, doneLabel, 
     : null;
   const isLevelUp = preFineLevel && post?.fineLevel && preFineLevel !== post.fineLevel;
 
+  // Banner reveal coordinates with the badge's tier-transition moment via
+  // onPhaseTransition. Non-level-up: callback never fires, banner never
+  // renders. Level-up: callback fires at the snap (post-Phase-A); under
+  // reduced motion, callback fires immediately on badge mount.
+  const [bannerVisible, setBannerVisible] = useState(false);
+
   return (
     <>
       <div className="post-workout-header">
@@ -19,7 +26,7 @@ function PostWorkoutScreen2({ sex, bodyweight, oneRMs, preFineLevel, doneLabel, 
         <div className="post-workout-subtitle" id="post-workout-screen2-subtitle">Your Strength Profile</div>
       </div>
 
-      {isLevelUp && (
+      {isLevelUp && bannerVisible && (
         <div className="post-workout-levelup-banner" role="status" aria-live="polite">
           <div className="post-workout-levelup-line1">LEVEL UP</div>
           <div className="post-workout-levelup-line2">Reached {post.fineLevel}</div>
@@ -27,7 +34,15 @@ function PostWorkoutScreen2({ sex, bodyweight, oneRMs, preFineLevel, doneLabel, 
       )}
 
       <div className="post-workout-classification-section">
-        <UserLevelBadge sex={sex} bodyweight={bodyweight} total={total} showProgress />
+        <UserLevelBadge
+          sex={sex}
+          bodyweight={bodyweight}
+          total={total}
+          animateFromTotal={preTotal}
+          showProgress
+          wide
+          onPhaseTransition={() => setBannerVisible(true)}
+        />
       </div>
 
       <div className="post-workout-big3-total">

@@ -216,7 +216,11 @@ function Day() {
   const [continuing, setContinuing] = useState(false);
   // Captured ONCE at first valid render, before any in-session pb-check raises personal_bests.
   // The level-up indicator on screen 2 fires when this differs from the post-recompute fine level.
+  // preTotal is the parallel snapshot of the user's big-3 total at the same capture moment —
+  // PostWorkoutScreen2 passes it as animateFromTotal to UserLevelBadge so the bar animates
+  // from the pre-workout % to the post-recompute %.
   const [preFineLevel, setPreFineLevel] = useState(null);
+  const [preTotal, setPreTotal] = useState(null);
   const [sessionPRs, setSessionPRs] = useState([]);
   // Loaded only when the post-workout modal opens — see effect below.
   // Powers the streak row's totalSessions / weeksLogged / thisMonth / daysThisWeek.
@@ -285,6 +289,7 @@ function Day() {
     const total = bench + squat + deadlift;
     if (total <= 0) return;
     setPreFineLevel(fineLevel({ sex: user.gender, bodyweight: user.current_bodyweight, total }));
+    setPreTotal(total);
   }, [user, personalBests, preFineLevel]);
 
   // Reset to screen 1 every time the modal newly opens.
@@ -1876,6 +1881,7 @@ function Day() {
                 bodyweight={user?.current_bodyweight}
                 oneRMs={user?.current_one_rep_maxes}
                 preFineLevel={preFineLevel}
+                preTotal={preTotal}
                 doneLabel="Done"
                 doneDisabled={false}
                 onDone={() => { setPostWorkoutData(null); navigate('/home'); }}

@@ -15,6 +15,18 @@
   --accent-border:  rgba(204, 4, 4, 0.40);
   --accent-glow:    0 0 16px rgba(204, 4, 4, 0.40), 0 0 32px rgba(204, 4, 4, 0.18);
   --accent-glow-sm: 0 0 8px rgba(204, 4, 4, 0.35);
+  /* Green family mirrors the accent-X formula at matching alphas. Base hex
+     #2dba7e is the codebase's "logged-day green" used at 16+ literal-hex
+     sites today (.day-cell--completed, .completed-badge, .day-completed-label,
+     .week-progress-fill--full, etc.); those sites are not migrated and keep
+     their bespoke alphas. Convention: --accent-green is for BAR-SHAPED
+     elements (fills, progress bars, track borders that frame those fills);
+     text accents stay --accent (red). UserLevelBadge consumes --accent-green
+     on its bar fill + track border only. */
+  --accent-green:        #2dba7e;
+  --accent-green-dim:    rgba(45, 186, 126, 0.12);
+  --accent-green-border: rgba(45, 186, 126, 0.40);
+  --accent-green-glow-sm: 0 0 8px rgba(45, 186, 126, 0.35);
   /* Surface stratification flipped to translucent-white (lift) so cards
      read against the near-black base. 0.04/0.07/0.10 matches the dark-theme
      elevation overlay convention. */
@@ -5562,7 +5574,7 @@ button,
 .user-level-badge {
   display: inline-flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
 }
 
@@ -5581,11 +5593,158 @@ button,
   box-shadow: var(--accent-glow-sm);
 }
 
-.user-level-badge__progress {
+/* Progress bar region — sits below the pill label inside .user-level-badge.
+   Renders on home, settings, and post-workout screen 2 (pickNewProgram passes
+   showProgress={false} so the region is suppressed there). Animation only on
+   post-workout screen 2 via the animateFromTotal prop; static call sites pass
+   no animateFromTotal so width is set once on mount and the transition never
+   fires (no observable value change).
+
+   Layout: three-row stack — top-row (3 cells: corner-name / mid-progress /
+   corner-name) → track → bottom-row (3 cells: corner-value / mid-percent /
+   corner-value). Each row uses justify-content: space-between so corner items
+   align to the row edges (and therefore to the bar's left/right ends),
+   regardless of label width. */
+.user-level-badge__bar-region {
+  align-self: stretch;
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Wide variant — opted into by home and post-workout screen 2 (celebratory /
+   prominent surfaces). Stretches the badge container to its parent's full
+   width and lifts the bar-region's max-width cap. The pill label stays
+   content-sized + horizontally centered because the badge container's
+   align-items: center keeps non-stretch children at intrinsic width; the
+   bar-region opts in to stretch via its own align-self: stretch. */
+.user-level-badge--wide {
+  width: 100%;
+}
+.user-level-badge--wide .user-level-badge__bar-region {
+  max-width: none;
+}
+
+.user-level-badge__bar-top-row,
+.user-level-badge__bar-bottom-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.user-level-badge__bar-top-row { margin-bottom: 4px; }
+.user-level-badge__bar-bottom-row { margin-top: 4px; }
+
+.user-level-badge__bar-corner-name {
+  flex: 0 0 auto;
+  font-family: var(--font-sub);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.user-level-badge__bar-corner-name--right { text-align: right; }
+
+.user-level-badge__bar-corner-value {
+  flex: 0 0 auto;
+  font-family: var(--font-sub);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent);
+  line-height: 1.1;
+}
+.user-level-badge__bar-corner-value--right { text-align: right; }
+
+/* Top-middle: "X lbs to NextLevel" copy. Empty (whitespace-only) when Elite
+   so the row keeps its layout shape. flex: 1 1 auto + min-width: 0 lets the
+   middle truncate with ellipsis when the three top-row labels can't all fit
+   at narrow widths (worst case ~360px total at the constrained variant). */
+.user-level-badge__bar-mid-progress {
+  flex: 1 1 auto;
+  min-width: 0;
   font-family: var(--font-sub);
   font-size: 12px;
-  color: var(--muted);
+  color: var(--text);
   letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-level-badge__bar-progress-lbs {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Bottom-middle: percentage (or Maxed Out span when Elite). No longer overlays
+   the fill, so no absolute positioning, no text-shadow halo, no z-index. */
+.user-level-badge__bar-mid-percent {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-heading);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+}
+
+.user-level-badge__bar-track {
+  position: relative;
+  height: 20px;
+  background: var(--surface);
+  border: 1px solid var(--accent-green-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* 12-segment dividers — pseudo-element layered ABOVE the fill so the dark
+   slits cut through the red on filled cells and disappear into the track on
+   unfilled cells (same color as track). Pointer-events:none so the overlay
+   can't intercept anything. 11 internal dividers create 12 visual cells; the
+   12th stripe at 100% sits on the rounded outer edge and is clipped by the
+   track's overflow:hidden + border-radius. */
+.user-level-badge__bar-track::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(100% / 12 - 1.5px),
+    var(--surface) calc(100% / 12 - 1.5px),
+    var(--surface) calc(100% / 12)
+  );
+  z-index: 2;
+}
+
+.user-level-badge__bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  background: var(--accent-green);
+  z-index: 1;
+  /* 800ms is intentionally outside the 150-300ms micro-interaction range —
+     this animation IS the post-workout celebration and the slow reveal is
+     load-bearing. Curve is Material's "emphasized decelerate". */
+  transition: width 800ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.user-level-badge__bar-maxed {
+  font-family: var(--font-sub);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .user-level-badge__bar-fill { transition: none; }
 }
 
 /* Post-workout modal screen 2 — classification section wraps the UserLevelBadge.

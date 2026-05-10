@@ -96,7 +96,11 @@ function Logger() {
   const [modalScreen, setModalScreen] = useState('summary'); // 'summary' | 'classification'
   // Captured ONCE at first valid render. Logger flow doesn't run inline pb-checks during
   // the session (PBs only update on saveSession), so the snapshot is naturally clean.
+  // preTotal mirrors preFineLevel — same capture moment, same data source — so
+  // PostWorkoutScreen2 can pass it as animateFromTotal to UserLevelBadge for the
+  // bar's pre→post transition animation.
   const [preFineLevel, setPreFineLevel] = useState(null);
+  const [preTotal, setPreTotal] = useState(null);
   const [sessionPRs, setSessionPRs] = useState([]);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
   // Loaded only when the post-workout modal opens — see effect below.
@@ -284,6 +288,7 @@ function Logger() {
     const total = bench + squat + deadlift;
     if (total <= 0) return;
     setPreFineLevel(fineLevel({ sex: user.gender, bodyweight: user.current_bodyweight, total }));
+    setPreTotal(total);
   }, [user, personalBests, preFineLevel]);
 
   // Reset to screen 1 every time the modal newly opens.
@@ -918,6 +923,7 @@ function Logger() {
                 bodyweight={user?.current_bodyweight}
                 oneRMs={user?.current_one_rep_maxes}
                 preFineLevel={preFineLevel}
+                preTotal={preTotal}
                 doneLabel="Done"
                 doneDisabled={false}
                 onDone={() => { setPostWorkoutData(null); navigate('/history'); }}
