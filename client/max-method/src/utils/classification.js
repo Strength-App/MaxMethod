@@ -148,3 +148,36 @@ export function bigThreeTotal(maxes) {
        + Number(maxes?.squat ?? 0)
        + Number(maxes?.deadlift ?? 0);
 }
+
+// Mirror the /classification response into UserContext so home / settings /
+// post-workout displays render correctly without requiring log-out + log-in.
+// Consumed by 4 sites:
+//   - pickNewProgram.jsx handleSubmit       (Pattern A — re-classification)
+//   - day.jsx handleContinue                 (Pattern A — re-classification)
+//   - logger.jsx handleContinue              (Pattern A — re-classification, PB re-fetch)
+//   - loadingPage.jsx onboarding branch      (Pattern B — onboarding, +gender +onboardingComplete)
+//
+// Required: user, classData, bodyweight, oneRMs.
+// Optional: gender (set during onboarding only — first flow to populate it),
+// onboardingComplete (set true during onboarding only — server flips the
+// persisted flag inside /goals next; this is the optimistic client mirror).
+//
+// The resolve-then-sum pattern at day.jsx + logger.jsx handleContinue (PB-with-
+// fallback resolution that produces oneRMs) stays inline — same separation
+// principle as bigThreeTotal. Helper trusts caller to pass already-resolved
+// oneRMs; it only Number-coerces bodyweight (the always-known scalar).
+//
+// Symmetry: server buildUserResponse produces the canonical user-doc shape;
+// this helper consumes the /classification response and merges it with form
+// data into UserContext. Producer-consumer pair across the boundary.
+export function mirrorClassificationResponse({ user, classData, bodyweight, oneRMs, gender, onboardingComplete }) {
+  const next = {
+    ...user,
+    current_classification: classData.classification,
+    current_bodyweight: Number(bodyweight),
+    current_one_rep_maxes: oneRMs,
+  };
+  if (gender !== undefined) next.gender = gender;
+  if (onboardingComplete !== undefined) next.onboarding_complete = onboardingComplete;
+  return next;
+}

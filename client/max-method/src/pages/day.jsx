@@ -4,11 +4,10 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useUser } from '../context/UserContext';
 import { API_URL } from '../config/api';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
-import { collapseSetDetails, formatSetLine } from '../utils/setDisplay';
-import { fineLevel } from '../utils/classification';
 import ContextMenu from '../components/ContextMenu';
 import EquipmentSelect from '../components/EquipmentSelect';
-import PostWorkoutScreen2 from '../components/PostWorkoutScreen2';
+import PostWorkoutModal from '../components/PostWorkoutModal';
+import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(exerciseName) {
@@ -197,7 +196,7 @@ function Day() {
   const di = parseInt(dayNum, 10) - 1;
 
   const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error, personalBests } = useWorkout();
-  const { user, setUser } = useUser();
+  const { user } = useUser();
   const viewWorkout = location.state?.viewWorkout ?? null;
   const editMode = location.state?.editMode ?? false;
   const workoutLogId = location.state?.workoutLogId ?? null;
@@ -211,20 +210,7 @@ function Day() {
   const [setData, setSetData] = useState({});
   const [userOneRMs, setUserOneRMs] = useState(null);
   const [timerState, setTimerState] = useState(null); // { cardKey, id }
-  const [postWorkoutData, setPostWorkoutData] = useState(null); // { totalVolume, breakdown }
-  const [modalScreen, setModalScreen] = useState('summary'); // 'summary' | 'classification'
-  const [continuing, setContinuing] = useState(false);
-  // Captured ONCE at first valid render, before any in-session pb-check raises personal_bests.
-  // The level-up indicator on screen 2 fires when this differs from the post-recompute fine level.
-  // preTotal is the parallel snapshot of the user's big-3 total at the same capture moment —
-  // PostWorkoutScreen2 passes it as animateFromTotal to UserLevelBadge so the bar animates
-  // from the pre-workout % to the post-recompute %.
-  const [preFineLevel, setPreFineLevel] = useState(null);
-  const [preTotal, setPreTotal] = useState(null);
   const [sessionPRs, setSessionPRs] = useState([]);
-  // Loaded only when the post-workout modal opens — see effect below.
-  // Powers the streak row's totalSessions / weeksLogged / thisMonth / daysThisWeek.
-  const [historySessions, setHistorySessions] = useState([]);
 
   // ── Right-click / long-press menu + swap-for-today state ────────────────
   // Active workout-log id for the localStorage override key. Falls back through
@@ -253,90 +239,27 @@ function Day() {
       .catch(() => {});
   }, []);
 
-  // Lazy-fetch all-history when the post-workout modal opens. day.jsx awaits
-  // completeDay() before opening the modal, so the just-finished session is
-  // already persisted by the time this fires — no synthetic patch needed
-  // (logger.jsx is the asymmetric case and handles its own patch).
-  useEffect(() => {
-    if (!postWorkoutData) return;
-    const uid = localStorage.getItem('userId');
-    if (!uid) return;
-    let cancelled = false;
-    fetch(`${API_URL}/api/users/workout/${uid}/all-history`)
-      .then(r => r.ok ? r.json() : { sessions: [] })
-      .then(data => {
-        if (cancelled) return;
-        setHistorySessions((data.sessions ?? []).map(s => {
-          const date = new Date(s.date);
-          date.setHours(0, 0, 0, 0);
-          return { ...s, date };
-        }));
-      })
-      // Fall through to empty state — streaks render as 0s, no error UI in celebration moment.
-      .catch(() => { if (!cancelled) setHistorySessions([]); });
-    return () => { cancelled = true; };
-  }, [postWorkoutData]);
-
-  // Capture pre-session fine-level ONCE on first valid render. The gate
-  // (preFineLevel !== null) locks it in so the inline pb-check raising
-  // personal_bests during the session can't shift the snapshot.
-  useEffect(() => {
-    if (preFineLevel !== null) return;
-    if (!user?.gender || !user?.current_bodyweight) return;
-    const bench    = personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0;
-    const squat    = personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0;
-    const deadlift = personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0;
-    const total = bench + squat + deadlift;
-    if (total <= 0) return;
-    setPreFineLevel(fineLevel({ sex: user.gender, bodyweight: user.current_bodyweight, total }));
-    setPreTotal(total);
-  }, [user, personalBests, preFineLevel]);
-
-  // Reset to screen 1 every time the modal newly opens.
-  useEffect(() => {
-    if (postWorkoutData) setModalScreen('summary');
-  }, [postWorkoutData]);
-
-  const handleContinue = async () => {
-    if (!user?._id) {
-      setModalScreen('classification');
-      return;
-    }
-    setContinuing(true);
-    try {
-      const bench    = personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0;
-      const squat    = personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0;
-      const deadlift = personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0;
-      const res = await fetch(`${API_URL}/api/users/classification`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: user.email,
-          gender: user.gender,
-          benchPress: bench,
-          squat,
-          deadlift,
-          bodyWeight: user.current_bodyweight,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser({
-          ...user,
-          current_classification: data.classification,
-          current_bodyweight: user.current_bodyweight,
-          current_one_rep_maxes: { bench, squat, deadlift },
-        });
-      }
-    } catch (err) {
-      console.error('Classification recompute failed:', err);
-    } finally {
-      setContinuing(false);
-      setModalScreen('classification');
-    }
+  // day.jsx provides saveAndGetPBs as a synchronous resolution from the
+  // current personalBests state — PRs already flushed into context per-set
+  // via updateLog's pbUpdate response. No save step needed at handleContinue
+  // (completeDay fired before the modal opened). Returns null when no user
+  // is loaded so the hook aborts the classification POST cleanly.
+  const saveAndGetPBs = async () => {
+    if (!user?._id) return null;
+    return {
+      bench:    personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0,
+      squat:    personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0,
+      deadlift: personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0,
+    };
   };
 
-  const { totalSessions, weeksLogged, thisMonth, daysThisWeek } = useWorkoutStats(historySessions);
+  const modal = usePostWorkoutModal({
+    saveAndGetPBs,
+    doneNavigate: '/home',
+    onSummaryBackdrop: () => navigate('/home'),
+  });
+
+  const { totalSessions, weeksLogged, thisMonth, daysThisWeek } = useWorkoutStats(modal.historySessions);
 
   const day = workout?.weeks?.[wi]?.days?.[di];
 
@@ -686,7 +609,7 @@ function Day() {
     }
     const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
     const totalSetsCompleted = breakdown.reduce((sum, e) => sum + e.sets, 0);
-    setPostWorkoutData({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs });
+    modal.open({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs });
   };
 
   // Group consecutive slots with the same exercise into one card (all slots, order preserved)
@@ -1773,123 +1696,12 @@ function Day() {
         })}
       </div>
 
-      {/* Post-Workout Modal — backdrop click closes; Esc + focus-trap need
-          useModalA11y wiring (functional change) and are deferred as follow-up. */}
-      {postWorkoutData && (
-        <div className="post-workout-overlay" onClick={() => { setPostWorkoutData(null); navigate('/home'); }}>
-          <div
-            className="post-workout-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={modalScreen === 'summary' ? 'post-workout-title' : 'post-workout-screen2-title'}
-            aria-describedby={modalScreen === 'summary' ? 'post-workout-subtitle' : 'post-workout-screen2-subtitle'}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="post-workout-handle" aria-hidden="true" />
-            {modalScreen === 'summary' ? (
-            <>
-            <div className="post-workout-header">
-              <div className="post-workout-title" id="post-workout-title">Workout Complete</div>
-              <div className="post-workout-subtitle" id="post-workout-subtitle">{day.title ?? `Day ${dayNum}`}</div>
-            </div>
-            <div className="post-workout-streak-row" role="group" aria-label="Workout streaks">
-              <div className="post-workout-streak-card">
-                <div className="post-workout-streak-val" aria-hidden="true"><span>{totalSessions}</span></div>
-                <div className="post-workout-streak-lbl" aria-hidden="true">Total Sessions</div>
-                <span className="sr-only">Total sessions: {totalSessions}</span>
-              </div>
-              <div className="post-workout-streak-card">
-                <div className="post-workout-streak-val" aria-hidden="true"><span>{weeksLogged}</span></div>
-                <div className="post-workout-streak-lbl" aria-hidden="true">Weeks Logged</div>
-                <span className="sr-only">Weeks logged: {weeksLogged}</span>
-              </div>
-              <div className="post-workout-streak-card">
-                <div className="post-workout-streak-val" aria-hidden="true"><span>{thisMonth}</span></div>
-                <div className="post-workout-streak-lbl" aria-hidden="true">This Month</div>
-                <span className="sr-only">This month: {thisMonth} {thisMonth === 1 ? 'session' : 'sessions'}</span>
-              </div>
-              <div className="post-workout-streak-card">
-                <div className="post-workout-streak-val" aria-hidden="true"><span>{daysThisWeek} / 7</span></div>
-                <div className="post-workout-streak-lbl" aria-hidden="true">Days This Week</div>
-                <span className="sr-only">Days this week: {daysThisWeek} of 7</span>
-              </div>
-            </div>
-            <div className="post-workout-stats-row" role="group" aria-label="Workout totals">
-              <div className="post-workout-volume-block">
-                <div className="post-workout-volume-val" aria-hidden="true">
-                  {postWorkoutData.totalVolume > 0
-                    ? postWorkoutData.totalVolume.toLocaleString()
-                    : '—'}
-                </div>
-                <div className="post-workout-volume-lbl" aria-hidden="true">Total Volume (lbs)</div>
-                <span className="sr-only">Total volume: {postWorkoutData.totalVolume > 0 ? `${postWorkoutData.totalVolume.toLocaleString()} pounds` : 'none recorded'}</span>
-              </div>
-              <div className="post-workout-volume-block">
-                <div className="post-workout-volume-val" aria-hidden="true">
-                  {postWorkoutData.totalSets ?? '—'}
-                </div>
-                <div className="post-workout-volume-lbl" aria-hidden="true">Total Sets</div>
-                <span className="sr-only">Total sets: {postWorkoutData.totalSets ?? 'none recorded'}</span>
-              </div>
-            </div>
-            {postWorkoutData.breakdown.length > 0 && (
-              <div className="post-workout-breakdown">
-                <div className="post-workout-breakdown-title">By Exercise</div>
-                {postWorkoutData.breakdown.map((e, i) => (
-                  <div key={i} className="post-workout-breakdown-exercise">
-                    <div className="post-workout-breakdown-row">
-                      <span className="post-workout-breakdown-name">{e.name}</span>
-                      <span className="post-workout-breakdown-sets">{e.sets} {e.sets === 1 ? 'set' : 'sets'}</span>
-                      <span className="post-workout-breakdown-vol">{e.volume > 0 ? `${e.volume.toLocaleString()} lbs` : '—'}</span>
-                    </div>
-                    {e.setDetails?.length > 0 && (
-                      <ul className="post-workout-breakdown-set-list" aria-label={`Sets for ${e.name}`}>
-                        {collapseSetDetails(e.setDetails).map((g, gi) => (
-                          <li key={gi} className="post-workout-breakdown-set-line">{formatSetLine(g)}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-            {postWorkoutData.prs?.length > 0 && (
-              <div className="post-workout-breakdown post-workout-prs">
-                <div className="post-workout-breakdown-title">Personal Records</div>
-                {postWorkoutData.prs.map((pr, i) => (
-                  <div key={i} className="post-workout-breakdown-row">
-                    <span className="post-workout-breakdown-name">{pr.exercise}</span>
-                    <span className="post-workout-pr-detail">
-                      {pr.weight.toLocaleString()} lbs{pr.reps ? ` x ${pr.reps} reps` : ''}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              className="post-workout-btn"
-              onClick={handleContinue}
-              disabled={continuing}
-              aria-busy={continuing || undefined}
-            >
-              Continue
-            </button>
-            </>
-            ) : (
-              <PostWorkoutScreen2
-                sex={user?.gender}
-                bodyweight={user?.current_bodyweight}
-                oneRMs={user?.current_one_rep_maxes}
-                preFineLevel={preFineLevel}
-                preTotal={preTotal}
-                doneLabel="Done"
-                doneDisabled={false}
-                onDone={() => { setPostWorkoutData(null); navigate('/home'); }}
-              />
-            )}
-          </div>
-        </div>
-      )}
+      <PostWorkoutModal
+        modal={modal}
+        title={day.title ?? `Day ${dayNum}`}
+        streakStats={{ totalSessions, weeksLogged, thisMonth, daysThisWeek }}
+        user={user}
+      />
 
       {/* Footer */}
       <div className="day-footer">

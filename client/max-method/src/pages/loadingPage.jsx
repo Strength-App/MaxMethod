@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { useUser } from '../context/UserContext';
 import { API_URL } from '../config/api';
+import { mirrorClassificationResponse } from '../utils/classification';
 
 const MESSAGES = [
   'Analyzing your strength profile…',
@@ -43,12 +44,12 @@ function LoadingPage() {
         const { source } = state;
 
         if (source === 'onboarding') {
-          const { userId, email, gender, benchPress, squat, deadlift, bodyWeight, daysPerWeek, goalSelection, isBeginner } = state;
+          const { userId, email, gender, benchPress, squat, deadlift, bodyWeight, daysPerWeek, goalSelection } = state;
 
           const classRes = await fetch(`${API_URL}/api/users/classification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, gender, benchPress, deadlift, squat, bodyWeight, isBeginner }),
+            body: JSON.stringify({ email, gender, benchPress, deadlift, squat, bodyWeight }),
           });
           if (!classRes.ok) throw new Error('Classification failed');
           const classData = await classRes.json();
@@ -60,23 +61,23 @@ function LoadingPage() {
           // is the first flow to set it — not in pickNewProgram's precedent shape)
           // and onboarding_complete: true optimistically (server flips it inside
           // /goals which fires immediately next).
-          setUser({
-            ...user,
-            gender,
-            current_bodyweight: Number(bodyWeight),
-            current_one_rep_maxes: {
+          setUser(mirrorClassificationResponse({
+            user,
+            classData,
+            bodyweight: bodyWeight,
+            oneRMs: {
               bench: Number(benchPress),
               squat: Number(squat),
               deadlift: Number(deadlift),
             },
-            current_classification: classData.classification,
-            onboarding_complete: true,
-          });
+            gender,
+            onboardingComplete: true,
+          }));
 
           const goalsRes = await fetch(`${API_URL}/api/users/goals`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, classification: classData.classification, daysPerWeek, goalSelection, isBeginner }),
+            body: JSON.stringify({ userId, classification: classData.classification, daysPerWeek, goalSelection }),
           });
           if (!goalsRes.ok) throw new Error('Goals failed');
           const goalsData = await goalsRes.json();

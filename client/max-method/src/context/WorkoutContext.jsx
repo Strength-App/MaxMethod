@@ -188,6 +188,14 @@ export function WorkoutProvider({ children }) {
     }, 500);
   }, [userId]);
 
+  // Refreshes WorkoutContext's personalBests state AND returns the freshly-
+  // fetched personal_bests object. State-updater AND value-returner contract:
+  // callers that need immediate fresh values in the same closure (logger.jsx
+  // saveSession → handleContinue) consume the return; callers that just want
+  // a UI refresh can ignore it. Returns undefined on no-userId, non-OK
+  // response, or thrown fetch error (state stays stale on failure, matching
+  // prior behavior). Eliminates the closure-staleness double-fetch workaround
+  // that previously lived in logger.jsx handleContinue.
   const refreshPersonalBests = useCallback(async () => {
     const resolvedId = userId;
     if (!resolvedId) return;
@@ -195,7 +203,9 @@ export function WorkoutProvider({ children }) {
       const res = await fetch(`${API_URL}/api/users/workout/${resolvedId}/personal-bests`);
       if (res.ok) {
         const data = await res.json();
-        setPersonalBests(data.personal_bests ?? {});
+        const pbs = data.personal_bests ?? {};
+        setPersonalBests(pbs);
+        return pbs;
       }
     } catch (err) {
       console.error('Failed to refresh personal bests:', err);

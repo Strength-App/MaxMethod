@@ -4,7 +4,7 @@ import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
 import UserLevelBadge from '../components/UserLevelBadge';
-import { bigThreeTotal } from '../utils/classification';
+import { bigThreeTotal, mirrorClassificationResponse } from '../utils/classification';
 
 const FEATURED = [
   { tag: 'Strength · 12 weeks', name: 'Power Builder',   meta: '4 days/week · Intermediate' },
@@ -98,16 +98,16 @@ function PickNewProgram() {
       // Refresh UserContext so live fine-level displays (home, settings) reflect
       // the new bodyweight + PRs without waiting for a re-login. Server already
       // persisted these fields; we mirror them client-side from the just-submitted form.
-      setUser({
-        ...user,
-        current_classification: data.classification,
-        current_bodyweight: Number(formData.bodyWeight),
-        current_one_rep_maxes: {
+      setUser(mirrorClassificationResponse({
+        user,
+        classData: data,
+        bodyweight: formData.bodyWeight,
+        oneRMs: {
           bench: Number(formData.benchPress),
           squat: Number(formData.squat),
           deadlift: Number(formData.deadlift),
         },
-      });
+      }));
 
       navigate("/goals", {
         state: {

@@ -16,13 +16,19 @@
   --accent-glow:    0 0 16px rgba(204, 4, 4, 0.40), 0 0 32px rgba(204, 4, 4, 0.18);
   --accent-glow-sm: 0 0 8px rgba(204, 4, 4, 0.35);
   /* Green family mirrors the accent-X formula at matching alphas. Base hex
-     #2dba7e is the codebase's "logged-day green" used at 16+ literal-hex
-     sites today (.day-cell--completed, .completed-badge, .day-completed-label,
-     .week-progress-fill--full, etc.); those sites are not migrated and keep
-     their bespoke alphas. Convention: --accent-green is for BAR-SHAPED
-     elements (fills, progress bars, track borders that frame those fills);
-     text accents stay --accent (red). UserLevelBadge consumes --accent-green
-     on its bar fill + track border only. */
+     #2dba7e is the codebase's "completion-state green" — consumed at 16
+     sites via var(--accent-green) (.day-cell--completed:hover, .completed-badge,
+     .day-completed-label, .week-progress-fill--full, .set-num--done,
+     .check-btn--checked, .toggle-btn--on, .ex-complete-banner, etc.) plus
+     the UserLevelBadge bar fill/track. --accent-green-dim (alpha 0.12) is
+     consumed at .check-btn:hover. Convention: --accent-green covers
+     COMPLETION STATE — fills, borders, AND text where the text describes
+     "this is done" (COMPLETED labels, done-state values). Identity contexts
+     (badge identity labels, level threshold values) stay --accent (red).
+     10 bespoke-alpha rgba(45, 186, 126, X) sites in the 0.06–0.45 range
+     stay inline (intentional layered tints). The darker hover #28a870 at
+     .toggle-btn--on:hover has no token today (potential future
+     --accent-green-dark). */
   --accent-green:        #2dba7e;
   --accent-green-dim:    rgba(45, 186, 126, 0.12);
   --accent-green-border: rgba(45, 186, 126, 0.40);
@@ -1348,7 +1354,7 @@ input::placeholder {
 
 .day-cell--completed:hover {
   background: rgba(45, 186, 126, 0.18);
-  border-color: #2dba7e;
+  border-color: var(--accent-green);
   box-shadow: 0 0 8px rgba(45, 186, 126, 0.30), 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 
@@ -1357,7 +1363,7 @@ input::placeholder {
   top: 6px;
   right: 9px;
   font-size: 10px;
-  color: #2dba7e;
+  color: var(--accent-green);
   font-weight: 700;
 }
 
@@ -1615,7 +1621,7 @@ input::placeholder {
 }
 
 .summary-pill-val--accent { color: var(--accent); }
-.summary-pill-val--green  { color: #2dba7e; }
+.summary-pill-val--green  { color: var(--accent-green); }
 
 .summary-pill-lbl {
   font-size: 10px;
@@ -1721,7 +1727,7 @@ input::placeholder {
   line-height: 1;
 }
 
-.stat-chip--done .stat-chip-val { color: #2dba7e; }
+.stat-chip--done .stat-chip-val { color: var(--accent-green); }
 
 .stat-chip-lbl {
   font-size: 9px;
@@ -1759,7 +1765,7 @@ input::placeholder {
   transition: width 0.35s ease;
 }
 
-.ex-progress-fill--full { background: #2dba7e; }
+.ex-progress-fill--full { background: var(--accent-green); }
 
 .ex-sets-panel {
   border-top: 1px solid var(--border);
@@ -1815,8 +1821,8 @@ input::placeholder {
 }
 
 .set-num--done {
-  background: #2dba7e;
-  border-color: #2dba7e;
+  background: var(--accent-green);
+  border-color: var(--accent-green);
   color: #fff;
 }
 
@@ -1905,7 +1911,7 @@ input::placeholder {
 .stepper-btn:disabled { opacity: 0.25; cursor: default; }
 
 .actual-input--matched {
-  border-color: #2dba7e;
+  border-color: var(--accent-green);
   background: rgba(45, 186, 126, 0.08);
 }
 
@@ -1927,13 +1933,13 @@ input::placeholder {
 }
 
 .check-btn:hover {
-  border-color: #2dba7e;
-  background: rgba(45, 186, 126, 0.12);
+  border-color: var(--accent-green);
+  background: var(--accent-green-dim);
 }
 
 .check-btn--checked {
-  background: #2dba7e;
-  border-color: #2dba7e;
+  background: var(--accent-green);
+  border-color: var(--accent-green);
   color: #fff;
 }
 
@@ -1945,7 +1951,7 @@ input::placeholder {
   border-top: 1px solid rgba(45, 186, 126, 0.22);
   padding: 10px 16px;
   font-size: 13px;
-  color: #2dba7e;
+  color: var(--accent-green);
   font-family: var(--font-sub);
   font-weight: 600;
 }
@@ -2235,7 +2241,7 @@ input::placeholder {
   transition: width 0.35s ease;
 }
 
-.week-progress-fill--full { background: #2dba7e; }
+.week-progress-fill--full { background: var(--accent-green); }
 
 /* ── Day Footer ──────────────────────────────────────── */
 .day-footer {
@@ -2305,7 +2311,7 @@ input::placeholder {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #2dba7e;
+  color: var(--accent-green);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -3188,8 +3194,8 @@ input::placeholder {
 }
 
 .toggle-btn--on {
-  background: #2dba7e;
-  border-color: #2dba7e;
+  background: var(--accent-green);
+  border-color: var(--accent-green);
 }
 
 .toggle-btn--on:hover {

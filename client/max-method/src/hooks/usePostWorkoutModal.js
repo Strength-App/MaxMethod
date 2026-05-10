@@ -1,0 +1,165 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../context/UserContext';
+import { useWorkout } from '../context/WorkoutContext';
+import { API_URL } from '../config/api';
+import { fineLevel, mirrorClassificationResponse } from '../utils/classification';
+
+// Post-workout modal lifecycle hook. Owns the state machine
+// (closed → summary → classification), pre-session fine-level + total
+// capture, the lazy /all-history fetch, the classification POST + setUser
+// mirror, and close-and-navigate handlers.
+//
+// Consumed by day.jsx (live tracker) and logger.jsx (batch retro-logger).
+// The two flows differ in HOW fresh PBs are produced (per-set context flush
+// vs. batch-save-then-resolve); that asymmetry stays in the parents via the
+// saveAndGetPBs callback. The hook itself is symmetric.
+//
+// Inputs:
+//   saveAndGetPBs: async () => { bench, squat, deadlift } | null
+//     Parent-provided. day.jsx returns from current personalBests state
+//     (already fresh per per-set pbUpdate flush). logger.jsx awaits
+//     saveSession() and resolves from its returned PBs. Return null to
+//     abort the screen-1→screen-2 transition cleanly (e.g. workout-didn't-
+//     save path); the hook's finally block still advances the screen on
+//     abort, matching prior in-place behavior in both parents.
+//   doneNavigate: '/home' | '/history'
+//     Target for the Done button on screen 2 and for the screen-2 backdrop.
+//   onSummaryBackdrop: () => void
+//     Parent-defined backdrop behavior on the summary screen. day navigates
+//     to /home (no save needed; completeDay already fired). logger calls
+//     saveAndExit which commits the batch session via /quick-sessions and
+//     navigates to /history.
+//
+// Returns: { postWorkoutData, modalScreen, continuing, preFineLevel,
+//   preTotal, historySessions, open, close, handleContinue, handleDone,
+//   handleSummaryBackdrop, handleScreen2Backdrop }
+//
+// Behavior preservation note: handleContinue's finally block always
+// advances modalScreen to 'classification', including on the !oneRMs abort
+// path. This matches the prior in-place behavior in both day.jsx and
+// logger.jsx — the screen advance is unconditional once handleContinue
+// starts. Errors propagate silently to console.error; UI gracefully
+// degrades to the prior classification mirror or the user's stored maxes.
+export function usePostWorkoutModal({ saveAndGetPBs, doneNavigate, onSummaryBackdrop }) {
+  const navigate = useNavigate();
+  const { user, setUser } = useUser();
+  const { personalBests } = useWorkout();
+
+  const [postWorkoutData, setPostWorkoutData] = useState(null);
+  const [modalScreen, setModalScreen] = useState('summary');
+  const [continuing, setContinuing] = useState(false);
+  const [preFineLevel, setPreFineLevel] = useState(null);
+  const [preTotal, setPreTotal] = useState(null);
+  const [historySessions, setHistorySessions] = useState([]);
+
+  // Capture pre-session fine-level + total ONCE on first valid render.
+  // Gate (preFineLevel !== null) locks the snapshot in so any inline
+  // pb-check raising personal_bests during the session can't shift it.
+  useEffect(() => {
+    if (preFineLevel !== null) return;
+    if (!user?.gender || !user?.current_bodyweight) return;
+    const bench    = personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0;
+    const squat    = personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0;
+    const deadlift = personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0;
+    const total = bench + squat + deadlift;
+    if (total <= 0) return;
+    setPreFineLevel(fineLevel({ sex: user.gender, bodyweight: user.current_bodyweight, total }));
+    setPreTotal(total);
+  }, [user, personalBests, preFineLevel]);
+
+  // Reset to screen 1 every time the modal newly opens.
+  useEffect(() => {
+    if (postWorkoutData) setModalScreen('summary');
+  }, [postWorkoutData]);
+
+  // Lazy-fetch all-history when the modal opens. Caller composes the streak
+  // stats (day uses raw historySessions; logger applies a synthetic-today
+  // patch via useMemo because saveAndExit fires post-dismiss).
+  useEffect(() => {
+    if (!postWorkoutData) return;
+    const uid = localStorage.getItem('userId');
+    if (!uid) return;
+    let cancelled = false;
+    fetch(`${API_URL}/api/users/workout/${uid}/all-history`)
+      .then(r => r.ok ? r.json() : { sessions: [] })
+      .then(data => {
+        if (cancelled) return;
+        setHistorySessions((data.sessions ?? []).map(s => {
+          const date = new Date(s.date);
+          date.setHours(0, 0, 0, 0);
+          return { ...s, date };
+        }));
+      })
+      // Fall through to empty state — streaks render as 0s, no error UI in celebration moment.
+      .catch(() => { if (!cancelled) setHistorySessions([]); });
+    return () => { cancelled = true; };
+  }, [postWorkoutData]);
+
+  const open = (data) => setPostWorkoutData(data);
+  const close = () => setPostWorkoutData(null);
+
+  const handleContinue = async () => {
+    setContinuing(true);
+    try {
+      const oneRMs = await saveAndGetPBs();
+      if (!oneRMs) return;
+      const res = await fetch(`${API_URL}/api/users/classification`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: user.email,
+          gender: user.gender,
+          benchPress: oneRMs.bench,
+          squat: oneRMs.squat,
+          deadlift: oneRMs.deadlift,
+          bodyWeight: user.current_bodyweight,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setUser(mirrorClassificationResponse({
+          user,
+          classData: data,
+          bodyweight: user.current_bodyweight,
+          oneRMs,
+        }));
+      }
+    } catch (err) {
+      console.error('Post-workout classification flow failed:', err);
+    } finally {
+      setContinuing(false);
+      setModalScreen('classification');
+    }
+  };
+
+  const handleDone = () => {
+    setPostWorkoutData(null);
+    navigate(doneNavigate);
+  };
+
+  const handleSummaryBackdrop = () => {
+    setPostWorkoutData(null);
+    onSummaryBackdrop();
+  };
+
+  const handleScreen2Backdrop = () => {
+    setPostWorkoutData(null);
+    navigate(doneNavigate);
+  };
+
+  return {
+    postWorkoutData,
+    modalScreen,
+    continuing,
+    preFineLevel,
+    preTotal,
+    historySessions,
+    open,
+    close,
+    handleContinue,
+    handleDone,
+    handleSummaryBackdrop,
+    handleScreen2Backdrop,
+  };
+}

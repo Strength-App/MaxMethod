@@ -163,7 +163,6 @@ function Onboarding() {
         bodyWeight: Number(merged.bodyWeight),
         daysPerWeek: merged.daysPerWeek,
         goalSelection: merged.goalSelection,
-        isBeginner: merged.isBeginner,
         skipped: merged.skipped,
       },
     });
