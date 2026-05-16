@@ -49,7 +49,7 @@ function LoadingPage() {
           const classRes = await fetch(`${API_URL}/api/users/classification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, gender, benchPress, deadlift, squat, bodyWeight }),
+            body: JSON.stringify({ email, gender, benchPress, deadlift, squat, bodyWeight, mode: 'set-actual' }),
           });
           if (!classRes.ok) throw new Error('Classification failed');
           const classData = await classRes.json();
@@ -72,6 +72,7 @@ function LoadingPage() {
             },
             gender,
             onboardingComplete: true,
+            mode: 'set-actual',
           }));
 
           const goalsRes = await fetch(`${API_URL}/api/users/goals`, {

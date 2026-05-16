@@ -4,7 +4,7 @@ import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
 import UserLevelBadge from '../components/UserLevelBadge';
-import { bigThreeTotal, mirrorClassificationResponse } from '../utils/classification';
+import { bigThreeTotalForUser, isNullState, mirrorClassificationResponse } from '../utils/classification';
 
 const FEATURED = [
   { tag: 'Strength · 12 weeks', name: 'Power Builder',   meta: '4 days/week · Intermediate' },
@@ -89,6 +89,7 @@ function PickNewProgram() {
           deadlift:   Number(formData.deadlift),
           squat:      Number(formData.squat),
           bodyWeight: Number(formData.bodyWeight),
+          mode: "set-actual",
         }),
       });
       if (!response.ok) throw new Error("Failed to save classification");
@@ -107,6 +108,7 @@ function PickNewProgram() {
           squat: Number(formData.squat),
           deadlift: Number(formData.deadlift),
         },
+        mode: "set-actual",
       }));
 
       navigate("/goals", {
@@ -158,7 +160,9 @@ const handleSelectProgram = (p) => {
             <UserLevelBadge
               sex={user?.gender}
               bodyweight={user?.current_bodyweight}
-              total={bigThreeTotal(user?.current_one_rep_maxes)}
+              total={bigThreeTotalForUser(user)}
+              nullState={isNullState(user)}
+              beginner1Anchor={user?.beginner_1_anchor ?? null}
               showProgress={false}
             />
           </div>

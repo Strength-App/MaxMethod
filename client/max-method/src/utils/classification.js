@@ -2,6 +2,15 @@
 // (sex, bodyweight, big-3 total). Bucket-stepped so the rollup of fine →
 // coarse always equals the server's existing 5-level coarse classification
 // (positions [3, 6, 9, 12] of every row equal the server's 4 coarse boundaries).
+//
+// MIRROR: the threshold tables (MALE_THRESHOLDS / FEMALE_THRESHOLDS) and the
+// FINE_LABELS array below are mirrored in
+// Backend_structure/src/utils/levelProgress.js, which the classification
+// handler uses to detect Beginner-1 entry for the anchor write. The
+// table-parity unit test at Backend_structure/tests/unit/levelProgress.test.js
+// asserts deepEqual against a fixture copied from this file — if either side
+// drifts, that test fails. When updating any threshold, edit BOTH files AND
+// the test fixture.
 
 const MALE_THRESHOLDS = {
   110: [292, 326, 360, 394, 435, 477, 518, 565, 611, 658, 708, 758, 808],
@@ -134,19 +143,54 @@ export function levelProgress({ sex, bodyweight, total }) {
   };
 }
 
-// Sum of bench + squat + deadlift from a current_one_rep_maxes-shaped object.
-// Defensive against null/undefined maxes object and against string-typed values.
-// Used by leveling-system display sites (home, pickNewProgram, settings) that
-// pass the result to UserLevelBadge's `total` prop. Sites that resolve from
-// personal_bests with fallback (day.jsx + logger.jsx handleContinue + the
-// pre-fine-level capture useEffect) keep their resolve-then-sum inline — that's
-// a different abstraction and bundling it here would couple this helper to the
-// freshness-primary-source pattern. PostWorkoutScreen2 also keeps inline as a
-// leaf component that trusts its prop.
+// Sum of bench + squat + deadlift from a maxes-shaped object. Per-lift null
+// values coerce to 0 in the sum (a user with bench=245, squat=null,
+// deadlift=null totals 245 — they're not at level 0, they're at the level
+// 245 implies). Defensive against null/undefined maxes object too.
 export function bigThreeTotal(maxes) {
   return Number(maxes?.bench ?? 0)
        + Number(maxes?.squat ?? 0)
        + Number(maxes?.deadlift ?? 0);
+}
+
+// Resolve a user's big-3 total from estimated_one_rep_maxes when populated,
+// falling back to current_one_rep_maxes when not. This is the canonical level-
+// math source post-Phase-6.
+//
+// Fallback is PER-SOURCE, not per-lift: if estimated has any non-null lift,
+// use estimated (with the remaining nulls coerced to 0 inside bigThreeTotal).
+// Only fall back to current if all three estimated lifts are null. This
+// protects two transition states:
+//   1. pre-migration users whose docs predate the estimated_one_rep_maxes
+//      field — estimated is undefined → fall to current.
+//   2. post-Phase-2 / pre-feature-trigger users whose estimated dict exists
+//      but is all-nulls — fall to current so their level isn't 0 until they
+//      log their first big-3 workout.
+//
+// Do NOT layer a per-lift merge (e.g., estimated.bench ?? current.bench).
+// Cross-source mixing would let stale current values leak into otherwise-
+// fresh estimated state and is explicitly out of scope.
+export function bigThreeTotalForUser(user) {
+  const est = user?.estimated_one_rep_maxes;
+  if (est && (est.bench != null || est.squat != null || est.deadlift != null)) {
+    return bigThreeTotal(est);
+  }
+  return bigThreeTotal(user?.current_one_rep_maxes);
+}
+
+// True iff the user has never recorded ANY 1RM in either field — neither
+// estimated_one_rep_maxes nor current_one_rep_maxes has a single non-null
+// lift. Stricter than `bigThreeTotalForUser(user) === 0`: a user with explicit
+// zeros (e.g. current = { bench: 0, ... }) is NOT null-state because they've
+// entered data, the data just sums to zero. Such a user gets the normal
+// Beginner-1-at-0% badge; only the EVER-never-entered case gets the alternate
+// empty-state element.
+export function isNullState(user) {
+  const est = user?.estimated_one_rep_maxes;
+  const cur = user?.current_one_rep_maxes;
+  const estHasAny = est && (est.bench != null || est.squat != null || est.deadlift != null);
+  const curHasAny = cur && (cur.bench != null || cur.squat != null || cur.deadlift != null);
+  return !estHasAny && !curHasAny;
 }
 
 // Mirror the /classification response into UserContext so home / settings /
@@ -170,14 +214,33 @@ export function bigThreeTotal(maxes) {
 // Symmetry: server buildUserResponse produces the canonical user-doc shape;
 // this helper consumes the /classification response and merges it with form
 // data into UserContext. Producer-consumer pair across the boundary.
-export function mirrorClassificationResponse({ user, classData, bodyweight, oneRMs, gender, onboardingComplete }) {
+// Mode parameter mirrors the server-side branching in userController.js's
+// classification handler:
+//   "set-actual" (default) — mirror bodyweight, current_one_rep_maxes, AND
+//     estimated_one_rep_maxes (hard override — actual is authoritative).
+//   "reclassify-only" — mirror only current_classification. Do NOT touch
+//     bodyweight or either max field. Use this in the post-workout flow
+//     where the server is just recomputing classification from a payload
+//     that does NOT represent fresh user-entered actuals.
+export function mirrorClassificationResponse({ user, classData, bodyweight, oneRMs, gender, onboardingComplete, mode = "set-actual" }) {
+  const isReclassifyOnly = mode === "reclassify-only";
   const next = {
     ...user,
     current_classification: classData.classification,
-    current_bodyweight: Number(bodyweight),
-    current_one_rep_maxes: oneRMs,
   };
+  if (!isReclassifyOnly) {
+    next.current_bodyweight = Number(bodyweight);
+    next.current_one_rep_maxes = oneRMs;
+    next.estimated_one_rep_maxes = oneRMs;
+  }
   if (gender !== undefined) next.gender = gender;
   if (onboardingComplete !== undefined) next.onboarding_complete = onboardingComplete;
+  // beginner_1_anchor: server includes this in every classification response
+  // (the just-written value when the anchor fired this call, OR the existing
+  // value otherwise). Mirror unconditionally — sticky semantics on the
+  // server mean re-mirroring an unchanged value is a no-op.
+  if (classData.beginner1Anchor !== undefined) {
+    next.beginner_1_anchor = classData.beginner1Anchor;
+  }
   return next;
 }

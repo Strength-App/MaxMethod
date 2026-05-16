@@ -7,18 +7,35 @@ const HOLD_MS = 80;
 function UserLevelBadge({
   sex, bodyweight, total,
   animateFromTotal = null, showProgress = true, wide = false,
+  nullState = false,
+  beginner1Anchor = null,
   onPhaseTransition,
 }) {
   const bw = Number(bodyweight);
   const t = Number(total);
-  const valid = Boolean(sex) && bw > 0 && t > 0;
 
-  // Post-state shape — drives final labels and resting state.
-  const postProgress = valid
+  // Three render outcomes:
+  //   1. sex or bodyweight missing → return null (can't pick threshold table).
+  //   2. nullState true → render alternate empty-state element.
+  //   3. otherwise → render normal badge.
+  //
+  // Hooks below MUST run unconditionally on every render to preserve hook
+  // ordering across renders (Rules of Hooks). All early returns happen after
+  // the hooks fire — short-circuit the branch decision at the JSX level, not
+  // by skipping hook calls. The `levelProgress` fallback below produces a
+  // safe shape so the hooks' computed values stay well-defined even when
+  // we're going to early-return.
+  const hasSexAndBw = Boolean(sex) && bw > 0;
+  const renderNormal = hasSexAndBw && !nullState && Number.isFinite(t);
+
+  // Post-state shape — drives final labels and resting state. Computed even
+  // for non-renderNormal cases (cheap pure call) so the precompute block
+  // below has a stable shape to work against.
+  const postProgress = renderNormal
     ? levelProgress({ sex, bodyweight: bw, total: t })
     : { fineLevel: '', nextLevel: null, currentThreshold: 0, nextThreshold: 0, lbsToNext: null };
 
-  const hasAnimation = valid && animateFromTotal != null && Number(animateFromTotal) !== t;
+  const hasAnimation = renderNormal && animateFromTotal != null && Number(animateFromTotal) !== t;
   const preTotal = hasAnimation ? Number(animateFromTotal) : null;
   // Pre-state shape — used to detect level-up and render Phase A's labels.
   const preProgress = hasAnimation
@@ -37,20 +54,33 @@ function UserLevelBadge({
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // % of progress within `shape`'s tier, clamped [0, 100].
-  const computePct = (val, shape) => {
+  // % of progress within `shape`'s tier, clamped [0, 100]. Beginner-1 special
+  // case: when shape is Beginner 1 AND a non-null anchor is provided, the bar
+  // fills from the anchor (the user's total when they first landed at B1)
+  // toward the B2 threshold, instead of from the threshold-table's B1 floor.
+  // Gives sub-floor users a visible starting reference instead of a bar
+  // pinned at 0% for hundreds of pounds of progress.
+  //
+  // If anchor > val (user dropped below their anchor after a hard-override),
+  // (val - leftBound) goes negative and clamps to 0. Anchor stays visible as
+  // the left label; the bar just shows no fill until they catch back up.
+  const computePct = (val, shape, anchor = null) => {
     if (!shape) return 0;
     if (shape.nextLevel == null) return 100;
-    const span = shape.nextThreshold - shape.currentThreshold;
+    const useAnchor = anchor != null && shape.fineLevel === 'Beginner 1';
+    const leftBound = useAnchor ? anchor : shape.currentThreshold;
+    const span = shape.nextThreshold - leftBound;
     if (span <= 0) return 100;
-    return Math.max(0, Math.min(100, ((val - shape.currentThreshold) / span) * 100));
+    return Math.max(0, Math.min(100, ((val - leftBound) / span) * 100));
   };
 
-  const postEndPct = computePct(t, postProgress);
+  const postEndPct = computePct(t, postProgress, beginner1Anchor);
   // Phase A start: pre's % using PRE thresholds (where the user actually was).
-  const preStartPct = isLevelUpAnim ? computePct(preTotal, preProgress) : 0;
+  // Anchor applies if preProgress is also Beginner 1 (e.g. animating from a
+  // B1 state into a higher tier; the pre side shows anchored math).
+  const preStartPct = isLevelUpAnim ? computePct(preTotal, preProgress, beginner1Anchor) : 0;
   // Single-stage start: pre's % using POST thresholds (preserves prior behavior).
-  const singleStartPct = (hasAnimation && !isLevelUpAnim) ? computePct(preTotal, postProgress) : postEndPct;
+  const singleStartPct = (hasAnimation && !isLevelUpAnim) ? computePct(preTotal, postProgress, beginner1Anchor) : postEndPct;
 
   // Phase machine. 'idle': no animation. 'single': single-stage in flight.
   // 'phase-a': level-up Phase A (pre tier, preStartPct → 100%). 'snap':
@@ -138,7 +168,31 @@ function UserLevelBadge({
     }
   };
 
-  if (!valid) return null;
+  // ─── Render-output branching ────────────────────────────────────────────
+  // All hooks above run unconditionally; the early returns below only choose
+  // the JSX output.
+  //
+  // Order matters. nullState is a user state, not a render prerequisite —
+  // the empty-state message is a static prompt that doesn't need sex /
+  // bodyweight to render. The sex+bw guard exists for the NORMAL badge
+  // path (threshold table lookup needs both), so it gates only that path,
+  // not the nullState message. Otherwise a skip-onboarding user who hasn't
+  // entered gender/bodyweight gets nothing rendered at all.
+  const rootClass = `user-level-badge${wide ? ' user-level-badge--wide' : ''}`;
+
+  if (nullState) {
+    return (
+      <div className={rootClass}>
+        <div className="user-level-badge__empty-message">
+          Log a workout with a Bench Press, Squat, or Deadlift to start your level progression.
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasSexAndBw) return null;
+
+  if (!Number.isFinite(t)) return null;
 
   // Display tier: pre during Phase A only; post for everything else (snap,
   // phase-b, done, single, idle). Pill, corner labels, and mid-progress all
@@ -146,6 +200,13 @@ function UserLevelBadge({
   const displayedTier = phase === 'phase-a' ? preProgress : postProgress;
   const { fineLevel, nextLevel, currentThreshold, nextThreshold, lbsToNext } = displayedTier;
   const isElite = nextLevel == null;
+
+  // Left corner-value swaps to the anchor when the user is at Beginner 1
+  // and an anchor has been written. Matches the bar-fill math's leftBound
+  // (see computePct above). For all other tiers (or when anchor is null),
+  // shows the threshold-table currentThreshold as before.
+  const useDisplayedAnchor = beginner1Anchor != null && displayedTier.fineLevel === 'Beginner 1';
+  const leftLabel = useDisplayedAnchor ? beginner1Anchor : currentThreshold;
 
   const postPctRounded = Math.round(postEndPct);
   const ariaLabel = postProgress.nextLevel == null
@@ -159,7 +220,6 @@ function UserLevelBadge({
     phase === 'phase-a' ? preStartPct : postEndPct
   );
 
-  const rootClass = `user-level-badge${wide ? ' user-level-badge--wide' : ''}`;
   const fillStyle = transitionStyle
     ? { width: `${fillPct}%`, transition: transitionStyle }
     : { width: `${fillPct}%` };
@@ -199,7 +259,7 @@ function UserLevelBadge({
             />
           </div>
           <div className="user-level-badge__bar-bottom-row">
-            <div className="user-level-badge__bar-corner-value">{currentThreshold}</div>
+            <div className="user-level-badge__bar-corner-value">{leftLabel}</div>
             <div className="user-level-badge__bar-mid-percent">
               {isElite ? <span className="user-level-badge__bar-maxed">Maxed Out</span> : `${displayedPctRounded}%`}
             </div>

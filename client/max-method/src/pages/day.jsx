@@ -8,6 +8,7 @@ import ContextMenu from '../components/ContextMenu';
 import EquipmentSelect from '../components/EquipmentSelect';
 import PostWorkoutModal from '../components/PostWorkoutModal';
 import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
+import { getPersonalBest } from '../utils/exerciseNameNormalize';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(exerciseName) {
@@ -77,7 +78,7 @@ const movementPatterns = {
   "Posterior Upper Accessory": ["Scarecrows", "Rear Delt Flys", "Machine Rear Delt Flys", "Pullovers", "Cable Pullovers", "Shrugs", "DB Shrugs", "Trap Bar Shrugs", "YTWLs"],
   "Bicep Accessory": ["DB Curls", "Barbell Curls", "Ez Bar Curls", "Hammer Curls", "Preacher Curls", "Cable Curls", "Rope Curls", "Incline DB Curls", "Concentration Curls", "Cross Body Hammer Curls"],
   "Hinge": ["Hip Thrusts", "Bodyweight Hip Thrusts", "RDLs", "Trap Bar Deadlifts", "Barbell Glute Bridges", "Bodyweight Glute Bridges", "Single Leg RDLs", "Sumo Deadlift", "Good Mornings"],
-  "Squat Pattern": ["Front Squat", "SSB Squats", "Squats", "Back Squat", "Box Squats", "Bodyweight Squat", "Pendulum Squat", "Leg Press", "Goblet Squat", "Zercher Squat"],
+  "Squat Pattern": ["Front Squat", "SSB Squats", "Squats", "Box Squats", "Bodyweight Squat", "Pendulum Squat", "Leg Press", "Goblet Squat", "Zercher Squat"],
   "Posterior Chain Accessory": ["Back Extensions", "Bodyweight Back Extensions", "Nordics", "Reverse Hypers", "GHD Raises", "Single Leg Hip Thrusts"],
   "Unilateral Lower": ["Bulgarians", "Bodyweight Bulgarians", "Walking Lunges", "Bodyweight Lunges", "ATG Lunges", "Bodyweight ATG Lunges", "Reverse Lunges", "Step Ups"],
   "Isolation Lower": ["Leg Extensions", "Single Leg Extensions", "Seated Leg Curls", "Lying Leg Curls", "Abductor Machine", "Adductor Machine"],
@@ -196,7 +197,7 @@ function Day() {
   const di = parseInt(dayNum, 10) - 1;
 
   const { displayWorkout, assignments, setExercise, log, updateLog, completeDay, loading, error, personalBests } = useWorkout();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
   const viewWorkout = location.state?.viewWorkout ?? null;
   const editMode = location.state?.editMode ?? false;
   const workoutLogId = location.state?.workoutLogId ?? null;
@@ -240,16 +241,17 @@ function Day() {
   }, []);
 
   // day.jsx provides saveAndGetPBs as a synchronous resolution from the
-  // current personalBests state — PRs already flushed into context per-set
-  // via updateLog's pbUpdate response. No save step needed at handleContinue
-  // (completeDay fired before the modal opened). Returns null when no user
-  // is loaded so the hook aborts the classification POST cleanly.
+  // post-completeDay user state. handleCompleteDay patches user.estimated_one_rep_maxes
+  // via setUser BEFORE opening the modal, so by the time saveAndGetPBs runs
+  // (from inside the hook's handleContinue), user.estimated_one_rep_maxes is
+  // already the post-update value. Per-lift fallback to current covers users
+  // whose estimated is still null (pre-migration / pre-first-workout).
   const saveAndGetPBs = async () => {
     if (!user?._id) return null;
     return {
-      bench:    personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0,
-      squat:    personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0,
-      deadlift: personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0,
+      bench:    user.estimated_one_rep_maxes?.bench    ?? user.current_one_rep_maxes?.bench    ?? 0,
+      squat:    user.estimated_one_rep_maxes?.squat    ?? user.current_one_rep_maxes?.squat    ?? 0,
+      deadlift: user.estimated_one_rep_maxes?.deadlift ?? user.current_one_rep_maxes?.deadlift ?? 0,
     };
   };
 
@@ -399,7 +401,7 @@ function Day() {
   const recordPRIfBeaten = (exercise, weight, reps) => {
     const w = parseFloat(weight) || 0;
     if (!w || !exercise) return;
-    const currentPB = personalBests?.[exercise] ?? 0;
+    const currentPB = getPersonalBest(personalBests, exercise);
     if (w > currentPB) {
       setSessionPRs(prev => {
         const existing = prev.find(p => p.exercise === exercise);
@@ -560,7 +562,22 @@ function Day() {
   const completionPct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
 
   const handleCompleteDay = async () => {
-    await completeDay(wi, di);
+    // completeDay returns { e1rmUpdates } from the server's processBig3Progression
+    // pipeline. Patch user.estimated_one_rep_maxes locally so saveAndGetPBs +
+    // PostWorkoutScreen2 see the post-update values without an extra round trip.
+    // Done BEFORE modal.open so the hook's pre-session-capture useEffect has
+    // already locked in (page-load timing) — patching here only shifts the
+    // POST-session value the level bar animates toward.
+    const completeResult = await completeDay(wi, di);
+    const e1rmUpdates = completeResult?.e1rmUpdates ?? [];
+    if (e1rmUpdates.length > 0) {
+      setUser(prev => {
+        if (!prev) return prev;
+        const nextEst = { ...(prev.estimated_one_rep_maxes ?? {}) };
+        for (const u of e1rmUpdates) nextEst[u.lift] = u.after;
+        return { ...prev, estimated_one_rep_maxes: nextEst };
+      });
+    }
 
     // Calculate total volume
     const breakdown = [];
@@ -609,7 +626,7 @@ function Day() {
     }
     const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
     const totalSetsCompleted = breakdown.reduce((sum, e) => sum + e.sets, 0);
-    modal.open({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs });
+    modal.open({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs, e1rmUpdates });
   };
 
   // Group consecutive slots with the same exercise into one card (all slots, order preserved)
@@ -705,7 +722,7 @@ function Day() {
     const isTimed = !isCardio && isTimedSlot(firstSlot);
     const isDistance = !isCardio && isDistanceSlot(firstSlot);
 
-    const pb = personalBests?.[exercise];
+    const pb = getPersonalBest(personalBests, exercise, null);
     const maxActual = Math.max(
         ...items.flatMap(({ si }) =>
             Array.from({ length: groupSetCount }, (_, j) => Number(getSet(si, j).actual) || 0)
@@ -1318,7 +1335,7 @@ function Day() {
           const progPct = setCount > 0 ? Math.round((doneCount / setCount) * 100) : 0;
           const isOpen = openCards[cardKey] ?? false;
 
-          const pb = personalBests?.[exName];
+          const pb = getPersonalBest(personalBests, exName, null);
           const maxActual = Math.max(
             ...Array.from({ length: setCount }, (_, j) => Number(setData[`${si}-${ei}-${j}`]?.actual) || 0)
           );

@@ -1,6 +1,7 @@
 import PostWorkoutScreen1 from './PostWorkoutScreen1';
 import PostWorkoutScreen2 from './PostWorkoutScreen2';
 import { useModalA11y } from '../hooks/useModalA11y';
+import { isNullState } from '../utils/classification';
 
 // Post-workout modal shell — backdrop overlay + dialog panel + screen
 // routing between PostWorkoutScreen1 (summary) and PostWorkoutScreen2
@@ -78,18 +79,30 @@ function PostWorkoutModal({
             onContinue={modal.handleContinue}
             ariaIdPrefix={ariaIdPrefix}
           />
-        ) : (
-          <PostWorkoutScreen2
-            sex={user?.gender}
-            bodyweight={user?.current_bodyweight}
-            oneRMs={user?.current_one_rep_maxes}
-            preFineLevel={modal.preFineLevel}
-            preTotal={modal.preTotal}
-            doneLabel={doneLabel}
-            doneDisabled={false}
-            onDone={modal.handleDone}
-          />
-        )}
+        ) : (() => {
+          // Post-Phase-6: leveling reads from estimated_one_rep_maxes. Per-source
+          // fallback (estimated → current) mirrors bigThreeTotalForUser's rule —
+          // use estimated if ANY lift is non-null, otherwise fall back to current.
+          // Keeps Screen2's UserLevelBadge total consistent with home/pickNewProgram.
+          const est = user?.estimated_one_rep_maxes;
+          const oneRMs = (est && (est.bench != null || est.squat != null || est.deadlift != null))
+            ? est : user?.current_one_rep_maxes;
+          return (
+            <PostWorkoutScreen2
+              sex={user?.gender}
+              bodyweight={user?.current_bodyweight}
+              oneRMs={oneRMs}
+              nullState={isNullState(user)}
+              beginner1Anchor={user?.beginner_1_anchor ?? null}
+              e1rmUpdates={modal.postWorkoutData?.e1rmUpdates ?? []}
+              preFineLevel={modal.preFineLevel}
+              preTotal={modal.preTotal}
+              doneLabel={doneLabel}
+              doneDisabled={false}
+              onDone={modal.handleDone}
+            />
+          );
+        })()}
       </div>
     </div>
   );

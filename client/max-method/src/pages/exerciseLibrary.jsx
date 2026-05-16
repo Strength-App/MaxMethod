@@ -4,6 +4,7 @@ import MuxPlayer from '@mux/mux-player-react'
 import { useWorkout } from '../context/WorkoutContext'
 import './exerciseLibrary.css'
 import { API_URL } from '../config/api';
+import { getPersonalBest } from '../utils/exerciseNameNormalize';
 
 // ─── Library Video Lookup ─────────────────────────────────────────────────────
 
@@ -564,7 +565,7 @@ function DetailView({ exercise, onBack, playbackId }) {
       .finally(() => setHistoryLoading(false))
   }, [exercise.name])
 
-  const pr = personalBests?.[exercise.name] ?? null
+  const pr = getPersonalBest(personalBests, exercise.name, null)
 
   return (
     <div className="el-page">
@@ -806,7 +807,7 @@ function CustomDetailView({ name, onBack }) {
       .finally(() => setHistoryLoading(false))
   }, [name])
 
-  const pr = personalBests?.[name] ?? null
+  const pr = getPersonalBest(personalBests, name, null)
 
   return (
     <div className="el-page">

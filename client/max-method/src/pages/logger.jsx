@@ -8,6 +8,8 @@ import { API_URL } from '../config/api';
 import ContextMenu from '../components/ContextMenu';
 import PostWorkoutModal from '../components/PostWorkoutModal';
 import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
+import { getPersonalBest } from '../utils/exerciseNameNormalize';
+import Toast from '../components/Toast';
 
 const BIG_THREE = ['bench', 'squat', 'deadlift'];
 function getRestSeconds(name) {
@@ -87,7 +89,9 @@ function Logger() {
   const [highlightedIndex, setHighlightedIndex] = useState(null);
 
   const { personalBests, refreshPersonalBests } = useWorkout();
-  const { user } = useUser();
+  const { user, setUser } = useUser();
+  const [finishing, setFinishing] = useState(false);
+  const [errorToast, setErrorToast] = useState(null);
   const userId = localStorage.getItem('userId');
   const defaultTitle = `Quick Workout · ${new Date().toLocaleDateString()}`;
   const [sessionPRs, setSessionPRs] = useState([]);
@@ -195,7 +199,7 @@ function Logger() {
   const recordPRIfBeaten = (exerciseName, weight, reps) => {
     const w = parseFloat(weight) || 0;
     if (!w || !exerciseName) return;
-    const currentPB = personalBests?.[exerciseName] ?? 0;
+    const currentPB = getPersonalBest(personalBests, exerciseName);
     if (w > currentPB) {
       setSessionPRs(prev => {
         const existing = prev.find(p => p.exercise === exerciseName);
@@ -231,78 +235,119 @@ function Logger() {
   const toggleCard = (ei) =>
     setOpenCards(prev => ({ ...prev, [ei]: !prev[ei] }));
 
-  // Save the in-progress quick session and refresh personal_bests in WorkoutContext.
-  // Does NOT navigate — callers compose navigation around it. Returns the
-  // personal_bests object on success, or {} if the refresh failed (workout
-  // still saved — workout-saved-state is independent of PR-refresh-success;
-  // they're separate operations). Returns null only on missing userId or a
-  // thrown /quick-sessions error (the workout itself didn't save).
-  // saveAndExit treats both {} and a populated PBs object as success (truthy);
-  // handleContinue's downstream bench/squat/deadlift resolution falls back to
-  // user.current_one_rep_maxes for any missing PB entries, so an empty-object
-  // return still produces a correct /classification POST body.
+  // Save the in-progress quick session. POSTs to /quick-sessions with
+  // isSessionComplete: true so the server fires processBig3Progression on
+  // the just-saved session. Returns the parsed response body on success
+  // (shape: { message, quickSessionId, e1rmUpdates }) so handleFinishWorkout
+  // can extract e1rmUpdates and patch user.estimated_one_rep_maxes via
+  // setUser before opening the post-workout modal. Returns null on failure
+  // (network error or non-OK response) so callers can branch on truthy.
+  //
+  // refreshPersonalBests stays as a fire-and-forget post-save call so the
+  // WorkoutContext's personalBests state catches up — the next quick session's
+  // per-set PR detection reads from it. Failure to refresh doesn't fail the
+  // save (workout-saved-state is independent of PR-refresh-success).
   const saveSession = async () => {
     if (!userId) return null;
     try {
-      await fetch(`${API_URL}/api/users/quick-sessions`, {
+      const res = await fetch(`${API_URL}/api/users/quick-sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, title: title.trim() || defaultTitle, exercises })
+        body: JSON.stringify({
+          userId,
+          title: title.trim() || defaultTitle,
+          exercises,
+          isSessionComplete: true,
+        }),
       });
-      return (await refreshPersonalBests()) ?? {};
+      if (!res.ok) return null;
+      const data = await res.json().catch(() => ({}));
+      refreshPersonalBests().catch(() => null);
+      return data;
     } catch (err) {
       console.error('Failed to save session:', err);
       return null;
     }
   };
 
-  // Backdrop-on-screen-1 path: existing "save and exit straight to history"
-  // contract preserved. Internal body delegates to saveSession(); the modal
-  // is already closed by usePostWorkoutModal's handleSummaryBackdrop before
-  // this fires, so no spinner state is needed here.
-  const saveAndExit = async () => {
-    const ok = await saveSession();
-    if (ok) navigate('/history');
+  // Backdrop-on-screen-1 path: by the time this fires, handleFinishWorkout
+  // has already saved the session. Just navigate. (Pre-Path-A this also
+  // called saveSession to handle the modal-opened-without-save state; that
+  // state no longer exists.)
+  const saveAndExit = () => {
+    navigate('/history');
   };
 
 
-  const handleFinishWorkout = () => {
+  // Path A: save FIRST (POST /quick-sessions with isSessionComplete: true),
+  // capture e1rmUpdates from response, patch user.estimated_one_rep_maxes
+  // via setUser (day.jsx handleCompleteDay pattern), build the summary
+  // breakdown, then open the modal with e1rmUpdates in the payload. This
+  // mirrors day.jsx's "commit before modal" semantics so Screen 2's badge,
+  // big-3 total, and e1rm-delta block all see post-update state.
+  //
+  // On save failure: show an error toast and DO NOT open the modal. The
+  // user can retry by clicking Finish Workout again.
+  //
+  // `finishing` state disables the Finish Workout button + shows "Saving…"
+  // during the await so double-clicks don't fire duplicate POSTs.
+  const handleFinishWorkout = async () => {
     if (exercises.length === 0) return;
-    const breakdown = [];
-    exercises.forEach(ex => {
-      let vol = 0, sets = 0;
-      const setDetails = [];
-      ex.sets.forEach(s => {
-        if (!s.done) return;
-        const reps = parseInt(s.reps) || 0;
-        const weight = parseFloat(s.weight) || 0;
-        vol += reps * weight;
-        sets++;
-        setDetails.push({ reps, weight });
+    if (finishing) return;
+    setFinishing(true);
+    try {
+      const saved = await saveSession();
+      if (!saved) {
+        setErrorToast({ message: 'Failed to save workout. Please try again.' });
+        return;
+      }
+
+      // Patch user.estimated_one_rep_maxes from e1rmUpdates response.
+      // Mirror of day.jsx handleCompleteDay's setUser pattern: functional
+      // updater, null guard, two-level spread, per-lift assignment.
+      const e1rmUpdates = Array.isArray(saved.e1rmUpdates) ? saved.e1rmUpdates : [];
+      if (e1rmUpdates.length > 0) {
+        setUser(prev => {
+          if (!prev) return prev;
+          const nextEst = { ...(prev.estimated_one_rep_maxes ?? {}) };
+          for (const u of e1rmUpdates) nextEst[u.lift] = u.after;
+          return { ...prev, estimated_one_rep_maxes: nextEst };
+        });
+      }
+
+      const breakdown = [];
+      exercises.forEach(ex => {
+        let vol = 0, sets = 0;
+        const setDetails = [];
+        ex.sets.forEach(s => {
+          if (!s.done) return;
+          const reps = parseInt(s.reps) || 0;
+          const weight = parseFloat(s.weight) || 0;
+          vol += reps * weight;
+          sets++;
+          setDetails.push({ reps, weight });
+        });
+        if (sets > 0) breakdown.push({ name: ex.name, volume: vol, sets, setDetails });
       });
-      if (sets > 0) breakdown.push({ name: ex.name, volume: vol, sets, setDetails });
-    });
-    const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
-    const totalSetsCompleted = breakdown.reduce((sum, e) => sum + e.sets, 0);
-    modal.open({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs });
+      const totalVolume = breakdown.reduce((sum, e) => sum + e.volume, 0);
+      const totalSetsCompleted = breakdown.reduce((sum, e) => sum + e.sets, 0);
+      modal.open({ totalVolume, totalSets: totalSetsCompleted, breakdown, prs: sessionPRs, e1rmUpdates });
+    } finally {
+      setFinishing(false);
+    }
   };
 
-  // logger.jsx provides saveAndGetPBs as the batch-save-then-resolve flow:
-  // saveSession POSTs /quick-sessions, refreshes /personal-bests, returns
-  // the fresh PBs (or {} on refresh failure — workout still saved). We
-  // resolve bench/squat/deadlift from the return with user.current_one_rep_maxes
-  // fallback for any missing PBs (handles the empty-{} case from
-  // saveSession's workout-saved-but-refresh-failed path). Returns null only
-  // when the workout itself didn't save (saveSession returned null), which
-  // aborts the classification POST cleanly via the hook's !oneRMs guard.
+  // Post-Path-A: saveAndGetPBs is a pure read. handleFinishWorkout already
+  // saved the session and patched user.estimated_one_rep_maxes; this just
+  // resolves the bench/squat/deadlift values the hook sends to /classification
+  // for reclassification. Returns null when user isn't loaded so the hook
+  // aborts the classification POST cleanly.
   const saveAndGetPBs = async () => {
     if (!userId || !user?._id) return null;
-    const pbs = await saveSession();
-    if (!pbs) return null;
     return {
-      bench:    pbs['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0,
-      squat:    pbs['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0,
-      deadlift: pbs['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0,
+      bench:    user.estimated_one_rep_maxes?.bench    ?? user.current_one_rep_maxes?.bench    ?? 0,
+      squat:    user.estimated_one_rep_maxes?.squat    ?? user.current_one_rep_maxes?.squat    ?? 0,
+      deadlift: user.estimated_one_rep_maxes?.deadlift ?? user.current_one_rep_maxes?.deadlift ?? 0,
     };
   };
 
@@ -312,17 +357,25 @@ function Logger() {
     onSummaryBackdrop: () => { saveAndExit(); },
   });
 
-  // Synthetic-session patch (Flag #5): the just-finished quick session
-  // hasn't been POSTed to /quick-sessions yet — saveAndExit fires when the
-  // user dismisses this modal. We patch in a same-day session so streaks
-  // reflect the workout the user just visibly completed. Shape-mirrors the
-  // API's quick-session output (programTitle: null, weekNumber: null) so
-  // the bucket key collapses identically with future fetched sessions.
-  // The useMemo stabilizes the array reference so useWorkoutStats's
-  // [sessions] dep doesn't refire every render.
+  // Synthetic-session placeholder: bridges the timing window between modal
+  // open and the /all-history fetch resolving (the hook fetches lazily on
+  // modal.postWorkoutData becoming truthy). Without it, streak stats would
+  // flash "0 sessions" until the fetch landed.
+  //
+  // Post-Path-A, handleFinishWorkout POSTs the session BEFORE modal.open,
+  // so /all-history's response includes the just-saved session. To avoid
+  // double-counting (useWorkoutStats's totalSessions and thisMonth don't
+  // dedupe by date), only inject the synthetic when historySessions has
+  // no entry for today yet — i.e., during the fetch-pending window.
   const sessionsForStats = useMemo(() => {
     if (!modal.postWorkoutData) return modal.historySessions;
     const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayMs = today.getTime();
+    const hasTodaySession = modal.historySessions.some(s => {
+      const d = new Date(s.date); d.setHours(0, 0, 0, 0);
+      return d.getTime() === todayMs;
+    });
+    if (hasTodaySession) return modal.historySessions;
     return [...modal.historySessions, { date: today, programTitle: null, weekNumber: null }];
   }, [modal.historySessions, modal.postWorkoutData]);
   const { totalSessions, weeksLogged, thisMonth, daysThisWeek } = useWorkoutStats(sessionsForStats);
@@ -747,9 +800,10 @@ function Logger() {
         <button
           className="btn-complete"
           onClick={handleFinishWorkout}
-          disabled={exercises.length === 0}
+          disabled={exercises.length === 0 || finishing}
+          aria-label={finishing ? 'Saving session' : 'Finish workout'}
         >
-          Finish Workout
+          {finishing ? 'Saving…' : 'Finish Workout'}
         </button>
       </div>
 
@@ -761,6 +815,15 @@ function Logger() {
         onClose={() => setContextMenu(null)}
         returnFocusRef={menuReturnFocusRef}
       />
+
+      <Toast
+        open={!!errorToast}
+        onDismiss={() => setErrorToast(null)}
+        autoDismissMs={6000}
+        role="alert"
+      >
+        {errorToast?.message}
+      </Toast>
     </div>
   );
 }

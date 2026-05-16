@@ -54,19 +54,26 @@ export function usePostWorkoutModal({ saveAndGetPBs, doneNavigate, onSummaryBack
   const [historySessions, setHistorySessions] = useState([]);
 
   // Capture pre-session fine-level + total ONCE on first valid render.
-  // Gate (preFineLevel !== null) locks the snapshot in so any inline
-  // pb-check raising personal_bests during the session can't shift it.
+  // Gate (preFineLevel !== null) locks the snapshot in so subsequent state
+  // updates (per-set PBs raising during the session, or estimated_one_rep_maxes
+  // being patched in handleCompleteDay after the workout finishes) can't shift it.
+  //
+  // Post-Phase-6: pre-session math reads estimated_one_rep_maxes (the leveling
+  // source) with per-lift fallback to current_one_rep_maxes for users whose
+  // estimated is still null (pre-M1 migration / pre-first-workout). The lock
+  // happens at page load — handleCompleteDay's setUser patch fires later and
+  // doesn't move this captured value.
   useEffect(() => {
     if (preFineLevel !== null) return;
     if (!user?.gender || !user?.current_bodyweight) return;
-    const bench    = personalBests?.['Bench Press'] ?? user.current_one_rep_maxes?.bench    ?? 0;
-    const squat    = personalBests?.['Squat']       ?? user.current_one_rep_maxes?.squat    ?? 0;
-    const deadlift = personalBests?.['Deadlift']    ?? user.current_one_rep_maxes?.deadlift ?? 0;
+    const bench    = user.estimated_one_rep_maxes?.bench    ?? user.current_one_rep_maxes?.bench    ?? 0;
+    const squat    = user.estimated_one_rep_maxes?.squat    ?? user.current_one_rep_maxes?.squat    ?? 0;
+    const deadlift = user.estimated_one_rep_maxes?.deadlift ?? user.current_one_rep_maxes?.deadlift ?? 0;
     const total = bench + squat + deadlift;
     if (total <= 0) return;
     setPreFineLevel(fineLevel({ sex: user.gender, bodyweight: user.current_bodyweight, total }));
     setPreTotal(total);
-  }, [user, personalBests, preFineLevel]);
+  }, [user, preFineLevel]);
 
   // Reset to screen 1 every time the modal newly opens.
   useEffect(() => {
@@ -102,8 +109,18 @@ export function usePostWorkoutModal({ saveAndGetPBs, doneNavigate, onSummaryBack
   const handleContinue = async () => {
     setContinuing(true);
     try {
+      // saveAndGetPBs (parent-provided) returns the POST-update estimated
+      // values: in day.jsx flow, handleCompleteDay has already patched
+      // user.estimated_one_rep_maxes via setUser BEFORE the modal opened;
+      // in logger.jsx flow, the e1rmUpdates path is gap-blocked (documented
+      // there) so the returned values are pre-update for quick sessions.
       const oneRMs = await saveAndGetPBs();
       if (!oneRMs) return;
+      // mode: "reclassify-only" — the server computes a fresh classification
+      // string from these maxes but does NOT write current_one_rep_maxes,
+      // estimated_one_rep_maxes, or bodyweight_history. Estimated is the
+      // canonical leveling source and was already raised (in day.jsx flow)
+      // by processBig3Progression's dotted-path write inside the route.
       const res = await fetch(`${API_URL}/api/users/classification`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -114,6 +131,7 @@ export function usePostWorkoutModal({ saveAndGetPBs, doneNavigate, onSummaryBack
           squat: oneRMs.squat,
           deadlift: oneRMs.deadlift,
           bodyWeight: user.current_bodyweight,
+          mode: 'reclassify-only',
         }),
       });
       if (res.ok) {
@@ -123,6 +141,7 @@ export function usePostWorkoutModal({ saveAndGetPBs, doneNavigate, onSummaryBack
           classData: data,
           bodyweight: user.current_bodyweight,
           oneRMs,
+          mode: 'reclassify-only',
         }));
       }
     } catch (err) {

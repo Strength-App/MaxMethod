@@ -237,7 +237,7 @@ export function WorkoutProvider({ children }) {
     });
 
     try {
-      await fetch(`${API_URL}/api/users/workout/complete-day`, {
+      const res = await fetch(`${API_URL}/api/users/workout/complete-day`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -247,9 +247,18 @@ export function WorkoutProvider({ children }) {
         })
       });
       await fetchWorkout(userId);
-
+      // Surface the server's e1rmUpdates so day.jsx can patch user.estimated_one_rep_maxes
+      // via setUser before the post-workout modal opens (the modal's pre-session
+      // capture has already locked in by then; setUser only updates the post-session
+      // level math, not pre).
+      if (res.ok) {
+        const data = await res.json().catch(() => ({}));
+        return { e1rmUpdates: data.e1rmUpdates ?? [] };
+      }
+      return { e1rmUpdates: [] };
     } catch (err) {
       console.error('Failed to mark day complete:', err);
+      return { e1rmUpdates: [] };
     }
   }, [userId, fetchWorkout]);
 

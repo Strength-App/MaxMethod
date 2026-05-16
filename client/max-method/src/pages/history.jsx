@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { API_URL } from '../config/api';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
+import { useUser } from '../context/UserContext';
 import Toast from '../components/Toast';
 import { ALL_EXERCISES } from './exerciseLibrary';
 
@@ -506,6 +507,7 @@ function AddExerciseTypeahead({ onSelect, onCancel, autoFocus }) {
 }
 
 export default function History() {
+  const { setUser } = useUser();
   const [view, setView] = useState('timeline');
   const [calYear, setCalYear] = useState(new Date().getFullYear());
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
@@ -849,6 +851,13 @@ export default function History() {
         editOps.adds.sets.length + editOps.adds.slots.length > 0;
 
       const pbAggregator = new Map();
+      // Per-lift max-after for estimated_one_rep_maxes patching. Server's
+      // processBig3Progression is monotonic-raise per call; the highest
+      // `after` seen across N parallel PATCH responses is the closest-to-
+      // reality client view regardless of server-side race ordering. Mirrors
+      // day.jsx handleCompleteDay's Phase-6 setUser pattern, applied below
+      // after all PATCHes settle.
+      const e1rmAggregator = new Map();
       let anyFailed = false;
       const collectPb = (r) => {
         if (r.status === 'rejected' || !r.value.ok) { anyFailed = true; return; }
@@ -858,6 +867,12 @@ export default function History() {
           if (!existing || Math.abs(pb.newPB - pb.oldPB) > Math.abs(existing.newPB - existing.oldPB)) {
             pbAggregator.set(pb.exercise, pb);
           }
+        }
+        for (const u of (r.value.data?.e1rmUpdates ?? [])) {
+          const after = Number(u.after);
+          if (!Number.isFinite(after)) continue;
+          const prior = e1rmAggregator.get(u.lift);
+          if (prior == null || after > prior) e1rmAggregator.set(u.lift, after);
         }
       };
 
@@ -961,6 +976,21 @@ export default function History() {
       );
       for (const r of patchResults) collectPb(r);
 
+      // Patch user.estimated_one_rep_maxes locally so home / settings /
+      // pickNewProgram see the post-update leveling source on next render
+      // without an extra round trip. Mirror of day.jsx handleCompleteDay's
+      // Phase-6 pattern: functional updater + null guard + per-lift merge.
+      // No-op when e1rmAggregator is empty (no big-3 sets affected by the
+      // edits, or only structural/non-PATCH responses).
+      if (e1rmAggregator.size > 0) {
+        setUser(prev => {
+          if (!prev) return prev;
+          const nextEst = { ...(prev.estimated_one_rep_maxes ?? {}) };
+          for (const [lift, after] of e1rmAggregator) nextEst[lift] = after;
+          return { ...prev, estimated_one_rep_maxes: nextEst };
+        });
+      }
+
       // Final reconciliation
       await loadHistory();
       setModal(null);
@@ -997,7 +1027,7 @@ export default function History() {
     } finally {
       setSaving(false);
     }
-  }, [modal, originalSlots, editDraft, editOps, hasPendingOps, loadHistory]);
+  }, [modal, originalSlots, editDraft, editOps, hasPendingOps, loadHistory, setUser]);
 
   const handleUndo = useCallback(async () => {
     if (!pbToast || pbToast.structural) return; // Undo unavailable for structural saves

@@ -1,7 +1,7 @@
 import { useState, useEffect, useId } from 'react'
 import { useUser } from '../context/UserContext'
 import UserLevelBadge from '../components/UserLevelBadge'
-import { bigThreeTotal } from '../utils/classification'
+import { bigThreeTotal, isNullState } from '../utils/classification'
 import {
     ResponsiveContainer,
     LineChart,
@@ -96,6 +96,8 @@ function Settings() {
                         sex={gender}
                         bodyweight={currentBodyweight}
                         total={bigThreeTotal(currentOneRMs)}
+                        nullState={isNullState(user)}
+                        beginner1Anchor={user?.beginner_1_anchor ?? null}
                         showProgress
                     />
                 </div>
