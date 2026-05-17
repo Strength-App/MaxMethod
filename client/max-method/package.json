@@ -8,6 +8,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "lint:suppressions-check": "node scripts/check-suppressions.cjs",
+    "lint:suppressions-prune": "eslint . --prune-suppressions",
     "preview": "vite preview"
   },
   "dependencies": {

@@ -52,9 +52,11 @@ These rules govern *how* the agent works in this codebase. They were established
 
 17. **Disable an ESLint rule only with a justifying comment.** Bulk-disabling is almost always wrong.
 
+18. **Shrink `eslint-suppressions.json` when you touch its files.** When touching a file with entries in `client/max-method/eslint-suppressions.json`, address that file's suppressions as part of the batch's work — either fix the violations (and run `npm run lint:suppressions-prune` from `client/max-method/` to clean the file) or, for genuine bugs scheduled for a later batch, leave them and document why in the batch summary. **The suppressions list shrinks with every batch that touches a listed file; it never grows.** New ESLint violations in any file always fail CI. See [`docs/decisions.md#lint-suppressions-baseline`](docs/decisions.md#lint-suppressions-baseline) and [`docs/follow-ups.md#lint-suppressions-shrinkage`](docs/follow-ups.md#lint-suppressions-shrinkage).
+
 ### Verification rules
 
-18. **Match the tool to the question.**
+19. **Match the tool to the question.**
     - RTL = behavior. `getByRole({ name })`, not `getByTestId`.
     - Axe = static a11y. Necessary, not sufficient — doesn't catch cognitive a11y, reading order, pronunciation.
     - Coverage = diagnostic. Per-category, per-batch reporting. **Never a CI gate.** Targets are in `vitest.config.js` as comments, not thresholds.
@@ -62,7 +64,7 @@ These rules govern *how* the agent works in this codebase. They were established
     - Keyboard tests = interaction. `userEvent.keyboard()`, not `fireEvent`. Assert on `toHaveFocus` + ARIA, not internal state.
     See [`docs/decisions.md#coverage-philosophy`](docs/decisions.md#coverage-philosophy), [`#accessibility-testing`](docs/decisions.md#accessibility-testing), [`#keyboard-testing`](docs/decisions.md#keyboard-testing), [`#visual-regression`](docs/decisions.md#visual-regression).
 
-19. **JSDoc thorough on the public boundary, terse internally.** `@param` + `@returns` + non-obvious behavior + edge cases on every export. Internal helpers: one-line WHY only when non-obvious. Don't restate what the signature already says.
+20. **JSDoc thorough on the public boundary, terse internally.** `@param` + `@returns` + non-obvious behavior + edge cases on every export. Internal helpers: one-line WHY only when non-obvious. Don't restate what the signature already says.
 
 ---
 

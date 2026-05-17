@@ -385,3 +385,45 @@ The entries below were settled during Phase 1 planning. They govern Batches 0–
 **Rationale.** Disciplined per-batch reporting makes Batch 16 mostly mechanical. If Batch 16 finds itself doing significant new analysis, that's a signal earlier batches under-reported and the gap should be filled now (not retroactively reconstructed).
 
 **Revisit conditions.** N/A.
+
+---
+
+### lint-suppressions-baseline
+
+**Decision.** Pre-existing ESLint violations in `client/max-method/` (79 errors across 17 files, surfaced by CI in Batch 0) are baselined via ESLint 9.24+'s native suppressions feature. `client/max-method/eslint-suppressions.json` captures the exact set of suppressed violations (file × rule × count) and is committed to the repo. The main `lint` script (`eslint .`) reads the file automatically; CI passes on the baseline. New violations of any rule in any file fail CI normally. A `lint:suppressions-check` script (Node wrapper) surfaces stale entries (suppressions whose violations no longer occur) and is wired into CI as a **non-blocking warning step** initially. `lint:suppressions-prune` (a wrapper around `eslint . --prune-suppressions`) provides the cleanup command. Each batch that touches a file with suppressions is expected to shrink that file's entries.
+
+**Alternatives considered.**
+- *Loosen the failing rule set* (option d in the original triage): permanently weakens lint signal; rejected because the failing rules catch real bugs already scheduled for plan-allocated batches.
+- *Dedicated Batch 0.5 fixing all 79 errors* (option b): wrong shape for the bug-tier errors (Rules-of-Hooks, set-state-in-effect, immutability, no-dupe-keys), all of which have plan-specified characterization-tests-first shapes in their assigned batches. Folding them into a "lint cleanup" pass violates the discipline.
+- *Manual hybrid — ignore-list bug-shaped errors, fix the cheap ones in Batch 0.5* (option c): directionally right, but the suppressions feature is purpose-built for exactly this and produces a per-file × per-rule × per-count baseline that's strictly more precise than manual triage.
+- *Coarser implementations of option a* (warn-mode, `--max-warnings <N>`): count-based gates are fragile (a *different* file's new warning can replace a fixed warning); the suppressions feature's per-file precision is the correct granularity.
+
+**Rationale.** Preserves the framework's "CI gates merges" property immediately, blocks regression in any file, lets each bug-tier error stay in its plan-allocated batch with characterization tests, and produces a shrinkage curve that's visible in the suppressions-file diff each batch. The shrinkage discipline is captured as meta-rule #18 in `CLAUDE.md`.
+
+**ESLint 9 mechanics worth knowing.**
+- `--suppress-all` writes/updates `eslint-suppressions.json` (default location).
+- Default `eslint .` reads it and exit-0s on suppressed violations.
+- Stale entries surface as a console notice ("There are suppressions left that do not occur anymore") but **do not fail with non-zero exit**. The `check-suppressions.cjs` script (`client/max-method/scripts/`) parses this notice and exits 1 when found — that's how CI surfaces shrinkage.
+- `--prune-suppressions` removes unused entries (run via `npm run lint:suppressions-prune`).
+- Only **errors** are suppressed by `--suppress-all`. Warnings (in our case 14 × `react-hooks/exhaustive-deps`) remain visible in lint output but don't fail CI either (warnings don't fail unless `--max-warnings 0`).
+
+**Revisit conditions.**
+- Suppressions file reaches zero entries (delete the file and remove the related scripts/CI step).
+- The shrinkage cadence proves stable across several batches (flip the `lint:suppressions-check` CI step from `continue-on-error: true` to blocking).
+- ESLint releases a breaking change to the suppressions API.
+
+---
+
+### within-file-key-duplication-finding
+
+**Decision.** ESLint's `no-dupe-keys` rule (32 errors) surfaced **within-file duplicate keys** in object literals in `exerciseLibrary.jsx` (22) and `reviewProgram.jsx` (10) — a problem **distinct from the cross-file duplication** the plan had already identified for Batch 3's `config/exercises.js` consolidation. Within-file duplication means later keys silently overwrite earlier ones in the same object literal, causing **runtime data loss** in the lookup tables: some movement/equipment pairings declared earlier in the file are not actually being applied.
+
+The resolution: Batch 3 ground-truths each duplicate against the unmodified runtime behavior (same shape as Risk #6's day-filter ground-truth step), produces `docs/comparisons/exercise-map-truth-table.md` recording which value wins for each duplicated key, and resolves the duplicates as part of consolidating the maps into `config/exercises.js`. The associated implementation work is tracked in `docs/follow-ups.md#exercise-map-dedup-rule` until Batch 3 lands.
+
+**Alternatives considered.**
+- *Fix the duplicates in Batch 0 / 0.5 as a quick `no-dupe-keys` cleanup*: rejected because removing a duplicate key is a behavior change (the silently-overwritten value disappears or the silently-winning value disappears, depending on which one we keep). Without ground-truthing against runtime behavior, the "fix" risks changing observable mappings.
+- *Treat as a Batch 12 (`exerciseLibrary.jsx`) and Batch 11 (`reviewProgram.jsx`) heavy-refactor concern, not Batch 3*: rejected because the duplicated maps are the same data that's being consolidated into `config/exercises.js`. Fixing the dedup in Batch 3 means the H-batches consume already-resolved data.
+
+**Rationale.** Surfaced by CI enforcement after Batch 0 — exactly the kind of latent bug the lint baseline was supposed to surface. Treating it as a separate ADR (rather than folding into `#lint-suppressions-baseline` or just a follow-up) preserves the discovery as a learnable historical artifact: the absence of CI lint enforcement let runtime data loss accumulate undetected.
+
+**Revisit conditions.** Batch 3 ground-truthing reveals the duplicates aren't actually silent (e.g., they're identical values and the duplication is cosmetic) — then this ADR amends to reflect that and the work changes shape.
