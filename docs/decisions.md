@@ -98,13 +98,15 @@ The entries below were settled during Phase 1 planning. They govern Batches 0–
 
 ### test-lint-plugins
 
-**Decision.** Install `eslint-plugin-testing-library`, `eslint-plugin-jest-dom`, and `eslint-plugin-vitest`. Configure each with its **recommended preset** (no custom rule selection), scoped to `**/*.test.{js,jsx}` via the `files` constraint. Violations are CI-blocking like any other lint failure. Per-line disables require justification comments.
+**Decision.** Install `eslint-plugin-testing-library`, `eslint-plugin-jest-dom`, and **`@vitest/eslint-plugin`**. Configure each with its **recommended preset** (no custom rule selection), scoped to `**/*.test.{js,jsx}` via the `files` constraint. Violations are CI-blocking like any other lint failure. Per-line disables require justification comments.
 
-**Alternatives considered.** Adding only `testing-library` saves dep count but loses the jest-dom matcher checks. Skipping all three defers cost.
+**Substitution note (2026-05-17, Batch 1).** Originally named `eslint-plugin-vitest@0.5.4` at plan time; substituted `@vitest/eslint-plugin@^1.6.17` during Batch 1's dep approval. The legacy package (`veritem/eslint-plugin-vitest`) has been stale since 2024 — last npm publish over a year ago. The Vitest organization's actively-maintained official version lives at `vitest-dev/eslint-plugin-vitest` under the `@vitest/eslint-plugin` package name with the same purpose, same recommended-preset shape, and ongoing maintenance. The substitution is purely a tracking-the-maintained-fork correction, not a behavior change.
 
-**Rationale.** Test-lint catches common footguns automatically (e.g., `container.querySelector` instead of `getByRole`). Cheap; benefits every test. Scoping to test files keeps the rules out of production code where they don't apply.
+**Alternatives considered.** Adding only `testing-library` saves dep count but loses the jest-dom matcher checks. Skipping all three defers cost. Pinning the legacy `eslint-plugin-vitest@0.5.4` was considered and rejected — actively-maintained tooling beats deprecated tooling, all else equal.
 
-**Revisit conditions.** A plugin's recommended preset becomes inappropriately aggressive.
+**Rationale.** Test-lint catches common footguns automatically (e.g., `container.querySelector` instead of `getByRole`, `no-focused-tests`, `expect-expect`). Cheap; benefits every test. Scoping to test files keeps the rules out of production code where they don't apply.
+
+**Revisit conditions.** A plugin's recommended preset becomes inappropriately aggressive. The legacy `eslint-plugin-vitest` resumes maintenance and overtakes `@vitest/eslint-plugin` in rule coverage (unlikely).
 
 ---
 
@@ -117,6 +119,12 @@ The entries below were settled during Phase 1 planning. They govern Batches 0–
 **Rationale.** TS migration is a separate, much larger initiative deserving its own focused decision-making. The current refactor's value comes from bounded scope.
 
 **Revisit conditions.** Type-related bugs become a meaningful source of regressions, or the team decides to commit to TS as a primary initiative.
+
+**Note on transitive TypeScript dependency (2026-05-17, Batch 1).** As of Batch 1, `typescript@6.0.3` appears in `node_modules` as a transitive of `@vitest/eslint-plugin` → `@typescript-eslint/utils` → `@typescript-eslint/typescript-estree` (which declares `typescript: ">=4.8.4 <6.1.0"` as a required peer dependency). It also appears transitively under `msw` (CLI tooling). Both consumers dedupe to the same `6.0.3` resolution.
+
+This does **not** contradict the out-of-scope decision: TypeScript is present as a parser library used internally by lint tooling, not as a source-language compiler. The codebase remains JavaScript-only — no `tsconfig.json`, no `.ts/.tsx` files, no `tsc` invocation in any npm script. The transitive is unavoidable while retaining any modern Vitest lint plugin: the legacy `eslint-plugin-vitest@0.5.4` named in the original plan has the same transitive via `@typescript-eslint/utils@^7.7.1`.
+
+If you see `typescript` in `node_modules` and wonder "I thought TypeScript was out of scope?" — this is why. The decision still stands for source-language commitments.
 
 ---
 
