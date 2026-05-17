@@ -1,7 +1,7 @@
 /**
  * Vitest global setup — runs once per worker before any test file.
  *
- * Three responsibilities:
+ * Four responsibilities:
  *   1. Register @testing-library/jest-dom matchers globally
  *      (toBeInTheDocument, toHaveFocus, toHaveAttribute, ...).
  *   2. Mock browser APIs jsdom doesn't implement but the codebase uses.
@@ -12,14 +12,15 @@
  *      window.scrollTo) are not used and are not mocked.
  *      requestAnimationFrame / cancelAnimationFrame are handled
  *      natively by jsdom@29 and need no mock either.
- *   3. (Future commits will wire MSW server lifecycle here.)
+ *   3. Wire MSW server lifecycle (listen / resetHandlers / close).
  *
  * See docs/decisions.md#dom-environment for the jsdom choice rationale
  * and CLAUDE.md "Surprising things" for the audit findings.
  */
 
 import '@testing-library/jest-dom/vitest';
-import { vi } from 'vitest';
+import { vi, beforeAll, afterEach, afterAll } from 'vitest';
+import { server } from './msw/server.js';
 
 // =============================================================================
 // window.matchMedia
@@ -153,3 +154,23 @@ class MockAudioContext {
 
 window.AudioContext = MockAudioContext;
 window.webkitAudioContext = MockAudioContext;
+
+// =============================================================================
+// MSW server lifecycle
+// =============================================================================
+//
+// `onUnhandledRequest: 'error'` fails any test that makes a network
+// request the test author didn't explicitly mock. Catches accidental
+// network coupling early — if a component fetches but its test forgot
+// to install a handler, the test fails loudly instead of producing a
+// flaky timeout or a silent fall-through.
+//
+// `resetHandlers` after each test undoes per-test `server.use(...)`
+// overrides so tests stay isolated. Default handlers (currently empty
+// — see ./msw/handlers.js) survive the reset.
+//
+// `server.close` at suite end releases the MSW interceptors.
+
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => server.resetHandlers());
+afterAll(() => server.close());
