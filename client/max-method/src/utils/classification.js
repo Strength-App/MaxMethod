@@ -1,16 +1,32 @@
-// 13-level fine classification, derived client-side from the user's
-// (sex, bodyweight, big-3 total). Bucket-stepped so the rollup of fine →
-// coarse always equals the server's existing 5-level coarse classification
-// (positions [3, 6, 9, 12] of every row equal the server's 4 coarse boundaries).
-//
-// MIRROR: the threshold tables (MALE_THRESHOLDS / FEMALE_THRESHOLDS) and the
-// FINE_LABELS array below are mirrored in
-// Backend_structure/src/utils/levelProgress.js, which the classification
-// handler uses to detect Beginner-1 entry for the anchor write. The
-// table-parity unit test at Backend_structure/tests/unit/levelProgress.test.js
-// asserts deepEqual against a fixture copied from this file — if either side
-// drifts, that test fails. When updating any threshold, edit BOTH files AND
-// the test fixture.
+/**
+ * Client-side 13-level fine classification, derived from
+ * (sex, bodyweight, big-3 total). Bucket-stepped so the rollup of
+ * fine → coarse always equals the server's existing 5-level coarse
+ * classification (positions [3, 6, 9, 12] of every row equal the
+ * server's 4 coarse boundaries).
+ *
+ * **Mirror constraint.** The threshold tables (`MALE_THRESHOLDS` /
+ * `FEMALE_THRESHOLDS`) and the `FINE_LABELS` array MUST match
+ * `Backend_structure/src/utils/levelProgress.js`, which the
+ * classification handler uses to detect Beginner-1 entry for the
+ * anchor write. The table-parity unit test at
+ * `Backend_structure/tests/unit/levelProgress.test.js` asserts
+ * deepEqual against a fixture copied from this file — if either side
+ * drifts, that test fails. When updating any threshold, edit BOTH
+ * files AND the test fixture. This discipline is locked in
+ * `docs/decisions.md#mirrored-utils`.
+ *
+ * **Sex handling.** `"female"` uses `FEMALE_THRESHOLDS`; anything else
+ * (including `"other"`, `undefined`, missing) rolls to
+ * `MALE_THRESHOLDS`. Matches server behavior at userController.js:33.
+ *
+ * **Bucketing.** Bodyweight is `Math.floor(bw / 10) * 10`, clamped
+ * to the row range (male 110–310, female 90–260). A 215lb male
+ * floors to row 210, not 220 — the floor-then-clamp ordering matters.
+ *
+ * **Threshold comparison.** `findFineIndex` uses `>=`. A total
+ * exactly equal to a threshold promotes to that level.
+ */
 
 const MALE_THRESHOLDS = {
   110: [292, 326, 360, 394, 435, 477, 518, 565, 611, 658, 708, 758, 808],
@@ -94,6 +110,7 @@ function getThresholds(sex, bodyweight) {
   return tableFor(sex)[row];
 }
 
+// >= comparison: a total exactly at a threshold promotes to that level.
 function findFineIndex(thresholds, total) {
   const t = Number(total);
   let idx = 0;
@@ -104,17 +121,91 @@ function findFineIndex(thresholds, total) {
   return idx;
 }
 
+/**
+ * Classify a user's big-3 total into one of 13 fine levels.
+ *
+ * @param {object} params
+ * @param {'female'|'male'|'other'|string|undefined} params.sex
+ *   `"female"` uses female table; any other value (including `"other"`,
+ *   `undefined`, `null`) uses the male table.
+ * @param {number|string} params.bodyweight  Floored to the nearest 10
+ *   and clamped to the row range (male 110–310, female 90–260).
+ * @param {number|string} params.total  Sum of bench + squat + deadlift.
+ *   Coerced via `Number()`.
+ *
+ * @returns {string} One of the 13 labels: `"Beginner 1"`..`"Beginner 3"`,
+ *   `"Novice 1"`..`"Novice 3"`, `"Intermediate 1"`..`"Intermediate 3"`,
+ *   `"Advanced 1"`..`"Advanced 3"`, `"Elite"`. Totals below the first
+ *   threshold floor to `"Beginner 1"`; totals at or above the Elite
+ *   threshold are `"Elite"`.
+ *
+ * @example
+ * fineLevel({ sex: 'male', bodyweight: 200, total: 686 })  // 'Beginner 2' (exact threshold)
+ * fineLevel({ sex: 'male', bodyweight: 200, total: 685 })  // 'Beginner 1'
+ * fineLevel({ sex: 'female', bodyweight: 150, total: 503 })  // 'Intermediate 1'
+ * fineLevel({ sex: 'other', bodyweight: 200, total: 686 })  // 'Beginner 2' (male table)
+ */
 export function fineLevel({ sex, bodyweight, total }) {
   const thresholds = getThresholds(sex, bodyweight);
   const idx = findFineIndex(thresholds, total);
   return FINE_LABELS[idx];
 }
 
+/**
+ * Roll a fine label up to its coarse (5-level) bucket.
+ *
+ * @param {string} fineLabel  One of the 13 fine labels.
+ *
+ * @returns {string|null} One of `"Beginner"`, `"Novice"`,
+ *   `"Intermediate"`, `"Advanced"`, `"Elite"`. Returns `null` for any
+ *   unrecognized label (including empty string, `null`, `undefined`,
+ *   or case-mismatched inputs — the lookup is exact).
+ *
+ * @example
+ * coarseLevel('Beginner 2')   // 'Beginner'
+ * coarseLevel('Elite')        // 'Elite'
+ * coarseLevel('Unknown')      // null
+ * coarseLevel('beginner 1')   // null (case-sensitive)
+ */
 export function coarseLevel(fineLabel) {
   const idx = FINE_LABELS.indexOf(fineLabel);
   return idx === -1 ? null : COARSE_BY_INDEX[idx];
 }
 
+/**
+ * Resolve a user's full progress shape: current level, next level,
+ * and remaining lbs to advance.
+ *
+ * @param {object} params  Same as `fineLevel`.
+ *
+ * @returns {{
+ *   fineLevel: string,
+ *   coarseLevel: string,
+ *   currentThreshold: number,
+ *   nextThreshold: number|null,
+ *   nextLevel: string|null,
+ *   lbsToNext: number|null,
+ * }}
+ *   For Elite users, `nextThreshold`, `nextLevel`, and `lbsToNext` are
+ *   all `null` (no higher tier). For all other levels, `lbsToNext` is
+ *   clamped to 0 via `Math.max` — the guard handles edge inputs but
+ *   isn't normally exercised on monotonic totals.
+ *
+ * @example
+ * levelProgress({ sex: 'male', bodyweight: 200, total: 841 })
+ * // {
+ * //   fineLevel: 'Novice 2', coarseLevel: 'Novice',
+ * //   currentThreshold: 841, nextThreshold: 899,
+ * //   nextLevel: 'Novice 3', lbsToNext: 58,
+ * // }
+ *
+ * levelProgress({ sex: 'male', bodyweight: 200, total: 1339 })
+ * // {
+ * //   fineLevel: 'Elite', coarseLevel: 'Elite',
+ * //   currentThreshold: 1339, nextThreshold: null,
+ * //   nextLevel: null, lbsToNext: null,
+ * // }
+ */
 export function levelProgress({ sex, bodyweight, total }) {
   const thresholds = getThresholds(sex, bodyweight);
   const idx = findFineIndex(thresholds, total);
@@ -143,33 +234,70 @@ export function levelProgress({ sex, bodyweight, total }) {
   };
 }
 
-// Sum of bench + squat + deadlift from a maxes-shaped object. Per-lift null
-// values coerce to 0 in the sum (a user with bench=245, squat=null,
-// deadlift=null totals 245 — they're not at level 0, they're at the level
-// 245 implies). Defensive against null/undefined maxes object too.
+/**
+ * Sum of bench + squat + deadlift from a maxes-shaped object.
+ *
+ * Per-lift null/undefined values coerce to 0 in the sum (a user with
+ * `bench=245, squat=null, deadlift=null` totals 245 — they're not at
+ * level 0, they're at the level 245 implies). Defensive against
+ * null/undefined `maxes` too.
+ *
+ * @param {{bench?: number|string|null, squat?: number|string|null, deadlift?: number|string|null} | null | undefined} maxes
+ *
+ * @returns {number} Sum of the three lifts. Each lift `Number()`-coerced
+ *   with `?? 0` fallback for null/undefined.
+ *
+ * @example
+ * bigThreeTotal({ bench: 100, squat: 200, deadlift: 300 })  // 600
+ * bigThreeTotal({ bench: 245, squat: null, deadlift: null })  // 245
+ * bigThreeTotal({})       // 0
+ * bigThreeTotal(null)     // 0
+ * bigThreeTotal(undefined)  // 0
+ */
 export function bigThreeTotal(maxes) {
   return Number(maxes?.bench ?? 0)
        + Number(maxes?.squat ?? 0)
        + Number(maxes?.deadlift ?? 0);
 }
 
-// Resolve a user's big-3 total from estimated_one_rep_maxes when populated,
-// falling back to current_one_rep_maxes when not. This is the canonical level-
-// math source post-Phase-6.
-//
-// Fallback is PER-SOURCE, not per-lift: if estimated has any non-null lift,
-// use estimated (with the remaining nulls coerced to 0 inside bigThreeTotal).
-// Only fall back to current if all three estimated lifts are null. This
-// protects two transition states:
-//   1. pre-migration users whose docs predate the estimated_one_rep_maxes
-//      field — estimated is undefined → fall to current.
-//   2. post-Phase-2 / pre-feature-trigger users whose estimated dict exists
-//      but is all-nulls — fall to current so their level isn't 0 until they
-//      log their first big-3 workout.
-//
-// Do NOT layer a per-lift merge (e.g., estimated.bench ?? current.bench).
-// Cross-source mixing would let stale current values leak into otherwise-
-// fresh estimated state and is explicitly out of scope.
+/**
+ * Resolve a user's big-3 total. Source-of-truth is
+ * `estimated_one_rep_maxes`; falls back to `current_one_rep_maxes`
+ * only when estimated is missing or all-null.
+ *
+ * **Per-source fallback, NOT per-lift.** If estimated has ANY non-null
+ * lift, the entire sum comes from estimated (remaining nulls coerce
+ * to 0 inside `bigThreeTotal`). Only fall back to current when all
+ * three estimated lifts are null. This protects two transition states:
+ *   1. Pre-migration users whose docs predate `estimated_one_rep_maxes`
+ *      — estimated is undefined → fall to current.
+ *   2. Post-Phase-2 / pre-feature-trigger users whose estimated dict
+ *      exists but is all-null — fall to current so their level isn't
+ *      0 until they log their first big-3 workout.
+ *
+ * Do NOT layer a per-lift merge (e.g., `estimated.bench ?? current.bench`).
+ * Cross-source mixing would let stale current values leak into otherwise-
+ * fresh estimated state and is explicitly out of scope.
+ *
+ * @param {{
+ *   estimated_one_rep_maxes?: object|null,
+ *   current_one_rep_maxes?: object|null
+ * } | null | undefined} user
+ *
+ * @returns {number} Big-3 total per the source-resolution rule above.
+ *   Defensive against null/undefined user.
+ *
+ * @example
+ * bigThreeTotalForUser({
+ *   estimated_one_rep_maxes: { bench: 245, squat: null, deadlift: null },
+ *   current_one_rep_maxes:   { bench: 200, squat: 300, deadlift: 400 },
+ * })  // 245 — estimated wins because it has a non-null lift
+ *
+ * bigThreeTotalForUser({
+ *   estimated_one_rep_maxes: { bench: null, squat: null, deadlift: null },
+ *   current_one_rep_maxes:   { bench: 200, squat: 300, deadlift: 400 },
+ * })  // 900 — estimated all-null, fall to current
+ */
 export function bigThreeTotalForUser(user) {
   const est = user?.estimated_one_rep_maxes;
   if (est && (est.bench != null || est.squat != null || est.deadlift != null)) {
@@ -178,13 +306,30 @@ export function bigThreeTotalForUser(user) {
   return bigThreeTotal(user?.current_one_rep_maxes);
 }
 
-// True iff the user has never recorded ANY 1RM in either field — neither
-// estimated_one_rep_maxes nor current_one_rep_maxes has a single non-null
-// lift. Stricter than `bigThreeTotalForUser(user) === 0`: a user with explicit
-// zeros (e.g. current = { bench: 0, ... }) is NOT null-state because they've
-// entered data, the data just sums to zero. Such a user gets the normal
-// Beginner-1-at-0% badge; only the EVER-never-entered case gets the alternate
-// empty-state element.
+/**
+ * True iff the user has NEVER recorded any 1RM in either field —
+ * neither `estimated_one_rep_maxes` nor `current_one_rep_maxes` has
+ * a single non-null lift.
+ *
+ * Stricter than `bigThreeTotalForUser(user) === 0`: a user with
+ * explicit zeros (e.g. `current = { bench: 0, ... }`) is NOT
+ * null-state because they've entered data, the data just sums to
+ * zero. Such a user gets the normal Beginner-1-at-0% badge; only
+ * the EVER-never-entered case gets the alternate empty-state element.
+ *
+ * @param {{
+ *   estimated_one_rep_maxes?: object|null,
+ *   current_one_rep_maxes?: object|null
+ * } | null | undefined} user
+ *
+ * @returns {boolean} `true` if both fields are absent or all-null.
+ *
+ * @example
+ * isNullState(null)  // true
+ * isNullState({})    // true
+ * isNullState({ current_one_rep_maxes: { bench: 0, squat: 0, deadlift: 0 } })  // false — explicit zeros count as data
+ * isNullState({ estimated_one_rep_maxes: { bench: 100 } })  // false
+ */
 export function isNullState(user) {
   const est = user?.estimated_one_rep_maxes;
   const cur = user?.current_one_rep_maxes;
@@ -193,35 +338,67 @@ export function isNullState(user) {
   return !estHasAny && !curHasAny;
 }
 
-// Mirror the /classification response into UserContext so home / settings /
-// post-workout displays render correctly without requiring log-out + log-in.
-// Consumed by 4 sites:
-//   - pickNewProgram.jsx handleSubmit       (Pattern A — re-classification)
-//   - day.jsx handleContinue                 (Pattern A — re-classification)
-//   - logger.jsx handleContinue              (Pattern A — re-classification, PB re-fetch)
-//   - loadingPage.jsx onboarding branch      (Pattern B — onboarding, +gender +onboardingComplete)
-//
-// Required: user, classData, bodyweight, oneRMs.
-// Optional: gender (set during onboarding only — first flow to populate it),
-// onboardingComplete (set true during onboarding only — server flips the
-// persisted flag inside /goals next; this is the optimistic client mirror).
-//
-// The resolve-then-sum pattern at day.jsx + logger.jsx handleContinue (PB-with-
-// fallback resolution that produces oneRMs) stays inline — same separation
-// principle as bigThreeTotal. Helper trusts caller to pass already-resolved
-// oneRMs; it only Number-coerces bodyweight (the always-known scalar).
-//
-// Symmetry: server buildUserResponse produces the canonical user-doc shape;
-// this helper consumes the /classification response and merges it with form
-// data into UserContext. Producer-consumer pair across the boundary.
-// Mode parameter mirrors the server-side branching in userController.js's
-// classification handler:
-//   "set-actual" (default) — mirror bodyweight, current_one_rep_maxes, AND
-//     estimated_one_rep_maxes (hard override — actual is authoritative).
-//   "reclassify-only" — mirror only current_classification. Do NOT touch
-//     bodyweight or either max field. Use this in the post-workout flow
-//     where the server is just recomputing classification from a payload
-//     that does NOT represent fresh user-entered actuals.
+/**
+ * Mirror the `/classification` response into UserContext so home /
+ * settings / post-workout displays render correctly without requiring
+ * log-out + log-in.
+ *
+ * Consumed by 4 sites:
+ *   - `pickNewProgram.jsx handleSubmit`  — Pattern A (re-classification)
+ *   - `day.jsx handleContinue`           — Pattern A (re-classification)
+ *   - `logger.jsx handleContinue`        — Pattern A (re-classification, PB re-fetch)
+ *   - `loadingPage.jsx onboarding branch` — Pattern B (onboarding, +gender +onboardingComplete)
+ *
+ * **Mode parameter mirrors the server-side branching** in
+ * `userController.js`'s classification handler:
+ *   - `"set-actual"` (default) — mirror bodyweight,
+ *     `current_one_rep_maxes`, AND `estimated_one_rep_maxes` (hard
+ *     override — actual is authoritative).
+ *   - `"reclassify-only"` — mirror ONLY `current_classification`. Do
+ *     NOT touch bodyweight or either max field. Use this in the
+ *     post-workout flow where the server is just recomputing
+ *     classification from a payload that does NOT represent fresh
+ *     user-entered actuals.
+ *
+ * **Optional-field semantics**: `gender`, `onboardingComplete`, and
+ * `classData.beginner1Anchor` are mirrored when the field is defined
+ * (`!== undefined`). An explicit `null` IS mirrored — only
+ * `undefined` is treated as "don't touch". Symmetric to how server
+ * `buildUserResponse` distinguishes null (explicit) from missing.
+ *
+ * **beginner_1_anchor sticky semantics**: server includes this in
+ * every classification response (the just-written value when the
+ * anchor fired this call, OR the existing value otherwise). Mirror
+ * unconditionally — re-mirroring an unchanged value is a no-op.
+ *
+ * Symmetry: server `buildUserResponse` produces the canonical user-doc
+ * shape; this helper consumes the `/classification` response and
+ * merges it with form data into UserContext. Producer-consumer pair
+ * across the boundary.
+ *
+ * The resolve-then-sum pattern at `day.jsx` + `logger.jsx
+ * handleContinue` (PB-with-fallback resolution that produces `oneRMs`)
+ * stays inline — same separation principle as `bigThreeTotal`. Helper
+ * trusts caller to pass already-resolved `oneRMs`; it only
+ * Number-coerces bodyweight (the always-known scalar).
+ *
+ * @param {object} params
+ * @param {object} params.user  Current user object; spread first so
+ *   unrelated fields survive untouched.
+ * @param {{classification: string, beginner1Anchor?: number|null}} params.classData
+ *   The `/classification` response from the server.
+ * @param {number|string} params.bodyweight  Number-coerced. Ignored
+ *   when `mode === "reclassify-only"`.
+ * @param {object} params.oneRMs  Already-resolved big-3 maxes. Written
+ *   to BOTH `current_one_rep_maxes` and `estimated_one_rep_maxes` in
+ *   `"set-actual"` mode (same reference). Ignored in `"reclassify-only"`.
+ * @param {string} [params.gender]  Onboarding only. Applied when defined.
+ * @param {boolean} [params.onboardingComplete]  Onboarding only.
+ *   Applied when defined (including `false`).
+ * @param {'set-actual'|'reclassify-only'} [params.mode='set-actual']
+ *
+ * @returns {object} New user object (spread + mutations applied per mode).
+ */
 export function mirrorClassificationResponse({ user, classData, bodyweight, oneRMs, gender, onboardingComplete, mode = "set-actual" }) {
   const isReclassifyOnly = mode === "reclassify-only";
   const next = {
@@ -235,10 +412,6 @@ export function mirrorClassificationResponse({ user, classData, bodyweight, oneR
   }
   if (gender !== undefined) next.gender = gender;
   if (onboardingComplete !== undefined) next.onboarding_complete = onboardingComplete;
-  // beginner_1_anchor: server includes this in every classification response
-  // (the just-written value when the anchor fired this call, OR the existing
-  // value otherwise). Mirror unconditionally — sticky semantics on the
-  // server mean re-mirroring an unchanged value is a no-op.
   if (classData.beginner1Anchor !== undefined) {
     next.beginner_1_anchor = classData.beginner1Anchor;
   }
