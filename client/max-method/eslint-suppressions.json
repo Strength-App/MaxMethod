@@ -1,0 +1,131 @@
+{
+  "src/components/PostWorkoutModal.jsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/context/ToolsContext.jsx": {
+    "react-refresh/only-export-components": {
+      "count": 2
+    }
+  },
+  "src/context/UserContext.jsx": {
+    "react-refresh/only-export-components": {
+      "count": 1
+    }
+  },
+  "src/context/WorkoutContext.jsx": {
+    "react-refresh/only-export-components": {
+      "count": 1
+    }
+  },
+  "src/hooks/usePostWorkoutModal.js": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/pages/classification.jsx": {
+    "no-unused-vars": {
+      "count": 2
+    }
+  },
+  "src/pages/customDay.jsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 3
+    },
+    "jsx-a11y/interactive-supports-focus": {
+      "count": 3
+    },
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    },
+    "no-empty": {
+      "count": 1
+    },
+    "react-hooks/immutability": {
+      "count": 1
+    }
+  },
+  "src/pages/customWorkout.jsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/pages/day.jsx": {
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/pages/exerciseLibrary.jsx": {
+    "no-dupe-keys": {
+      "count": 22
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 3
+    },
+    "react-hooks/static-components": {
+      "count": 4
+    }
+  },
+  "src/pages/history.jsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/pages/logger.jsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 1
+    },
+    "jsx-a11y/interactive-supports-focus": {
+      "count": 3
+    }
+  },
+  "src/pages/reviewProgram.jsx": {
+    "no-dupe-keys": {
+      "count": 10
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/pages/settings.jsx": {
+    "no-unused-vars": {
+      "count": 1
+    },
+    "react-hooks/rules-of-hooks": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/pages/viewProgram.jsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  }
+}

@@ -31,6 +31,14 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Stale-suppressions check (non-blocking)
+        # Surfaces entries in eslint-suppressions.json whose violations no
+        # longer occur. Non-blocking initially per docs/decisions.md
+        # #lint-suppressions-baseline — flips to blocking once the shrinkage
+        # cadence is established. See client/max-method/scripts/check-suppressions.cjs.
+        continue-on-error: true
+        run: npm run lint:suppressions-check
+
       - name: Tests
         # Vitest lands in Batch 1. Until then this step no-ops (no test runner installed).
         # After Batch 1 merges, replace with: npx vitest run

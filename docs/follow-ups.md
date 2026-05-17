@@ -143,6 +143,31 @@ When an entry is acted on, move it to a "Resolved" section at the bottom (with a
 - **Trigger conditions.** Team grows and these become useful collaboration tools.
 - **Effort / risk.** Small each.
 
+### lint-suppressions-shrinkage
+
+- **What.** Reduce `client/max-method/eslint-suppressions.json` from its Batch-0 baseline (79 errors across 17 files) to zero. The baseline captures violations of: `no-dupe-keys` (32), `jsx-a11y/click-events-have-key-events` (11), `jsx-a11y/no-static-element-interactions` (6), `jsx-a11y/interactive-supports-focus` (6), `no-unused-vars` (5), `jsx-a11y/no-noninteractive-element-interactions` (4), `react-refresh/only-export-components` (4), `react-hooks/set-state-in-effect` (4), `react-hooks/static-components` (4), `react-hooks/rules-of-hooks` (1), `react-hooks/immutability` (1), `no-empty` (1).
+- **Design space.** Each batch that touches a file with suppressions either fixes the violations as part of its work or leaves them with explicit batch-summary justification (typically: "real bug, scheduled for Batch N's characterization-tests-first sequence"). Bug-tier categories (`rules-of-hooks`, `set-state-in-effect`, `static-components`, `immutability`, `no-dupe-keys`) already have plan-allocated batches with the right shape — they shrink as those batches land. A11y-tier categories shrink as the respective files are touched in Batches 8 / 9a / 9b / 14 / 15. The `react-refresh/only-export-components` suppressions on the three contexts are a separate question (see `#react-refresh-context-split`). Track per-batch shrinkage in the batch summary.
+- **Trigger conditions.** Continuous — every batch checks. When the file reaches zero entries, delete it and remove the `lint:suppressions-check` / `lint:suppressions-prune` scripts plus the related CI step. When the shrinkage cadence proves reliable (likely after 4–5 batches), flip the CI `lint:suppressions-check` step from `continue-on-error: true` to blocking.
+- **Effort / risk.** Distributed across the refactor; per-file effort is small-to-medium depending on the rule (a11y fixes can be tricky if they require restructuring focus management). The bug-tier fixes are already on the plan and have characterization tests in their batches.
+- **Tracking.** Each batch's PR description "Notes" section reports the per-file suppression-count delta. CLAUDE.md meta-rule #18 enforces the shrinks-never-grows invariant.
+
+### exercise-map-dedup-rule
+
+- **What.** Resolve the 32 within-file duplicate keys in `exerciseLibrary.jsx` (22) and `reviewProgram.jsx` (10) as part of Batch 3's `config/exercises.js` consolidation. Each duplicate causes runtime data loss — the later key silently overwrites the earlier value in the same object literal, so some movement/equipment pairings declared in the source are never applied. The work is captured in [`docs/decisions.md#within-file-key-duplication-finding`](decisions.md#within-file-key-duplication-finding).
+- **Design space.** For each duplicate key in the two affected files, ground-truth which value is "current" (i.e., the one ESLint says wins — the later one) by reading the unmodified code and tracing usages. Produce `docs/comparisons/exercise-map-truth-table.md` recording: file, key, earlier-value, later-value, which one is currently observable, decision (keep later as the canonical value, or surface to the user that the earlier value should win — the latter is a real behavior change requiring sign-off). Then consolidate into `config/exercises.js` with deduplicated entries.
+- **Trigger conditions.** Batch 3 (`Local utils + new helpers`) executes. No earlier execution is correct — fixing the duplicates earlier risks behavior changes without ground-truthing.
+- **Effort / risk.** Medium effort (32 duplicates, each needing a ground-truth check). Low risk if the deduplication preserves the currently-observable mappings; higher risk if any of the duplicates turn out to be silent feature regressions that should be restored (then the resolution is a deliberate behavior change, not a refactor).
+
+### react-refresh-context-split
+
+- **What.** The four `react-refresh/only-export-components` suppressions sit on the three Context files (`UserContext.jsx`, `WorkoutContext.jsx`, `ToolsContext.jsx`). The rule fires because each file exports both the React `Context` object (or a `<Provider>` component) **and** a `useXxx()` hook from the same module. Vite's Fast Refresh can't isolate component updates when non-component exports live alongside components, so HMR resets state on every save in dev — a quality-of-life cost during development.
+- **Design space.** The mechanical fix is to **split each context into two files**: e.g., `UserContext.jsx` keeps the Provider component (and the Context object as an internal/named export), and a sibling `useUser.js` re-exports the hook. **This is an API change touching every consumer of the hook** (`useUser`, `useWorkout`, `useTools`). It affects every page and every component that calls one of these hooks (likely 20+ files). The Fast-Refresh benefit is real but the import-statement churn is real too.
+- **Trigger conditions.** Explicit decision — this is not a default "we'll get to it." Two scenarios that would justify acting:
+  - HMR state-reset during context-file edits becomes a measurable productivity drag.
+  - Another structural change touches the three context files for an unrelated reason, and the split becomes nearly free as a side effect.
+- **Effort / risk.** Medium effort (touches every consumer's import statement; mechanical but pervasive). Low risk per-consumer; medium aggregate risk of import-typo bugs. **The current state is "we suppress, we capture the trade-off, we decide explicitly later whether the Fast-Refresh quality is worth breaking every import statement."** The suppression might be permanent if the answer is no.
+- **Decision not yet made.** This entry exists to capture the trade-off, not to commit to the split. Future Claude Code sessions should NOT treat this as scheduled work.
+
 ---
 
 ## Resolved follow-ups

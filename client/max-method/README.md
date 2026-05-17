@@ -27,6 +27,16 @@ npx vitest run --coverage # coverage report (diagnostic — not gated)
 
 Coverage targets are informational, recorded as comments in `vitest.config.js`. See [`../../docs/decisions.md#coverage-philosophy`](../../docs/decisions.md#coverage-philosophy).
 
+## Lint suppressions baseline
+
+`eslint-suppressions.json` baselines 79 pre-existing ESLint errors that surfaced when CI lint enforcement was added in Batch 0. New violations fail CI; baselined violations don't. The list shrinks with every batch that touches a file in it; it never grows. See [`../../docs/decisions.md#lint-suppressions-baseline`](../../docs/decisions.md#lint-suppressions-baseline), [`../../docs/follow-ups.md#lint-suppressions-shrinkage`](../../docs/follow-ups.md#lint-suppressions-shrinkage), and [`../../CLAUDE.md`](../../CLAUDE.md) meta-rule #18.
+
+```sh
+npm run lint                       # eslint . (reads suppressions automatically)
+npm run lint:suppressions-check    # flag stale entries (also runs in CI, non-blocking)
+npm run lint:suppressions-prune    # remove unused entries from the file
+```
+
 ## Where things live
 
 - `src/pages/` — route-level components
