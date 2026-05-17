@@ -27,6 +27,8 @@ The entries below were settled during Phase 1 planning. They govern Batches 0–
 
 **Rationale.** Vite-native, ESM-first, ~100% Jest API parity, zero extra build config. RTL's `getByRole`/`getByLabelText` queries align with the integration-leaning posture.
 
+**Note on `--passWithNoTests` (2026-05-17, Batch 1).** The `test:run` and `test:coverage` npm scripts both include `--passWithNoTests`. Vitest 4 exits code 1 by default when no test files match the discovery glob; this would fail CI for any Batch 1-era state (and any future state where all tests happen to be deleted in a single PR — a degenerate case PR review catches via the diff anyway). The flag is **permanent**, not transitional: keeping it removes a future-contributor footgun (the flag-removal step that's easy to forget once tests exist) and costs nothing once tests are present (the flag becomes informational — it only changes behavior on empty-suite runs). Discipline against accidental test deletion lives in PR review, not in CI semantics.
+
 **Revisit conditions.** Vitest reaches end-of-life or stops matching Jest's API in a way that breaks tests we depend on.
 
 ---
