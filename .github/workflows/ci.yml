@@ -40,6 +40,4 @@ jobs:
         run: npm run lint:suppressions-check
 
       - name: Tests
-        # Vitest lands in Batch 1. Until then this step no-ops (no test runner installed).
-        # After Batch 1 merges, replace with: npx vitest run
-        run: echo "Vitest not yet installed — added in Batch 1"
+        run: npm run test:run
