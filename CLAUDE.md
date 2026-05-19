@@ -1,6 +1,6 @@
 # Working in this codebase
 
-> Last reviewed: 2026-05-18 (Batch 3)
+> Last reviewed: 2026-05-19 (Batch 4)
 
 MaxMethodApp is a React 19 + Vite SPA for strength-training program management. The frontend lives at `client/max-method/`; the backend is `Backend_structure/` (Express + Mongo). This file orients contributors and AI agents working on **the frontend**.
 
@@ -55,6 +55,7 @@ These rules govern *how* the agent works in this codebase. They were established
 17. **Disable an ESLint rule only with a justifying comment.** Bulk-disabling is almost always wrong.
 
 18. **Shrink `eslint-suppressions.json` when you touch its files.** When touching a file with entries in `client/max-method/eslint-suppressions.json`, address that file's suppressions as part of the batch's work — either fix the violations (and run `npm run lint:suppressions-prune` from `client/max-method/` to clean the file) or, for genuine bugs scheduled for a later batch, leave them and document why in the batch summary. **The suppressions list shrinks with every batch that touches a listed file; it never grows.** New ESLint violations in any file always fail CI. See [`docs/decisions.md#lint-suppressions-baseline`](docs/decisions.md#lint-suppressions-baseline) and [`docs/follow-ups.md#lint-suppressions-shrinkage`](docs/follow-ups.md#lint-suppressions-shrinkage).
+    - **Lint-invocation semantics.** `npm run lint` is the CI gate — it reads `eslint-suppressions.json` and treats suppressed violations as non-failing. `npx eslint <files>` (or `npx eslint .` directly) **bypasses the suppressions file** — useful for ad-hoc per-file checks during development, but it surfaces the full set of pre-existing suppressed violations as "new" errors. If you see a high error count from a per-file run, sanity-check it against `npm run lint` before reacting; the suppressions baseline is intentional, not regression. Surfaced post-Batch-4 after a per-file run during the useModalA11y test commit reported errors that `npm run lint` accepted, creating a false-positive lint-broke-the-baseline moment.
 
 ### Verification rules
 
@@ -67,6 +68,8 @@ These rules govern *how* the agent works in this codebase. They were established
     See [`docs/decisions.md#coverage-philosophy`](docs/decisions.md#coverage-philosophy), [`#accessibility-testing`](docs/decisions.md#accessibility-testing), [`#keyboard-testing`](docs/decisions.md#keyboard-testing), [`#visual-regression`](docs/decisions.md#visual-regression).
 
 20. **JSDoc thorough on the public boundary, terse internally.** `@param` + `@returns` + non-obvious behavior + edge cases on every export. Internal helpers: one-line WHY only when non-obvious. Don't restate what the signature already says.
+
+21. **Match the test layer to the invariant location.** When a Risk Register entry is allocated to Batch N but the underlying invariant lives at a layer characterized in an earlier Batch M (M < N), pin the invariant in Batch M where it lives; Batch N handles the consumer-integration concern separately. Pinning at both layers is not duplication — the hook-layer test pins the invariant; the component-layer test pins the wiring. Established post-Batch-4: Risk #7 (PostWorkoutModal snapshot lock) was nominally allocated to Batch 8, but the `preFineLevel !== null` gate and the once-effect that captures the snapshot live entirely in `usePostWorkoutModal` (lines 56-76). The three load-bearing snapshot-lock assertions landed in Batch 4 at the hook layer; Batch 8 will still test the component-level integration (e.g., that PostWorkoutModal renders the captured values correctly), but won't re-pin the invariant.
 
 ---
 
