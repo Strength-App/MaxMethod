@@ -168,6 +168,13 @@ When an entry is acted on, move it to a "Resolved" section at the bottom (with a
 - **Effort / risk.** Medium effort (touches every consumer's import statement; mechanical but pervasive). Low risk per-consumer; medium aggregate risk of import-typo bugs. **The current state is "we suppress, we capture the trade-off, we decide explicitly later whether the Fast-Refresh quality is worth breaking every import statement."** The suppression might be permanent if the answer is no.
 - **Decision not yet made.** This entry exists to capture the trade-off, not to commit to the split. Future Claude Code sessions should NOT treat this as scheduled work.
 
+### customExercises-batch-12-completion
+
+- **What.** Complete the `utils/customExercises.js` extraction by adding `getAllExerciseNames` and `isValidExercise` (both named in the Batch 3 plan's scope but deferred during execution; see the Batch 3 PR summary for the discovery write-up). Also migrate the inline `try { JSON.parse(localStorage.getItem('customExercises') || '[]') } catch { /* noop */ }` at `pages/exerciseLibrary.jsx:1280` to consume `getCustomExerciseNames` from the helper module.
+- **Design space.** Both deferred helpers depend on a module-load constant `ALL_EXERCISE_NAMES` derived from `ALL_EXERCISES`, currently imported by `pages/customDay.jsx`, `pages/history.jsx`, and `pages/logger.jsx` from `pages/exerciseLibrary.jsx`. Extracting the helpers in Batch 3 would have created an upside-down `utils/ → pages/` import. Batch 12 is when `ALL_EXERCISES` moves out of `pages/exerciseLibrary.jsx` (likely into `config/exercises.js` or a sibling data file alongside `MOVEMENT_PATTERNS` / `EXERCISE_EQUIPMENT` / `PATTERN_MUSCLES` / `VIDEO_NAME_ALIASES`); once the upstream lives outside `pages/`, the helpers compose cleanly. `getAllExerciseNames` is the one-liner `() => [...ALL_EXERCISE_NAMES, ...getCustomExerciseNames()]`; `isValidExercise` is `name => getAllExerciseNames().some(n => n.toLowerCase() === name.toLowerCase())`. Migration of the line-1280 inline read is mechanical — replace the try/catch with `getCustomExerciseNames()` and adjust the surrounding usage.
+- **Trigger conditions.** Batch 12 (`exerciseLibrary.jsx`) executes. The blocking concern is the upstream relocation of `ALL_EXERCISES`; this entry has no useful action until that lands.
+- **Effort / risk.** Low. Both helpers are one-liners with byte-identical existing inline copies in customDay (both), history (`getAllExerciseNames` only), and logger (both). Risk concentrates upstream — wherever Batch 12 chooses to place `ALL_EXERCISES`, the helpers re-import from there. Reference the Batch 3 PR summary for the deferred reasoning when picking this up.
+
 ---
 
 ## Resolved follow-ups
