@@ -5,42 +5,68 @@ import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
 import { fineLevel, mirrorClassificationResponse } from '../utils/classification';
 
-// Post-workout modal lifecycle hook. Owns the state machine
-// (closed → summary → classification), pre-session fine-level + total
-// capture, the lazy /all-history fetch, the classification POST + setUser
-// mirror, and close-and-navigate handlers.
-//
-// Consumed by day.jsx (live tracker) and logger.jsx (batch retro-logger).
-// The two flows differ in HOW fresh PBs are produced (per-set context flush
-// vs. batch-save-then-resolve); that asymmetry stays in the parents via the
-// saveAndGetPBs callback. The hook itself is symmetric.
-//
-// Inputs:
-//   saveAndGetPBs: async () => { bench, squat, deadlift } | null
-//     Parent-provided. day.jsx returns from current personalBests state
-//     (already fresh per per-set pbUpdate flush). logger.jsx awaits
-//     saveSession() and resolves from its returned PBs. Return null to
-//     abort the screen-1→screen-2 transition cleanly (e.g. workout-didn't-
-//     save path); the hook's finally block still advances the screen on
-//     abort, matching prior in-place behavior in both parents.
-//   doneNavigate: '/home' | '/history'
-//     Target for the Done button on screen 2 and for the screen-2 backdrop.
-//   onSummaryBackdrop: () => void
-//     Parent-defined backdrop behavior on the summary screen. day navigates
-//     to /home (no save needed; completeDay already fired). logger calls
-//     saveAndExit which commits the batch session via /quick-sessions and
-//     navigates to /history.
-//
-// Returns: { postWorkoutData, modalScreen, continuing, preFineLevel,
-//   preTotal, historySessions, open, close, handleContinue, handleDone,
-//   handleSummaryBackdrop, handleScreen2Backdrop }
-//
-// Behavior preservation note: handleContinue's finally block always
-// advances modalScreen to 'classification', including on the !oneRMs abort
-// path. This matches the prior in-place behavior in both day.jsx and
-// logger.jsx — the screen advance is unconditional once handleContinue
-// starts. Errors propagate silently to console.error; UI gracefully
-// degrades to the prior classification mirror or the user's stored maxes.
+/**
+ * Post-workout modal lifecycle hook. Owns the state machine
+ * (closed → summary → classification), pre-session fine-level + total
+ * capture, the lazy /all-history fetch, the classification POST + setUser
+ * mirror, and close-and-navigate handlers.
+ *
+ * Consumed by day.jsx (live tracker) and logger.jsx (batch retro-logger).
+ * The two flows differ in HOW fresh PBs are produced (per-set context
+ * flush vs. batch-save-then-resolve); that asymmetry stays in the parents
+ * via the saveAndGetPBs callback. The hook itself is symmetric.
+ *
+ * Behavior preservation note: handleContinue's finally block always
+ * advances modalScreen to 'classification', including on the !oneRMs abort
+ * path. This matches the prior in-place behavior in both day.jsx and
+ * logger.jsx — the screen advance is unconditional once handleContinue
+ * starts. Errors propagate silently to console.error; UI gracefully
+ * degrades to the prior classification mirror or the user's stored maxes.
+ *
+ * Snapshot lock (Risk #7): `preFineLevel` and `preTotal` are captured ONCE
+ * per hook lifetime, on the first render where `user` has `gender`,
+ * `current_bodyweight`, and a positive total of `(estimated ?? current ?? 0)`
+ * per-lift. The gate `if (preFineLevel !== null) return` in the snapshot
+ * effect locks the values; subsequent mutations to `user.estimated_one_rep_maxes`
+ * (e.g., from a mid-session PB raise) do not shift the captured snapshot.
+ * Tests at `usePostWorkoutModal.test.jsx` pin this invariant.
+ *
+ * @param {object} options
+ * @param {() => Promise<{ bench: number, squat: number, deadlift: number } | null>} options.saveAndGetPBs
+ *   Parent-provided async callback that returns the post-update one-rep
+ *   maxes. day.jsx returns from current personalBests state (already
+ *   fresh per per-set pbUpdate flush). logger.jsx awaits saveSession()
+ *   and resolves from its returned PBs. Returning null aborts the
+ *   screen-1→screen-2 transition cleanly (e.g. workout-didn't-save
+ *   path); the hook's finally block still advances the screen on abort,
+ *   matching prior in-place behavior in both parents.
+ * @param {string} options.doneNavigate
+ *   Target for the Done button on screen 2 and for the screen-2 backdrop.
+ *   Typically '/home' (day.jsx) or '/history' (logger.jsx).
+ * @param {() => void} options.onSummaryBackdrop
+ *   Parent-defined backdrop behavior on the summary screen. day.jsx
+ *   navigates to /home (no save needed; completeDay already fired).
+ *   logger.jsx calls saveAndExit which commits the batch session via
+ *   /quick-sessions and navigates to /history.
+ *
+ * @returns {{
+ *   postWorkoutData: object | null,
+ *   modalScreen: 'summary' | 'classification',
+ *   continuing: boolean,
+ *   preFineLevel: object | null,
+ *   preTotal: number | null,
+ *   historySessions: Array<object>,
+ *   open: (data: object) => void,
+ *   close: () => void,
+ *   handleContinue: () => Promise<void>,
+ *   handleDone: () => void,
+ *   handleSummaryBackdrop: () => void,
+ *   handleScreen2Backdrop: () => void,
+ * }}
+ *   Hook state, lifecycle handlers, and parent-flow handlers. See the
+ *   snapshot-lock and behavior-preservation notes above for the
+ *   non-obvious invariants.
+ */
 export function usePostWorkoutModal({ saveAndGetPBs, doneNavigate, onSummaryBackdrop }) {
   const navigate = useNavigate();
   const { user, setUser } = useUser();
