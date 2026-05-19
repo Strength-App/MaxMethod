@@ -30,6 +30,16 @@ import { dateKey } from '../utils/dateUtils';
  * Usage:
  *   const { totalSessions, weeksLogged, thisMonth, daysThisWeek } =
  *     useWorkoutStats(sessions);
+ *
+ * @param {Array<{date: Date, programTitle?: string|null, weekNumber?: number|null}>} sessions
+ *   Array of session records. Date must be normalized to local midnight by
+ *   the caller. The hook does no defensive coercion.
+ * @returns {{ totalSessions: number, weeksLogged: number, thisMonth: number, daysThisWeek: number }}
+ *   Derived stats. `totalSessions` is `sessions.length`. `weeksLogged` is
+ *   the count of unique `${programTitle ?? 'default'}-${weekNumber}` keys
+ *   across the full array (not just the current week). `thisMonth` and
+ *   `daysThisWeek` count against the current local month/week boundaries
+ *   (inclusive on the start); `daysThisWeek` dedupes by calendar day.
  */
 export function useWorkoutStats(sessions) {
   return useMemo(() => {
@@ -56,6 +66,3 @@ export function useWorkoutStats(sessions) {
     };
   }, [sessions]);
 }
-
-// Local copy — history.jsx has its own for the calendar grid / sessionMap.
-// Deferred dedup of the primitive is tracked in the change summary.
