@@ -156,6 +156,40 @@ window.AudioContext = MockAudioContext;
 window.webkitAudioContext = MockAudioContext;
 
 // =============================================================================
+// HTMLElement.prototype.offsetParent
+// =============================================================================
+//
+// Six consumers via src/hooks/useModalA11y.js's isVisible() predicate
+// (viewProgram, history, customWorkout, customDay, ToolsPanel,
+// PostWorkoutModal). The predicate checks `el.offsetParent !== null` to
+// decide whether an element is in layout — a standard test for
+// "is this element rendered and visible." jsdom doesn't compute layout,
+// so the real DOM's offsetParent getter returns null for every element
+// regardless of CSS or position. Without this shim, isVisible() reports
+// every focusable as not-visible, getFocusables() returns [], and the
+// hook's Tab-trap and initial-focus behaviors degrade — characterization
+// tests against real production behavior break for an environment reason,
+// not a hook bug.
+//
+// The shim returns `parentNode` so any element attached to the test DOM
+// reports a truthy offsetParent. That's a coarse simulation — real
+// browsers return the nearest positioned ancestor or null for display:none
+// elements — but it's enough to make the visibility predicate honest about
+// "is this element actually in the document," which is the load-bearing
+// distinction for the focus-management code.
+//
+// See docs/decisions.md#jsdom-environment-mocks for the ADR. Future
+// focus-managing components (ContextMenu, EquipmentSelect, RestTimer in
+// later batches) inherit this shim without further configuration.
+
+Object.defineProperty(HTMLElement.prototype, 'offsetParent', {
+  configurable: true,
+  get() {
+    return this.parentNode;
+  },
+});
+
+// =============================================================================
 // MSW server lifecycle
 // =============================================================================
 //
