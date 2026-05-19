@@ -437,3 +437,18 @@ The resolution: Batch 3 ground-truths each duplicate against the unmodified runt
 **Rationale.** Surfaced by CI enforcement after Batch 0 — exactly the kind of latent bug the lint baseline was supposed to surface. Treating it as a separate ADR (rather than folding into `#lint-suppressions-baseline` or just a follow-up) preserves the discovery as a learnable historical artifact: the absence of CI lint enforcement let runtime data loss accumulate undetected.
 
 **Revisit conditions.** Batch 3 ground-truthing reveals the duplicates aren't actually silent (e.g., they're identical values and the duplication is cosmetic) — then this ADR amends to reflect that and the work changes shape.
+
+---
+
+### utils-purity
+
+**Decision.** Files under `client/max-method/src/utils/` may hold I/O-touching helpers. There is **no pure-only convention** for that directory. The first concrete instance is `utils/customExercises.js` (added in Batch 3), whose `addToCustomExercises` writes to `localStorage` and fires a best-effort `fetch` POST. Future contributors writing a side-effectful `utils/` module are expected to: (1) document the side effects in the module header and the JSDoc of each export that has them; (2) make the side effects fail-safe — best-effort with swallowed errors, no throws that the caller doesn't expect; (3) test the side effects using the existing patterns (MSW for fetch, jsdom's built-in localStorage) rather than inventing new test plumbing.
+
+**Alternatives considered.**
+- *Pure-only `utils/`, with a separate `lib/` (or similar) directory for side-effectful helpers.* Rejected because the existing `utils/` files (`epley`, `classification`, `exerciseNameNormalize`, `setDisplay`, plus the new `dateUtils`) happen to be pure but `utils/` wasn't designed that way — it's just where shared helpers live. Splitting into two directories now would invent a convention post-hoc to fit five existing files and one new I/O-touching one, with no concrete payoff beyond cosmetic separation.
+- *Pure utils, side-effectful helpers go in `hooks/`.* Rejected because hooks have a React-lifecycle constraint. Module-level helpers like `addToCustomExercises` are called from event handlers and from non-React module code, not from render — wrapping them in a hook would be a category error and would force every consumer to call them inside React.
+- *Leave the question unwritten and decide case-by-case.* Rejected because Batch 3 is the first time the question arose, and the cost of re-litigating it in each future batch is higher than the cost of one ADR entry that settles it.
+
+**Rationale.** Side effects in shared helpers are a legitimate category of shared code (state management, network I/O, browser API access). Putting them in `utils/` alongside pure helpers is fine as long as the side effects are documented at the boundary and the helpers are fail-safe. The discipline lives in the documentation contract, not in directory geography. `customExercises.js` is the test case for this rule: its module header announces the side effects, JSDoc on `addToCustomExercises` enumerates them, and the test suite covers the no-userId branch and the fetch-rejects branch alongside the happy path.
+
+**Revisit conditions.** A pattern of `utils/` helpers growing complex enough that the directory becomes hard to navigate — at which point a deliberate pure-vs-side-effectful split would be a single, planned restructure with all the call-site migration that entails, not a piecemeal slide. Also revisit if a future contributor proposes a pure-only convention with a concrete pain point that motivates it (e.g., a tree-shaking constraint where pure helpers need to live in a separate tree).
