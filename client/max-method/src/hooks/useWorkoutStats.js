@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { dateKey } from '../utils/dateUtils';
 
 /**
  * Derive the four headline workout-history stats from a sessions array.
@@ -58,4 +59,3 @@ export function useWorkoutStats(sessions) {
 
 // Local copy — history.jsx has its own for the calendar grid / sessionMap.
 // Deferred dedup of the primitive is tracked in the change summary.
-function dateKey(d) { return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; }
