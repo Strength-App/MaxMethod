@@ -27,6 +27,30 @@ import { useEffect, useRef } from 'react';
  *       </div>
  *     </div>
  *   ) : null;
+ *
+ * Edge cases:
+ *   - Consumer must attach the returned ref to the modal's container. If
+ *     `modalRef.current` is null when the modal is opened, the hook bails:
+ *     no listener, no scroll lock, no focus changes.
+ *   - `onClose` is invoked via optional chaining; passing `undefined` is safe.
+ *     Escape still stops propagation when onClose is absent.
+ *
+ * @param {object} options
+ * @param {boolean} options.isOpen
+ *   Whether the modal is currently open. Toggle false → true engages the
+ *   hook; toggle true → false (or unmount) triggers cleanup — listener
+ *   removal, body-scroll restoration, focus return to the opener.
+ * @param {() => void} [options.onClose]
+ *   Called when the user presses Escape. Optional.
+ * @param {{ current: HTMLElement | null } | null} [options.initialFocusRef]
+ *   If provided and `.current` is non-null on open, the hook focuses it
+ *   instead of the first focusable. Falls through to the first focusable
+ *   in the modal, then to the modal node itself, when null or empty.
+ * @returns {{ current: HTMLElement | null }}
+ *   Ref to attach to the modal's outermost interactive container — the
+ *   element the focus trap and keyboard scope are bound to, not the
+ *   overlay. The hook also reads `document.activeElement` on open to
+ *   capture the opener for focus return.
  */
 export function useModalA11y({ isOpen, onClose, initialFocusRef = null }) {
   const modalRef = useRef(null);
