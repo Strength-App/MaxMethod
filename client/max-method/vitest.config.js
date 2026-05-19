@@ -19,6 +19,32 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.js'],
+    // Pin TZ for deterministic local-time semantics in tests.
+    //
+    // Some functions in this codebase (starting with `utils/dateUtils.js`'s
+    // `dateKey`) use Date's local-time methods (`getFullYear/getMonth/getDate`)
+    // and the local-calendar-day semantics are load-bearing — `useWorkoutStats`'s
+    // Sunday-start week boundaries, `history.jsx`'s calendar grid, and any
+    // downstream callers depend on "this calendar day in the user's locale,"
+    // not "this calendar day in UTC."
+    //
+    // Default CI Node runs in UTC, which makes local-day and UTC-day equal at
+    // every midnight-aligned instant — so a test like `dateKey(new Date(2026, 0, 5))`
+    // produces the same output whether the function uses local or UTC methods.
+    // The test would format-pin the output but NOT pin local-vs-UTC.
+    //
+    // Pinning a real, non-UTC timezone here makes those tests actually test
+    // what they claim to: a Date constructed at a UTC instant whose local day
+    // differs (e.g. `Date.UTC(2026, 0, 5, 5, 0, 0)` = Jan 5 05:00 UTC =
+    // Jan 4 22:00 in MST) will produce different output under local vs UTC
+    // methods, so the test fails if the function ever drifts.
+    //
+    // Denver (MST/MDT, UTC-7/-6) chosen for: real human timezone, has DST so
+    // both offsets get exercised across the year, broadly available in the
+    // tz database that ships with full-icu Node 20.
+    env: {
+      TZ: 'America/Denver',
+    },
     // CSS is not parsed during tests — RTL queries by accessible roles
     // and labels, not by computed style. Skipping CSS keeps tests fast
     // and prevents jsdom-vs-real-browser style discrepancies from
