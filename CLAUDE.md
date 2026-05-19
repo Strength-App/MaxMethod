@@ -1,6 +1,6 @@
 # Working in this codebase
 
-> Last reviewed: 2026-05-17 (Batch 0)
+> Last reviewed: 2026-05-18 (Batch 3)
 
 MaxMethodApp is a React 19 + Vite SPA for strength-training program management. The frontend lives at `client/max-method/`; the backend is `Backend_structure/` (Express + Mongo). This file orients contributors and AI agents working on **the frontend**.
 
@@ -43,6 +43,8 @@ These rules govern *how* the agent works in this codebase. They were established
 12. **Per-batch branch off `dev` tip at the moment work starts.** No stale base; no parallel batches. Naming: `refactor/batch-NN-description` (lex-sortable). Next batch's branch is not created until the previous merges. See [`docs/decisions.md#branching-strategy`](docs/decisions.md#branching-strategy).
 
 13. **One PR per batch, multiple commits per PR.** Conventional Commits with scope. Pattern: `test(scope)` → `refactor(scope)` → `fix(scope)` (if a bug was surfaced) → `docs(scope)`. Each commit independently green for bisectability. Rebase-merge to `dev`. **Agent does not auto-merge** and **does not start the next batch** until the previous merges. PR size ceiling: ~1000 lines. See [`docs/decisions.md#pr-commit-strategy`](docs/decisions.md#pr-commit-strategy).
+    - **Test-before-feat commit-shape distinction.** For *characterization tests against existing code* (e.g. D-classification utilities like `epley`/`classification`/`exerciseNameNormalize`/`setDisplay`), the test commit lands first and passes against unmodified source from that commit forward — bisectability holds. For *new-file helpers* (no existing source to characterize, e.g. Batch 3's `dateUtils.js` and `customExercises.js`), tests and the helper land in a single combined `feat(<helper>)` commit. A test file importing a non-existent module isn't a useful bisectable intermediate state. The test-first design discipline lives in the agent's working order during development, not in commit history. Clarification adopted post-Batch-3 after two intermediate-red commits in that batch surfaced the gap.
+    - **No `Co-Authored-By` trailers.** Commit authorship is set via `git config` and reflects the human who pushed; collaborative work with AI tooling is implicit in the workflow and doesn't need an explicit trailer. A Claude-specific trailer locks the commit history to a particular AI provider in a way that ages awkwardly (model names change, attribution conventions shift, the trailer becomes a dated artifact). Consistency matters: don't drift between trailer-having and trailer-less commits within a batch.
 
 14. **Never push past the checkpoint.** Pause between batches for review. No queueing the next batch on a stale base.
 
