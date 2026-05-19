@@ -1,17 +1,20 @@
 /**
  * Vitest global setup — runs once per worker before any test file.
  *
- * Four responsibilities:
+ * Three responsibilities:
  *   1. Register @testing-library/jest-dom matchers globally
  *      (toBeInTheDocument, toHaveFocus, toHaveAttribute, ...).
  *   2. Mock browser APIs jsdom doesn't implement but the codebase uses.
- *      Scope is determined by the Batch 1 browser-API audit, not
- *      speculation: only matchMedia and AudioContext are referenced.
- *      Five APIs the plan anticipated (IntersectionObserver,
- *      ResizeObserver, canvas .getContext, navigator.vibrate,
- *      window.scrollTo) are not used and are not mocked.
- *      requestAnimationFrame / cancelAnimationFrame are handled
- *      natively by jsdom@29 and need no mock either.
+ *      Scope is determined by the Batch 1 browser-API audit plus
+ *      Batch 4's focus-management gap: matchMedia, AudioContext, and
+ *      HTMLElement.prototype.offsetParent are mocked because each has
+ *      a real consumer in the codebase. Five APIs the plan anticipated
+ *      (IntersectionObserver, ResizeObserver, canvas .getContext,
+ *      navigator.vibrate, window.scrollTo) are not used and are not
+ *      mocked. requestAnimationFrame / cancelAnimationFrame are
+ *      handled natively by jsdom@29 and need no mock either. See
+ *      docs/decisions.md#jsdom-environment-mocks for the ADR governing
+ *      this list and the discipline for future additions.
  *   3. Wire MSW server lifecycle (listen / resetHandlers / close).
  *
  * See docs/decisions.md#dom-environment for the jsdom choice rationale
