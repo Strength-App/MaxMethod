@@ -9,7 +9,7 @@ This file captures decisions that affect future work on the codebase. Each entry
 
 New entries are added at the bottom (chronological), use stable anchor IDs that other docs can link to, and follow this shape strictly. Variations of prose style or section length make the file harder to skim — don't.
 
-> Last reviewed against codebase: 2026-05-17
+> Last reviewed against codebase: 2026-05-19
 
 ---
 
@@ -454,3 +454,17 @@ The resolution: Batch 3 ground-truths each duplicate against the unmodified runt
 **Rationale.** Side effects in shared helpers are a legitimate category of shared code (state management, network I/O, browser API access). Putting them in `utils/` alongside pure helpers is fine as long as the side effects are documented at the boundary and the helpers are fail-safe. The discipline lives in the documentation contract, not in directory geography. `customExercises.js` is the test case for this rule: its module header announces the side effects, JSDoc on `addToCustomExercises` enumerates them, and the test suite covers the no-userId branch and the fetch-rejects branch alongside the happy path.
 
 **Revisit conditions.** A pattern of `utils/` helpers growing complex enough that the directory becomes hard to navigate — at which point a deliberate pure-vs-side-effectful split would be a single, planned restructure with all the call-site migration that entails, not a piecemeal slide. Also revisit if a future contributor proposes a pure-only convention with a concrete pain point that motivates it (e.g., a tree-shaking constraint where pure helpers need to live in a separate tree).
+
+---
+
+### test-file-extension-convention
+
+**Decision.** Test files use `.test.jsx` when their source contains JSX (test harness components, inline JSX in `render()` calls, etc.) and `.test.js` when the file is JSX-free (pure utility tests). The convention mirrors the source-file convention exactly: `.jsx` for files that contain JSX, `.js` for files that don't. First applied in Batch 4, where `useModalA11y.test.jsx` was the first hook test to render React in a test harness. Batches 1–3's existing tests stay `.test.js` because they characterize pure functions and contain no JSX — no retroactive renames.
+
+**Alternatives considered.**
+- *Always `.test.jsx` for uniformity.* Rejected because retroactive renames of Batches 1–3's test files would be busywork with no upside, and forcing JSX-free utility tests to use `.jsx` blurs the per-file signal (a reader can't tell from the extension whether the file actually renders React).
+- *Always `.test.js`, with Vitest configured to transform JSX in any `.test.js` file.* Rejected because it adds a second touch to `vitest.config.js` for a problem the file extension already solves cleanly, hides JSX inside a `.js` extension (weaker per-file honesty), and produces no benefit over the chosen convention once it's established.
+
+**Rationale.** Mirrors the source-file convention exactly — readers infer "renders React" from the filename, same as they do for source files. Zero infrastructure cost: Vitest already handles both extensions through `@vitejs/plugin-react`. Retroactively coherent — Batches 1–3 stay correct without renames because their tests legitimately don't contain JSX. Honest per-file signal: a `.test.jsx` filename announces "this test sets up a React tree."
+
+**Revisit conditions.** Vitest changes its default file resolution in a way that makes `.test.jsx` files require additional configuration. The codebase adopts TypeScript and the extension question reshapes around `.test.ts`/`.test.tsx`. The team adopts a different file-extension convention for source files (the test-file convention follows the source-file convention by design).
