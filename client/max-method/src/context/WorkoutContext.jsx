@@ -21,6 +21,18 @@ export function WorkoutProvider({ children }) {
   const displayWorkout = workout;
 
   const updateLogTimer = useRef(null);
+  const updateLogAbort = useRef(null);
+
+  // Cancel any pending debounced log save and abort any in-flight PATCH
+  // when the provider unmounts. Edits inside the 500ms window before
+  // unmount are intentionally cancelled rather than persisted via an
+  // orphan request — see docs/decisions.md#debounce-cleanup-shape.
+  useEffect(() => {
+    return () => {
+      clearTimeout(updateLogTimer.current);
+      updateLogAbort.current?.abort();
+    };
+  }, []);
 
   const setUserId = useCallback((id) => {
     localStorage.setItem('userId', id);
@@ -157,7 +169,12 @@ export function WorkoutProvider({ children }) {
     });
 
     clearTimeout(updateLogTimer.current);
+    // Abort any in-flight PATCH from a prior updateLog call so a stale
+    // response can't land after a newer edit has already updated state.
+    updateLogAbort.current?.abort();
     updateLogTimer.current = setTimeout(async () => {
+      const controller = new AbortController();
+      updateLogAbort.current = controller;
       try {
         const res = await fetch(`${API_URL}/api/users/workout/log`, {
           method: 'PATCH',
@@ -169,7 +186,8 @@ export function WorkoutProvider({ children }) {
             slotIdx,
             setIdx,
             [field]: field === 'actualWeight' ? Number(value) : value
-          })
+          }),
+          signal: controller.signal
         });
 
         const data = await res.json();
@@ -183,6 +201,7 @@ export function WorkoutProvider({ children }) {
         }
 
       } catch (err) {
+        if (err.name === 'AbortError') return;
         console.error('Failed to save log entry:', err);
       }
     }, 500);
