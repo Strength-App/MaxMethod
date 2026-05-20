@@ -50,7 +50,6 @@ export function WorkoutProvider({ children }) {
 
   const fetchWorkout = useCallback(async (id, preloadedData = null) => {
     const resolvedId = id ?? userId;
-    console.log('fetchWorkout called with:', resolvedId);
     if (!resolvedId && !preloadedData) return;
 
     setLoading(true);
@@ -80,7 +79,6 @@ export function WorkoutProvider({ children }) {
           }
         }
 
-        console.log('fetchWorkout got data, weeks:', data.weeks?.length);
         setWorkout(data);
 
         // Seed assignments from week 1's resolved exercises
@@ -112,7 +110,6 @@ export function WorkoutProvider({ children }) {
             });
           });
         });
-        console.log('fetchWorkout seeded log sample (w0,d0,s0):', initialLog[0]?.[0]?.[0]);
         setLog(initialLog);
 
         return data;
@@ -126,7 +123,6 @@ export function WorkoutProvider({ children }) {
 
   // Re-fetch whenever userId changes (covers both app load and login)
   useEffect(() => {
-    console.log('userId effect fired, userId is:', userId);
     if (userId) {
       fetchWorkout(userId);
     }
