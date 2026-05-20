@@ -101,7 +101,7 @@ Non-obvious behaviors worth knowing before touching the relevant code. Each link
 
 - **Three mirrored utilities** (`src/utils/epley.js`, `src/utils/classification.js`, `src/utils/exerciseNameNormalize.js`) are mirrored with `Backend_structure/src/utils/*` and have parity test fixtures. Any change must be made in lockstep with the backend. See [`docs/decisions.md#mirrored-utils`](docs/decisions.md#mirrored-utils).
 
-- **`WorkoutContext.updateLog` debounce cancels on unmount** (post-Batch-5 fix). Edits made within the 500ms debounce window before navigation away are not persisted. Intentional; matches user expectation. See [`docs/decisions.md#debounce-cleanup-shape`](docs/decisions.md#debounce-cleanup-shape).
+- **`WorkoutContext.updateLog` debounce cleanup.** Two behaviors: (1) each new `updateLog` aborts any in-flight PATCH from a prior edit (prevents stale-write races on rapid successive edits); (2) on `WorkoutProvider` unmount — page reload or tab close only, since the provider wraps the router and survives in-app navigation — a pending debounce is cancelled rather than sent as an orphan request. Note: in-app navigation does **not** cancel a pending edit. See [`docs/decisions.md#debounce-cleanup-shape`](docs/decisions.md#debounce-cleanup-shape).
 
 - **`personalBests` are stale between `day.jsx` and `logger.jsx` mid-session.** Known issue, deferred to `#personal-bests-staleness-day-logger` in `docs/follow-ups.md`. Don't accidentally "fix" without context.
 
