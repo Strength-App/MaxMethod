@@ -15,6 +15,22 @@ const PERCENTAGES = {
   6.5: [ 87.8, 85.0, 82.4, 79.9, 77.4, 75.1, 72.3, 69.4, 66.7, 64.0, 61.3, 58.6],
 };
 
+/**
+ * RPE-based weight prescription calculator. The user enters a 1RM and picks a
+ * target reps × RPE (rate of perceived exertion) via steppers; the tool renders
+ * the prescribed working weight — the table percentage of the 1RM, floored to
+ * the nearest 5 lb so it's loadable on standard plates.
+ *
+ * The RPE × reps → %-of-1RM coefficient table (`PERCENTAGES`) and the
+ * floor-to-5 are inline here rather than in a util — a known consolidation
+ * candidate tracked at `docs/follow-ups.md#rpe-coefficients-and-floor5-inline`.
+ * Reps clamp to [1, 12]; RPE walks the `RPE_VALUES` ladder [6.5, 10] by index
+ * (avoiding float accumulation). Invalid 1RM (missing/≤0) renders an em-dash.
+ * The visual result is aria-hidden; the accessible channel is an sr-only
+ * aria-live region. Takes no props.
+ *
+ * @returns {JSX.Element} The RPE calculator UI.
+ */
 export default function RPECalc() {
   const [oneRM, setOneRM] = useState('');
   const [reps, setReps] = useState(5);
