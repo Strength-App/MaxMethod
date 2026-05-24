@@ -1,0 +1,14 @@
+# Line-ending policy.
+#
+# Snapshot files (Vitest `toMatchSnapshot` -> __snapshots__/*.snap) must be LF on
+# every platform. They are committed as LF (CI / Linux), and a Windows checkout
+# under core.autocrlf=true otherwise reports a spurious working-tree dirty flag
+# ("LF will be replaced by CRLF") on each .snap file. `text eol=lf` forces LF on
+# checkout regardless of platform and normalizes to LF on stage, so commits from
+# Windows machines also stay LF (no inverse problem for Linux/macOS contributors).
+#
+# Scoped deliberately to *.snap -- the one artifact with this hazard today (Batch 7
+# added the first .snap; Batch 8 adds two more). This is NOT a repo-wide
+# line-ending audit; broader patterns (e.g. `* text=auto`, `*.js eol=lf`) are
+# intentionally omitted to keep the change minimal and reviewable.
+*.snap text eol=lf
