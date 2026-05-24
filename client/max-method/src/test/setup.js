@@ -2,8 +2,9 @@
  * Vitest global setup — runs once per worker before any test file.
  *
  * Three responsibilities:
- *   1. Register @testing-library/jest-dom matchers globally
- *      (toBeInTheDocument, toHaveFocus, toHaveAttribute, ...).
+ *   1. Register custom matchers globally: @testing-library/jest-dom
+ *      (toBeInTheDocument, toHaveFocus, toHaveAttribute, ...) and vitest-axe
+ *      (toHaveNoViolations).
  *   2. Mock browser APIs jsdom doesn't implement but the codebase uses.
  *      Scope is determined by the Batch 1 browser-API audit plus
  *      Batch 4's focus-management gap: matchMedia, AudioContext, and
@@ -22,8 +23,16 @@
  */
 
 import '@testing-library/jest-dom/vitest';
-import { vi, beforeAll, afterEach, afterAll } from 'vitest';
+import * as axeMatchers from 'vitest-axe/matchers';
+import { vi, expect, beforeAll, afterEach, afterAll } from 'vitest';
 import { server } from './msw/server.js';
+
+// Second global matcher registration alongside the jest-dom side-effect import
+// above: vitest-axe's toHaveNoViolations. Lifted here in Batch 7 so every
+// axe-using test (ToolsPanel, EquipmentSelect, PostWorkoutModal, future
+// consumers) shares one idempotent registration instead of re-running
+// expect.extend in each file. See the chore(setup) commit body for the rationale.
+expect.extend(axeMatchers);
 
 // =============================================================================
 // window.matchMedia
