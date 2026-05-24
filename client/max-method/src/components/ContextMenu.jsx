@@ -82,17 +82,26 @@ export default function ContextMenu({
     };
   }, [open, onClose]);
 
-  // Focus first item on open via rAF — synchronous focus during the same tick
-  // as onContextMenu/touchend can race with the browser's own focus dispatch.
+  // Focus the open menu via rAF — synchronous focus during the same tick as
+  // onContextMenu/touchend can race with the browser's own focus dispatch.
   // On close, return focus to the opener if a ref was supplied. Effect runs
   // only on the open-flip; returnFocusRef is intentionally not a dep — it is
   // a ref whose .current is read at call time, and re-firing on its identity
   // would cause spurious focus shifts.
+  //
+  // Target the CURRENT highlight, not always the first item: this rAF and the
+  // focus-follows-highlight effect below both fire on open, but the rAF is
+  // deferred ~1 frame. If a keypress moves the highlight before the rAF fires,
+  // focusing the first item would STEAL focus back to item 0. On open the
+  // highlight is always item 0 (useState(0) + the open-reset effect above), so
+  // querying the highlighted item is identity-preserving for production; it only
+  // differs when a keypress beats the ~16ms rAF, where the highlight is correct.
   useEffect(() => {
     if (open) {
       const t = requestAnimationFrame(() => {
-        const first = menuRef.current?.querySelector('[role="menuitem"]');
-        first?.focus();
+        const target = menuRef.current?.querySelector('.cm-menu-item--highlighted')
+          ?? menuRef.current?.querySelector('[role="menuitem"]');
+        target?.focus();
       });
       return () => cancelAnimationFrame(t);
     }
