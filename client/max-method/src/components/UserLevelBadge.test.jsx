@@ -34,6 +34,15 @@
 // not a Risk Register item, and snapshots are static-only. Documented as a located
 // gap; if pinned later it would use fireEvent.transitionEnd, not snapshots.
 //
+// wide={true} is NOT asserted: it only toggles the `--wide` CSS layout modifier on
+// the root, which has no ARIA/role/text handle (asserting the class would need
+// testing-library/no-node-access, forbidden here) and is pure appearance. Located
+// gap, not unbounded deferral — `wide` is consumed by PostWorkoutScreen2 (Batch 8)
+// and home.jsx (Batch 9a), and the `--wide` root class is captured structurally in
+// Batch 8's PostWorkoutScreen2 snapshot (PostWorkoutScreen2 is snapshot-listed per
+// docs/decisions.md#snapshot-conventions and renders this badge with wide), so a
+// regression has a concrete observation point.
+//
 // File extension is .test.jsx per docs/decisions.md#test-file-extension-convention.
 
 import { describe, it, expect } from 'vitest';
