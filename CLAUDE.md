@@ -1,6 +1,6 @@
 # Working in this codebase
 
-> Last reviewed: 2026-05-19 (Batch 4)
+> Last reviewed: 2026-05-23 (Batch 6)
 
 MaxMethodApp is a React 19 + Vite SPA for strength-training program management. The frontend lives at `client/max-method/`; the backend is `Backend_structure/` (Express + Mongo). This file orients contributors and AI agents working on **the frontend**.
 
@@ -93,7 +93,9 @@ These rules govern *how* the agent works in this codebase. They were established
 
 ## Surprising things
 
-Non-obvious behaviors worth knowing before touching the relevant code. Each links to the ADR with the rationale.
+Non-obvious behaviors and findings worth knowing before you touch — or write tests for — the relevant code. **Code hazards** are *don't accidentally "fix" this* warnings about production behavior; **test-design hazards** are *don't write tests this way* findings from prior batches. Code hazards link to their ADR; test-design hazards link to the canonical test.
+
+### Code hazards
 
 - **`home.jsx` / `viewProgram.jsx` day-display filter is title-only.** A day with `title: null` is hidden; a day with a missing title field is hidden. Intentional, not a bug. Don't "fix" by adding `&& d.exercises?.length`. See [`docs/decisions.md#day-filter-truth-table`](docs/decisions.md#day-filter-truth-table).
 
@@ -110,6 +112,14 @@ Non-obvious behaviors worth knowing before touching the relevant code. Each link
 - **CSS variables `--accent` (red, identity) and `--accent-green` (completion state)** follow a strict semantic split. Completion fills/borders/text use green; identity contexts (badge labels, threshold values) use red. See [`docs/decisions.md#color-token-convention`](docs/decisions.md#color-token-convention).
 
 - **The big-3 lifts (Bench / Squat / Deadlift) have a seeded floor on personal bests.** `updatePersonalBest` raises only; `rebuildPersonalBest` is bidirectional but floors at `current_one_rep_maxes` for the big three. Server-side logic; client must round-trip correctly. See `#project_pr_semantics` in agent memory.
+
+### Test-design hazards
+
+- **Three timer-test patterns — pick by what you assert.** *Why three:* `vi.useFakeTimers()` without `shouldAdvanceTime` hangs the suite under `userEvent` with no error, so realistic-interaction tests need either real timers or `shouldAdvanceTime: true`. The setups: **(a)** *real timers* (no `vi.useFakeTimers`) when no test asserts a tick value — simplest (`ToolsPanel.test.jsx`); **(b)** `vi.useFakeTimers({ shouldAdvanceTime: true })` + `userEvent` for realistic interaction with coarse (≥1s) tick assertions — the fake clock tracks real time so `userEvent`'s awaits resolve, while explicit `vi.advanceTimersByTime` still drives the timer (`Timer.test.jsx`); **(c)** *frozen* `vi.useFakeTimers()` + `fireEvent` for exact sub-second/tick determinism (`Stopwatch.test.jsx`; `ToolsContext.test.jsx` is the frozen variant driving the API via `renderHook`/`act`).
+
+- **Modal-consumer test harnesses must memoize their callbacks.** `useModalA11y`'s effect lists `onClose` in its deps, so a harness passing a fresh closure on every render re-runs the effect each render — re-capturing the opener and thrashing focus, which breaks focus-trap and focus-return assertions. Wrap the harness's callbacks in `useCallback` so the effect stays scoped to `isOpen` transitions. Canonical fix: the `Harness` in `ToolsPanel.test.jsx`. Applies to every `useModalA11y` consumer's tests (viewProgram, history, customWorkout, customDay, ToolsPanel, PostWorkoutModal, and future consumers in Batches 10/13/14/15).
+
+- **React 19 silently swallows setState on an unmounted component** — no `console.error`, no act warning. A cleanup-on-unmount test therefore **cannot** assert absence-of-warning: it would pass against buggy-by-omission code (false armor). Characterize cleanup via a side-effect/network observable (the in-flight fetch abort in `WorkoutContext.test.jsx`; `createOscillator`-not-called-after-unmount in `ToolsContext.test.jsx`); or, when no observable exists, source-verify the cleanup and **document in the test file that it's source-verified, not behaviorally pinned** (e.g. `Stopwatch.test.jsx`) — the explicit admission stops source-verification from being silently mistaken for behavioral pinning. See [`docs/decisions.md#debounce-cleanup-shape`](docs/decisions.md#debounce-cleanup-shape) and [`#jsdom-environment-mocks`](docs/decisions.md#jsdom-environment-mocks).
 
 ---
 
