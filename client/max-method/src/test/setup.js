@@ -66,13 +66,15 @@ Object.defineProperty(window, 'matchMedia', {
 // and lazy-constructs an AudioContext inside the timer's `start()` callback
 // (user-gesture unlock point). Subsequent usage:
 //
-//   ctx.state                                           (property read)
-//   ctx.resume()                                        (method)
-//   ctx.createOscillator()                              (factory)
-//   ctx.createGain()                                    (factory)
-//   osc.connect(gain).connect(ctx.destination)          (chained connect)
-//   osc.frequency.value, osc.type, osc.start, osc.stop  (oscillator shape)
-//   gain.gain.value, gain.gain.setTargetAtTime          (gain envelope shape)
+//   ctx.state                                              (property read)
+//   ctx.currentTime                                        (property read — envelope base time)
+//   ctx.resume()                                           (method)
+//   ctx.createOscillator()                                 (factory)
+//   ctx.createGain()                                       (factory)
+//   osc.connect(gain).connect(ctx.destination)             (chained connect)
+//   osc.frequency.value, osc.type, osc.start, osc.stop     (oscillator shape)
+//   gain.gain.value, gain.gain.setValueAtTime,             (gain envelope shape)
+//     gain.gain.linearRampToValueAtTime
 //
 // The mock covers exactly those surfaces — nothing speculative.
 //
@@ -110,7 +112,10 @@ class MockAudioParam {
   constructor() {
     this.value = 0;
   }
-  setTargetAtTime() { /* no-op — gain-envelope shaping doesn't matter in tests */ }
+  // playBeep shapes the gain envelope with these two; both are no-ops in tests —
+  // the curve doesn't affect any assertion, only that the calls don't throw.
+  setValueAtTime() { /* no-op */ }
+  linearRampToValueAtTime() { /* no-op */ }
 }
 
 class MockAudioNode {
@@ -142,6 +147,9 @@ class MockAudioContext {
   constructor() {
     this.state = 'running';
     this.destination = new MockAudioNode();
+    // playBeep reads currentTime as the envelope base; a static 0 suffices
+    // because the envelope-shaping methods above are no-ops.
+    this.currentTime = 0;
   }
   resume() {
     this.state = 'running';
