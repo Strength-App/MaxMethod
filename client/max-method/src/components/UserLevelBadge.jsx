@@ -4,6 +4,52 @@ import { levelProgress } from '../utils/classification';
 const PHASE_TRANSITION = 'width 600ms cubic-bezier(0.22, 1, 0.36, 1)';
 const HOLD_MS = 80;
 
+/**
+ * UserLevelBadge — the strength-level badge: a fine-level label plus an optional
+ * animated progress bar toward the next tier.
+ *
+ * Three render outcomes (decided after all hooks run, to keep hook order stable):
+ *   1. `nullState` → an empty-state prompt to log a big-3 lift (rendered even
+ *      without sex/bodyweight — it's a static message, not a computed badge).
+ *   2. sex or bodyweight missing → renders `null` (can't choose a threshold table).
+ *   3. otherwise → the normal badge. At the Elite tier (no next level) the
+ *      thresholds collapse to "Maxed Out" and the corner labels show "—".
+ *
+ * Beginner-1 anchor: for a Beginner-1 user with a non-null `beginner1Anchor`, the
+ * bar fills from the anchor (their total when they first reached Beginner 1)
+ * toward the Beginner-2 threshold, and the left corner shows the anchor instead
+ * of the table floor — so sub-floor users see real progress instead of a bar
+ * pinned at 0. If the anchor exceeds the current total the fill clamps to 0 while
+ * the anchor stays visible (the exact bounds math is in the `computePct` comment
+ * below).
+ *
+ * Level-up animation: when `animateFromTotal` differs from `total`, a phase
+ * machine animates the bar — single-stage for a within-tier change, or a staged
+ * Phase A → snap → Phase B for a tier promotion, firing `onPhaseTransition` at the
+ * tier swap. Reduced-motion users skip the staged build-up. `aria-valuenow` always
+ * reflects the settled post-state regardless of animation phase.
+ *
+ * @param {Object} props
+ * @param {'female'|'male'|'other'|string} props.sex Selects the threshold table
+ *   ('female' → female table; anything else → male).
+ * @param {number|string} props.bodyweight Bodyweight; floored/clamped to a table
+ *   row by `levelProgress`.
+ * @param {number|string} props.total Big-3 total. Must be finite to render the
+ *   normal badge.
+ * @param {number|null} [props.animateFromTotal=null] A prior total to animate
+ *   FROM. When null or equal to `total`, the bar renders statically at its final fill.
+ * @param {boolean} [props.showProgress=true] When false, renders only the level
+ *   label (no progress bar / progressbar).
+ * @param {boolean} [props.wide=false] Adds the `--wide` layout modifier to the root.
+ * @param {boolean} [props.nullState=false] Render the empty-state prompt instead of
+ *   a badge (takes precedence over the normal path).
+ * @param {number|null} [props.beginner1Anchor=null] Beginner-1 entry total; used as
+ *   the bar origin only at the Beginner-1 tier (see "Beginner-1 anchor" above).
+ * @param {() => void} [props.onPhaseTransition] Called once at the tier swap of a
+ *   level-up animation (and immediately, on mount, for reduced-motion users).
+ * @returns {JSX.Element|null} The badge, the empty-state element, or `null` when
+ *   sex/bodyweight are missing or `total` is non-finite.
+ */
 function UserLevelBadge({
   sex, bodyweight, total,
   animateFromTotal = null, showProgress = true, wide = false,
