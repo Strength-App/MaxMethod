@@ -7,6 +7,22 @@ const BEEP_FREQ_HZ = 720;
 const BEEP_DURATION_S = 0.3;
 const BEEP_PEAK_GAIN = 0.4;
 
+/**
+ * Provides the app-wide countdown timer state machine via context. Mounted once
+ * near the root, so the timer is a single live instance shared by every consumer
+ * (Timer, ToolsFAB, …) — there is no per-page snapshot to drift.
+ *
+ * Accuracy uses a timestamp model: the source of truth is `endsAt - Date.now()`,
+ * read from the tick interval and from pause/adjust, so a backgrounded tab or a
+ * reconciliation pause can't accumulate drift the way a per-tick decrement would.
+ * A single interval lives here (not at consumers), active only while running and
+ * cleared the instant status leaves `'running'`. On finish, a Web Audio beep
+ * plays (best-effort — silent if `AudioContext` is unavailable).
+ *
+ * @param {object} props
+ * @param {React.ReactNode} props.children - Subtree that can read the timer.
+ * @returns {JSX.Element} The provider wrapping `children`.
+ */
 export function ToolsProvider({ children }) {
   // Timer state — timestamp model. Source of truth for accuracy is
   // (endsAt - Date.now()), read from interval callbacks (impure read kept
@@ -141,12 +157,35 @@ export function ToolsProvider({ children }) {
   return <ToolsContext.Provider value={value}>{children}</ToolsContext.Provider>;
 }
 
+/**
+ * @typedef {object} TimerApi
+ * @property {'idle'|'running'|'paused'|'finished'} status - Current phase.
+ * @property {number} remainingMs - Milliseconds left (0 when idle/finished).
+ * @property {number} durationMs - Duration the timer was started with (0 when idle).
+ * @property {(ms: number) => void} start - Begin a countdown of `ms`; ignored for non-finite or ≤ 0.
+ * @property {() => void} pause - Freeze a running timer at its current remaining.
+ * @property {() => void} resume - Resume a paused timer from its frozen remaining.
+ * @property {() => void} reset - Return to idle and clear remaining/duration.
+ * @property {(deltaMs: number) => void} adjust - Add/subtract ms while running or paused (clamps at 0); no-op when idle/finished or for a zero/non-finite delta.
+ */
+
+/**
+ * Access the Tools context value.
+ *
+ * @returns {{timer: TimerApi}} The tools context (currently just the timer).
+ * @throws {Error} If called outside a `<ToolsProvider>`.
+ */
 export function useTools() {
   const ctx = useContext(ToolsContext);
   if (!ctx) throw new Error('useTools must be used inside <ToolsProvider>');
   return ctx;
 }
 
+/**
+ * Convenience accessor for the timer API — equivalent to `useTools().timer`.
+ *
+ * @returns {TimerApi} The timer state and controls.
+ */
 export function useTimer() {
   return useTools().timer;
 }
