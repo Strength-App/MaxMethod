@@ -110,6 +110,9 @@ describe('ToolsContext timer — countdown and finish', () => {
     // boundary in a single step would fire every subsequent tick synchronously
     // before React could clear the interval — a fake-timer artifact, not real
     // behavior, since in real time the interval is cleared between 250ms ticks.)
+    // Principle: characterize the production contract ("one beep"), not the
+    // test-environment artifact — the same discipline as #jsdom-environment-mocks'
+    // "don't characterize the jsdom degradation."
     act(() => vi.advanceTimersByTime(1000));
     expect(window.AudioContext.prototype.createOscillator).toHaveBeenCalledTimes(1);
     // With the interval now cleared, further time produces no additional beeps.
