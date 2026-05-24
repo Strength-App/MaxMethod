@@ -33,6 +33,19 @@ function formatA11y(ms) {
   return `${seconds} ${seconds === 1 ? 'second' : 'seconds'}`;
 }
 
+/**
+ * Count-up stopwatch tool. Self-contained — owns its state machine
+ * (idle → running ⇄ paused) and its own 100ms tick interval; does not use
+ * ToolsContext. Elapsed time is derived from a timestamp model
+ * (`Date.now() - startedAt`, plus any elapsed-before-pause), re-read on each
+ * tick so it stays accurate across tab backgrounding rather than drifting like a
+ * per-tick accumulator, and clamped at 99:59.99. Start begins — or, from paused,
+ * resumes — the count; Pause freezes it; Reset clears to idle. The display reads
+ * MM:SS.CS (aria-hidden); an sr-only aria-live region announces
+ * start/resume/pause/reset. Takes no props.
+ *
+ * @returns {JSX.Element} The stopwatch tool UI.
+ */
 export default function Stopwatch() {
   const [status, setStatus] = useState('idle'); // idle | running | paused
   const [startedAt, setStartedAt] = useState(null);
