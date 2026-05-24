@@ -81,6 +81,21 @@ function HoldRepeatButton({ children, onTrigger, disabled, className, ariaLabel 
   );
 }
 
+/**
+ * Rest / interval timer tool. The user composes a duration (minute/second
+ * steppers or preset buttons), then start/pause/resume/reset and ±30s controls
+ * drive the shared countdown owned by ToolsContext — this component is a thin
+ * consumer of `useTimer`, not the timer itself. The display shows the entered
+ * duration while idle and the live remaining time while running, formatted MM:SS
+ * and rounded UP so it never reads 00:00 mid-countdown. Steppers support
+ * press-and-hold repeat; the visual readout is aria-hidden with an sr-only
+ * aria-live announcement (plus a separate ±30s-adjustment announcement). The
+ * button set varies by status: idle → Start; running → Pause / Reset / ±30s;
+ * paused → Resume / Reset / ±30s; finished → Dismiss (steppers and presets
+ * return for the next timer). Takes no props.
+ *
+ * @returns {JSX.Element} The timer tool UI.
+ */
 export default function Timer() {
   const { status, remainingMs, start, pause, resume, reset, adjust } = useTimer();
 
