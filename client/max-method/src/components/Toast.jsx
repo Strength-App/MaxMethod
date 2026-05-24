@@ -13,6 +13,23 @@ import { useEffect, useRef } from 'react';
  *
  * Auto-dismiss pauses while the pointer is over the toast or focus is inside,
  * so users have time to read longer messages or act on the action button.
+ * Leaving (mouseleave / focusout) restarts a fresh full-duration countdown.
+ * The pending timer is cleared on unmount and whenever `open` flips to false,
+ * so a closed or unmounted toast never fires a late `onDismiss`.
+ *
+ * @param {Object} props
+ * @param {boolean} props.open Whether the toast is shown. When false the
+ *   component renders nothing and any pending auto-dismiss timer is cleared.
+ * @param {() => void} [props.onDismiss] Called when the toast should close — on
+ *   auto-timeout and on the × button, but never on pause. The parent owns `open`
+ *   and is expected to flip it to false in response.
+ * @param {number} [props.autoDismissMs=12000] Auto-dismiss delay in ms. A value
+ *   `<= 0` disables auto-dismiss entirely (the toast stays until manually closed).
+ * @param {'status'|'alert'} [props.role='status'] ARIA live-region role.
+ *   `'status'` pairs with `aria-live="polite"` (informational); `'alert'` pairs
+ *   with `aria-live="assertive"` (urgent).
+ * @param {React.ReactNode} props.children Toast body content.
+ * @returns {JSX.Element|null} The toast element, or `null` when `open` is false.
  */
 export default function Toast({
   open,
