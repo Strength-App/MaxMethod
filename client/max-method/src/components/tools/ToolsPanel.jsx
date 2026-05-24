@@ -37,6 +37,25 @@ function renderTool(activeTool, tool) {
   }
 }
 
+/**
+ * The Tools modal — a master→detail surface composing the five tools. On the
+ * menu (`activeTool === 'menu'`) it lists the tools; selecting one opens that
+ * tool's detail with a Back affordance. Controlled: the parent owns `isOpen` and
+ * `activeTool` and supplies the mutating callbacks. Renders nothing when closed.
+ *
+ * Accessibility: a `role="dialog" aria-modal` panel wired to `useModalA11y`
+ * (focus trap, Esc-to-close, initial focus into the panel, focus return to the
+ * opener on close, body-scroll lock). A local effect also shifts focus on
+ * master↔detail transitions — to Back when entering a tool, to the first menu
+ * item when returning. A `tabIndex=-1` backdrop button closes on click.
+ *
+ * @param {object} props
+ * @param {boolean} props.isOpen - Whether the panel is open (renders null when false).
+ * @param {() => void} props.onClose - Called to close the panel (Escape, backdrop click).
+ * @param {string} props.activeTool - Current view: `'menu'` or a tool id (`'1rm'` | `'rpe'` | `'plates'` | `'timer'` | `'stopwatch'`).
+ * @param {(toolId: string) => void} props.onSelectTool - Called with a tool id (or `'menu'`) to navigate.
+ * @returns {JSX.Element | null} The modal, or `null` when closed.
+ */
 export default function ToolsPanel({ isOpen, onClose, activeTool, onSelectTool }) {
   const modalRef = useModalA11y({ isOpen, onClose });
   const backBtnRef = useRef(null);
