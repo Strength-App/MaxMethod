@@ -15,6 +15,24 @@ import { useEffect, useRef, useState } from 'react';
  * responsible for closing the menu — most flows close immediately, but some
  * need to swap focus elsewhere (e.g. the day.jsx swap panel autofocuses an
  * EquipmentSelect trigger) and bypassing the default returnFocusRef path.
+ *
+ * @param {Object} props
+ * @param {boolean} props.open Whether the menu is shown. When false the
+ *   component renders nothing and, if `returnFocusRef` is set, returns focus to
+ *   the opener.
+ * @param {number} props.x Requested viewport x (px) for the menu's left edge,
+ *   before edge-flip adjustment.
+ * @param {number} props.y Requested viewport y (px) for the menu's top edge,
+ *   before edge-flip adjustment.
+ * @param {Array<{label: string, onSelect: () => void}>} props.items Menu items,
+ *   rendered one button each. `onSelect` fires on Enter / Space / click and is
+ *   itself responsible for closing the menu — ContextMenu does NOT auto-close on
+ *   activation. There is no `disabled` support.
+ * @param {() => void} props.onClose Called to request close — on Escape, Tab,
+ *   outside-click, and scroll. The parent owns `open`.
+ * @param {React.RefObject<HTMLElement>} [props.returnFocusRef] If provided, its
+ *   `.current` is focused when the menu closes (focus return to the opener).
+ * @returns {JSX.Element|null} The menu element, or `null` when `open` is false.
  */
 export default function ContextMenu({
   open,
