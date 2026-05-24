@@ -31,6 +31,11 @@ import Timer from './Timer.jsx';
 // shouldAdvanceTime lets the fake clock track real time, so userEvent's internal
 // awaits resolve (a plain vi.useFakeTimers() hangs userEvent). Explicit
 // vi.advanceTimersByTime jumps still work on top, for the countdown/hold timers.
+// Cost note: each awaited user.click costs ~130ms here (its awaits resolve through
+// the advancing clock), so SYNCHRONOUS bulk walks (e.g. the minutes-clamp's 30
+// steps) use fireEvent.click instead — the clamp is a synchronous onClick, so
+// fireEvent drives it identically without the per-click cost. userEvent stays for
+// genuine interaction/dispatch tests. See CLAUDE.md → Test-design hazards.
 beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
 afterEach(() => vi.useRealTimers());
 
@@ -66,14 +71,17 @@ describe('Timer — duration entry and clamping (Timer-local)', () => {
     expect(screen.getByRole('button', { name: 'Start' })).toBeEnabled();
   });
 
-  it('clamps minutes to [0, 30]', async () => {
-    const user = setup();
+  it('clamps minutes to [0, 30]', () => {
+    setup();
     expect(screen.getByRole('button', { name: 'Decrease minutes' })).toBeDisabled(); // at 0
-    for (let i = 0; i < 30; i++) {
-      await user.click(screen.getByRole('button', { name: 'Increase minutes' }));
-    }
+    // Plain minutes stepper (no hold-to-repeat) → 30 discrete steps. The clamp is a
+    // synchronous onClick handler (setMinutes(m => Math.min(30, m + 1))), so
+    // fireEvent.click drives it identically without userEvent's ~130ms-per-await
+    // cost (30 awaited clicks ≈ 4s, 82% of the 5000ms budget). See the file header.
+    const incMinutes = screen.getByRole('button', { name: 'Increase minutes' });
+    for (let i = 0; i < 30; i++) fireEvent.click(incMinutes);
     expect(screen.getByText('30:00')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Increase minutes' })).toBeDisabled(); // at 30
+    expect(incMinutes).toBeDisabled(); // at 30
   });
 
   it('clamps seconds to [0, 59]', () => {
