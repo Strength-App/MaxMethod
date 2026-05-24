@@ -26,17 +26,11 @@ import { useState, useCallback } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
-import * as axeMatchers from 'vitest-axe/matchers';
 import { ToolsProvider } from '../../context/ToolsContext.jsx';
 import ToolsPanel from './ToolsPanel.jsx';
 
-// vitest-axe matcher registration is local to this file — ToolsPanel is the
-// first axe-using test in the codebase. Lifting to src/test/setup.js becomes
-// worth doing once Batches 7 (EquipmentSelect) and 8 (PostWorkoutModal) land
-// their axe tests; at that point three+ consumers justify the consolidation.
-// Until then, local registration keeps axe opt-in and avoids mid-batch
-// infrastructure changes for downstream batches' benefit.
-expect.extend(axeMatchers);
+// toHaveNoViolations is registered globally in src/test/setup.js (lifted in
+// Batch 7); this file only calls axe() in the accessibility describe block below.
 
 // Stateful harness: ToolsPanel is controlled (parent owns isOpen + activeTool).
 // Callbacks are wrapped in useCallback so they're stable — useModalA11y's effect
