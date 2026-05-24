@@ -9,6 +9,20 @@ function formatTime(ms) {
   return `${pad(Math.floor(totalSecs / 60))}:${pad(totalSecs % 60)}`;
 }
 
+/**
+ * Floating action button that launches the Tools panel and doubles as a live
+ * timer indicator. A wiring-only consumer of ToolsContext (reads status +
+ * remainingMs via useTimer): idle shows a tools icon labelled "Open Tools";
+ * running/paused show the remaining time (MM:SS, rounded up) with a descriptive
+ * label; finished shows "Done!". Status also drives indicator/urgent/finished
+ * styling classes. The icon is aria-hidden; the button's accessible name is the
+ * status-specific aria-label. Tapping invokes `onClick` — the parent owns what
+ * that does (open the panel; on finish, also dismiss the timer).
+ *
+ * @param {object} props
+ * @param {() => void} props.onClick - Invoked when the FAB is tapped.
+ * @returns {JSX.Element} The Tools FAB button.
+ */
 export default function ToolsFAB({ onClick }) {
   const { status, remainingMs } = useTimer();
   const isIndicator = status !== 'idle';
