@@ -1,0 +1,234 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`UserLevelBadge — snapshots (static state; see #snapshot-conventions) > matches the Beginner-1 anchored badge (origin = anchor) 1`] = `
+<DocumentFragment>
+  <div
+    class="user-level-badge"
+  >
+    <div
+      class="user-level-badge__label"
+    >
+      Beginner 1
+    </div>
+    <div
+      class="user-level-badge__bar-region"
+    >
+      <div
+        class="user-level-badge__bar-top-row"
+      >
+        <div
+          class="user-level-badge__bar-corner-name"
+        >
+          Beginner 1
+        </div>
+        <div
+          class="user-level-badge__bar-mid-progress"
+        >
+          <span
+            class="user-level-badge__bar-progress-lbs"
+          >
+            43 lbs
+          </span>
+           to Beginner 2
+        </div>
+        <div
+          class="user-level-badge__bar-corner-name user-level-badge__bar-corner-name--right"
+        >
+          Beginner 2
+        </div>
+      </div>
+      <div
+        aria-label="50% to Beginner 2"
+        aria-valuemax="100"
+        aria-valuemin="0"
+        aria-valuenow="50"
+        class="user-level-badge__bar-track"
+        role="progressbar"
+      >
+        <div
+          class="user-level-badge__bar-fill"
+          style="width: 50%;"
+        />
+      </div>
+      <div
+        class="user-level-badge__bar-bottom-row"
+      >
+        <div
+          class="user-level-badge__bar-corner-value"
+        >
+          600
+        </div>
+        <div
+          class="user-level-badge__bar-mid-percent"
+        >
+          50%
+        </div>
+        <div
+          class="user-level-badge__bar-corner-value user-level-badge__bar-corner-value--right"
+        >
+          686
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`UserLevelBadge — snapshots (static state; see #snapshot-conventions) > matches the Elite (maxed-out) badge 1`] = `
+<DocumentFragment>
+  <div
+    class="user-level-badge"
+  >
+    <div
+      class="user-level-badge__label"
+    >
+      Elite
+    </div>
+    <div
+      class="user-level-badge__bar-region"
+    >
+      <div
+        class="user-level-badge__bar-top-row"
+      >
+        <div
+          class="user-level-badge__bar-corner-name"
+        >
+          Elite
+        </div>
+        <div
+          class="user-level-badge__bar-mid-progress"
+        />
+        <div
+          class="user-level-badge__bar-corner-name user-level-badge__bar-corner-name--right"
+        >
+          —
+        </div>
+      </div>
+      <div
+        aria-label="Maxed out"
+        aria-valuemax="100"
+        aria-valuemin="0"
+        aria-valuenow="100"
+        class="user-level-badge__bar-track"
+        role="progressbar"
+      >
+        <div
+          class="user-level-badge__bar-fill"
+          style="width: 100%;"
+        />
+      </div>
+      <div
+        class="user-level-badge__bar-bottom-row"
+      >
+        <div
+          class="user-level-badge__bar-corner-value"
+        >
+          1339
+        </div>
+        <div
+          class="user-level-badge__bar-mid-percent"
+        >
+          <span
+            class="user-level-badge__bar-maxed"
+          >
+            Maxed Out
+          </span>
+        </div>
+        <div
+          class="user-level-badge__bar-corner-value user-level-badge__bar-corner-value--right"
+        >
+          —
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`UserLevelBadge — snapshots (static state; see #snapshot-conventions) > matches the normal mid-tier badge (Novice 2, 50% fill) 1`] = `
+<DocumentFragment>
+  <div
+    class="user-level-badge"
+  >
+    <div
+      class="user-level-badge__label"
+    >
+      Novice 2
+    </div>
+    <div
+      class="user-level-badge__bar-region"
+    >
+      <div
+        class="user-level-badge__bar-top-row"
+      >
+        <div
+          class="user-level-badge__bar-corner-name"
+        >
+          Novice 2
+        </div>
+        <div
+          class="user-level-badge__bar-mid-progress"
+        >
+          <span
+            class="user-level-badge__bar-progress-lbs"
+          >
+            29 lbs
+          </span>
+           to Novice 3
+        </div>
+        <div
+          class="user-level-badge__bar-corner-name user-level-badge__bar-corner-name--right"
+        >
+          Novice 3
+        </div>
+      </div>
+      <div
+        aria-label="50% to Novice 3"
+        aria-valuemax="100"
+        aria-valuemin="0"
+        aria-valuenow="50"
+        class="user-level-badge__bar-track"
+        role="progressbar"
+      >
+        <div
+          class="user-level-badge__bar-fill"
+          style="width: 50%;"
+        />
+      </div>
+      <div
+        class="user-level-badge__bar-bottom-row"
+      >
+        <div
+          class="user-level-badge__bar-corner-value"
+        >
+          841
+        </div>
+        <div
+          class="user-level-badge__bar-mid-percent"
+        >
+          50%
+        </div>
+        <div
+          class="user-level-badge__bar-corner-value user-level-badge__bar-corner-value--right"
+        >
+          899
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`UserLevelBadge — snapshots (static state; see #snapshot-conventions) > matches the null-state message 1`] = `
+<DocumentFragment>
+  <div
+    class="user-level-badge"
+  >
+    <div
+      class="user-level-badge__empty-message"
+    >
+      Log a workout with a Bench Press, Squat, or Deadlift to start your level progression.
+    </div>
+  </div>
+</DocumentFragment>
+`;
