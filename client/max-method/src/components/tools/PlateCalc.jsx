@@ -14,10 +14,24 @@ const PLATE_GAP = 1;
 const BAR_LEAD_LEFT = 24;
 const PLATE_X_START = BAR_LEAD_LEFT;
 
-// Greedy plate packing. Greedy is optimal for the [45, 25, 10, 5, 2.5]
-// denomination set because each plate is ≥ next, with the 45→25 ratio of 1.8
-// being the tightest case (and bounded since at most 1× 25 fits after each 45).
-// Integer-tenths math avoids 2.5 lb float drift in the subtraction loop.
+/**
+ * Compute the per-side plate breakdown for a target/bar pair.
+ *
+ * @param {number} target - Desired total weight in lbs (bar included).
+ * @param {number} bar - Bar weight in lbs.
+ * @returns {{kind: 'empty'}
+ *   | {kind: 'invalid', message: string}
+ *   | {kind: 'ok', plates: number[], perSideLbs: number}}
+ *   A tagged result: `empty` for a missing/zero/negative target, `invalid`
+ *   (with a user-facing message) when the bar is non-numeric/negative, the
+ *   target is below the bar, or the weight can't be loaded in 5 lb symmetric
+ *   increments, and `ok` with the greedy per-side plate list otherwise.
+ *
+ * Greedy (largest-first) is optimal for the [45, 25, 10, 5, 2.5] denomination
+ * set because each plate is ≥ the next, with the 45→25 ratio of 1.8 the
+ * tightest case (and bounded — at most 1× 25 fits after each 45). Integer-
+ * tenths math avoids 2.5 lb float drift in the subtraction loop.
+ */
 function computePlates(target, bar) {
   if (!Number.isFinite(target) || target <= 0) {
     return { kind: 'empty' };
@@ -66,6 +80,9 @@ function formatBreakdown(plates) {
     .join(', ');
 }
 
+// Screen-reader variant of formatBreakdown: spells denominations as words
+// (e.g. "two and a half pound") and pluralizes, since "2.5" and "×" don't read
+// cleanly aloud.
 function formatA11yBreakdown(plates) {
   if (plates.length === 0) return 'bar only, no plates';
   const counts = new Map();
@@ -80,6 +97,9 @@ function formatA11yBreakdown(plates) {
   return parts.join(', ');
 }
 
+// Decorative plate-stack diagram. Rendered inside an aria-hidden wrapper, so
+// its role="img"/aria-label is not surfaced to assistive tech (the sr-only
+// aria-live region is the accessible channel); the label is kept for parity.
 function PlateStackSVG({ plates }) {
   const svgWidth = PLATE_X_START + Math.max(plates.length, 0) * (PLATE_WIDTH + PLATE_GAP) + 4;
   return (
@@ -122,6 +142,25 @@ function PlateStackSVG({ plates }) {
   );
 }
 
+/**
+ * Barbell plate calculator. Given a target total weight and a bar weight,
+ * renders the plates to load PER SIDE as a greedy (largest-first) breakdown,
+ * a decorative plate-stack diagram, and an sr-only live announcement.
+ *
+ * Three display states, driven by `computePlates`:
+ *   - empty   — missing/zero/negative target: idle "Plate Loading" prompt.
+ *   - invalid — bar non-numeric/negative, target below bar, or target not
+ *               loadable in 5 lb symmetric increments: an error message naming
+ *               the nearest loadable weights.
+ *   - ok      — a per-side breakdown ("Bar only — no plates" at the floor).
+ *
+ * Accessibility: the visual result (diagram, label, note) is aria-hidden; the
+ * accessible channel is a single sr-only aria-live region that announces the
+ * full loading or the error. Takes no props — target starts empty, bar
+ * defaults to 45.
+ *
+ * @returns {JSX.Element} The plate calculator UI.
+ */
 export default function PlateCalc() {
   const [target, setTarget] = useState('');
   const [bar, setBar] = useState('45');
