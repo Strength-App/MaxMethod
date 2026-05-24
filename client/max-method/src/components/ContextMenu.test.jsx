@@ -21,6 +21,15 @@
 // `await waitFor(() => expect(...).toHaveFocus())`, which resolves whether focus
 // lands synchronously (the focus-follows-highlight effect also fires on open) or
 // one rAF tick later — rather than fake-timer flushing. No vi.useFakeTimers here.
+// EVERY post-key-press focus assertion likewise uses waitFor — defensive hygiene
+// because focus-follows-highlight is EFFECT-driven (the [highlightedIndex, open]
+// effect calls .focus() after the keydown handler's setState commits), so a bare
+// toHaveFocus() can race the effect's commit on a slow runner. NOTE: the actual
+// post-merge CI flake was a deeper rAF focus-STEAL (the open-effect's deferred
+// first-item focus firing after a nav), fixed at the source in the accompanying
+// fix(ContextMenu) commit — these waitFor wraps are hardening, not that fix. See
+// docs/follow-ups.md#waitfor-discipline-for-effect-driven-focus (effect-ordering,
+// not just effect-lag).
 //
 // Viewport-edge flip (Q2 = stub): the "menu must not render off-screen" flip
 // (lines 38-49) is a CORRECTNESS invariant, not aesthetic positioning, so it is
@@ -121,11 +130,11 @@ describe('ContextMenu — keyboard navigation', () => {
     render(<Harness items={makeItems()} onClose={vi.fn()} />);
     await waitFor(() => expect(firstItem()).toHaveFocus());
     await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('menuitem', { name: 'View in Library' })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'View in Library' })).toHaveFocus());
     await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('menuitem', { name: 'Remove' })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Remove' })).toHaveFocus());
     await user.keyboard('{ArrowDown}'); // wrap back to first
-    expect(firstItem()).toHaveFocus();
+    await waitFor(() => expect(firstItem()).toHaveFocus());
   });
 
   it('ArrowUp from the first item wraps to the last', async () => {
@@ -133,7 +142,7 @@ describe('ContextMenu — keyboard navigation', () => {
     render(<Harness items={makeItems()} onClose={vi.fn()} />);
     await waitFor(() => expect(firstItem()).toHaveFocus());
     await user.keyboard('{ArrowUp}');
-    expect(screen.getByRole('menuitem', { name: 'Remove' })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Remove' })).toHaveFocus());
   });
 
   it('Home focuses the first item and End the last', async () => {
@@ -141,9 +150,9 @@ describe('ContextMenu — keyboard navigation', () => {
     render(<Harness items={makeItems()} onClose={vi.fn()} />);
     await waitFor(() => expect(firstItem()).toHaveFocus());
     await user.keyboard('{End}');
-    expect(screen.getByRole('menuitem', { name: 'Remove' })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'Remove' })).toHaveFocus());
     await user.keyboard('{Home}');
-    expect(firstItem()).toHaveFocus();
+    await waitFor(() => expect(firstItem()).toHaveFocus());
   });
 
   it('marks the focused item with the highlighted class', async () => {
@@ -233,7 +242,7 @@ describe('ContextMenu — highlight reset on reopen', () => {
     render(<Harness items={makeItems()} onClose={vi.fn()} withReturnFocus />);
     await waitFor(() => expect(firstItem()).toHaveFocus());
     await user.keyboard('{ArrowDown}');
-    expect(screen.getByRole('menuitem', { name: 'View in Library' })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole('menuitem', { name: 'View in Library' })).toHaveFocus());
     await user.keyboard('{Escape}');
     await waitFor(() => expect(screen.queryByRole('menu')).not.toBeInTheDocument());
     await user.click(screen.getByRole('button', { name: 'opener' }));
