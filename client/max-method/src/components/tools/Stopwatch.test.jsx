@@ -23,6 +23,12 @@
 // because it doesn't assert exact sub-second values). No keyboard contract is
 // under test, so fireEvent.click is sufficient.
 //
+// Interval cleanup on unmount is SOURCE-VERIFIED (Stopwatch.jsx's effect returns
+// clearInterval), not separately tested — React 19 silently swallows
+// setState-on-unmounted, so there is no behavioral observable to assert. This is
+// documented (rather than left implicit) on purpose, so the gap isn't mistaken
+// for behavioral pinning. See CLAUDE.md "Surprising things → Test-design hazards".
+//
 // File extension is .test.jsx per docs/decisions.md#test-file-extension-convention.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
