@@ -293,6 +293,13 @@ When an entry is acted on, move it to a "Resolved" section at the bottom (with a
 - **Trigger conditions.** The next batch where a flakiness pattern is observed and the bank-or-investigate question arises. Batch 16 synthesis is also a natural moment to codify whichever shape gets adopted.
 - **Effort / risk.** Process change only, no code. Low effort. Risk: under-discipline lets determinism bugs slip (this remediation is the cost); over-discipline (e.g. require 5 green CI runs per observation) taxes every batch.
 
+### timer-minutes-stepper-no-hold-repeat
+
+- **What.** In `src/components/tools/Timer.jsx` the **minutes** stepper is a plain `<button onClick={incMinutes}>` (no press-and-hold repeat), while the **seconds** stepper is a `HoldRepeatButton` (immediate fire + repeat every 80ms after a 400ms delay). The two steppers sit side-by-side in the same row, so the asymmetry is visible. Surfaced during the Timer test-construction-fragility fix: the minutes-clamp test had to walk 0→30 with 30 discrete clicks (no hold path to exploit), which is exactly why it was slow, whereas the seconds-clamp test reaches 59 via a single hold.
+- **Design space.** Two readings. (1) **Intentional** — minutes max at 30 (vs. seconds at 59) and step less often, so hold-to-repeat was deemed unnecessary for the smaller range. (2) **UX oversight** — symmetric steppers should behave symmetrically; a user holding the minutes "+" expecting repeat (as the seconds "+" does) gets a single increment. The side-by-side placement makes (2) the more likely read. **If picked up:** wrap the minutes ± buttons in `HoldRepeatButton` (the component already exists and is used for seconds) — small, symmetric change. Bonus: it would let the minutes-clamp test mirror the seconds-clamp test's single-hold construction exactly (`fireEvent.pointerDown` + `vi.advanceTimersByTime` + `pointerUp`), retiring the 30-fireEvent-click walk.
+- **Trigger conditions.** Any batch touching `Timer.jsx` source for a non-bug-fix reason (Batch 11+ heavy-page work, or a tools-area pass). A user report that holding the minutes stepper doesn't repeat. NOT a correctness bug — the clamp and increment work; this is an interaction-affordance consistency question, so it waits for an organic source touch.
+- **Effort / risk.** Small (swap two plain buttons for the existing `HoldRepeatButton`, mirror the disabled-prop wiring). Low risk — the hold mechanism is already proven on the seconds stepper. If done, update the minutes-clamp test to the hold construction (and this entry resolves).
+
 ---
 
 ## Resolved follow-ups
