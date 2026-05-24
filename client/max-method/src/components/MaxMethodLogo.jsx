@@ -1,3 +1,19 @@
+/**
+ * MaxMethodLogo — the Max Method brand mark, rendered as an inline SVG.
+ *
+ * Draws the barbell, the "MAX METHOD" wordmark, and the "BREAK THE STANDARD"
+ * tagline. Exposed to assistive tech as a single image: `role="img"` with an
+ * `aria-label` (the inner `<title>` is a secondary fallback for SVG-title-aware
+ * AT). Purely presentational — no state, no effects, no context.
+ *
+ * @param {Object} props
+ * @param {boolean} [props.animated=false] When `true`, the root carries the
+ *   `mm-logo` class and the CSS keyframe build-in plays (barbell assembles,
+ *   wordmark stamps in, tagline reveals). When `false`, the root carries
+ *   `mm-logo mm-logo--static`, pinning every element at its end-state with no
+ *   animation. This is the only behavioral branch in the component.
+ * @returns {JSX.Element} The logo `<svg>`.
+ */
 export default function MaxMethodLogo({ animated = false }) {
   const className = animated ? 'mm-logo' : 'mm-logo mm-logo--static';
   return (
