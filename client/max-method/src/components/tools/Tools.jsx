@@ -3,6 +3,17 @@ import { useTimer } from '../../context/ToolsContext';
 import ToolsFAB from './ToolsFAB';
 import ToolsPanel from './ToolsPanel';
 
+/**
+ * Tools composition root. Owns the open/active-tool state and wires the floating
+ * action button to the tools panel: the FAB (shown only while the panel is
+ * closed) opens the panel, and `useTimer` status drives *where* it opens — idle →
+ * the tools menu; running/paused → the Rest Timer view; finished → the Rest Timer
+ * view *and* `reset()` (tapping the finished indicator dismisses it, per F-UX2a).
+ * The panel's close and tool-selection callbacks flow back into this state. Takes
+ * no props.
+ *
+ * @returns {JSX.Element} The FAB plus the tools panel.
+ */
 export default function Tools() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTool, setActiveTool] = useState('menu');
