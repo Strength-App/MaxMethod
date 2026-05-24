@@ -18,6 +18,27 @@ import { useState, useRef, useEffect } from 'react';
  *
  * Keyboard: ArrowDown/Up, Home/End, Enter, Space (open or select), Escape (close +
  * return focus), Tab (close, no preventDefault).
+ *
+ * @param {Object} props
+ * @param {string} props.value The currently-selected option, shown in the trigger.
+ * @param {string[]} props.options The selectable options. Pass a STABLE reference —
+ *   changing the array identity resets the highlighted index (a defensive
+ *   stale-index guard). An empty array renders the trigger but it will not open.
+ * @param {Object<string, string>} [props.equipment={}] Map of option → equipment
+ *   label; when an option has one, an aria-hidden `.rp-equipment-tag--{kind}` pill
+ *   renders beside it (kind = label lowercased, whitespace → dashes).
+ * @param {(value: string) => void} props.onChange Called with the chosen option on
+ *   selection. Fires even when the chosen option equals the current value — there
+ *   is no same-value guard.
+ * @param {string} props.id Base id for the listbox (`{id}-listbox`) and each option
+ *   (`{id}-option-{idx}`), wired through aria-controls / aria-activedescendant.
+ * @param {string} [props.ariaLabel] Accessible name for both the trigger (combobox)
+ *   and the listbox.
+ * @param {boolean} [props.autoFocus=false] Focus the trigger on mount. Read once on
+ *   mount only — re-running on prop change would steal focus mid-interaction. Used
+ *   by consumers that mount this in response to a user action elsewhere (e.g.
+ *   day.jsx's swap panel).
+ * @returns {JSX.Element} The combobox: a trigger button plus, when open, the listbox.
  */
 export default function EquipmentSelect({
   value,
@@ -103,6 +124,9 @@ export default function EquipmentSelect({
     setIsOpen(true);
   }
 
+  // returnFocus (the Escape path) pulls focus back to the trigger; selection skips
+  // it because the trigger already holds focus — options are never focused (the
+  // aria-activedescendant pattern keeps roving focus off the option elements).
   function close({ returnFocus = false } = {}) {
     setIsOpen(false);
     setHighlightedIndex(null);
