@@ -1,6 +1,19 @@
 import { useState, useMemo } from 'react';
 import { estimateOneRepMax, floorTo5 } from '../../utils/epley';
 
+/**
+ * Estimated 1RM calculator. The user enters a working weight and rep count and
+ * the tool renders the Epley-estimated one-rep max, floored to the nearest 5 lb.
+ *
+ * Routes the inputs through `utils/epley.js` — `estimateOneRepMax` (with
+ * `allowHighReps: true`, so high-rep extrapolation is permitted here) then
+ * `floorTo5`. Invalid input (missing/≤0 weight, missing/<1 reps) renders an
+ * em-dash placeholder. Above 10 reps a low-accuracy note appears. The visual
+ * result is aria-hidden; the accessible channel is an sr-only aria-live region.
+ * Takes no props.
+ *
+ * @returns {JSX.Element} The 1RM calculator UI.
+ */
 export default function OneRMCalc() {
   const [weight, setWeight] = useState('');
   const [reps, setReps] = useState('');
