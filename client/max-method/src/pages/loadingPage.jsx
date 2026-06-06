@@ -13,6 +13,25 @@ const MESSAGES = [
   'Finalizing your program…',
 ];
 
+/**
+ * The "building your program" waiting screen.
+ *
+ * This screen is the hand-off between answering questions and seeing the
+ * finished program. It shows a friendly spinner with rotating status messages
+ * while it does the real work behind the scenes — exactly once, even if the
+ * page re-renders.
+ *
+ * What it does depends on where the user came from (passed along in the page's
+ * navigation state as `source`):
+ *   - From onboarding: it sends the user's strength numbers to be classified,
+ *     updates their saved profile, then asks the server to build a program
+ *     from their goals.
+ *   - From the goals screen: it just asks the server to build the program.
+ *   - From anywhere else (or with no instructions): it quietly sends them home.
+ *
+ * On success it forwards to the review-program screen carrying the brand-new
+ * program. If anything goes wrong it apologizes and sends the user back a step.
+ */
 function LoadingPage() {
   const navigate = useNavigate();
   const location = useLocation();
