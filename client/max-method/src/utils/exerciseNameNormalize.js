@@ -14,14 +14,18 @@
  * `personal_bests` inside the same file as the normalizer and applies
  * the lookup directly, so no server twin is needed for that helper.
  *
- * **Today's only alias.** `"back squat" → "Squat"`. The lookup is
- * trim+lowercase, but the output is the alias value verbatim
- * (preserves casing). Non-string inputs pass through unchanged
- * (callers may pass null/undefined defensively).
+ * **Squat-family aliases.** Real MongoDB program data spells the barbell
+ * back squat three ways — `"Squat"`, `"Squats"`, and `"Back Squat"` — all
+ * meaning the exact same lift. They collapse to the canonical `"Squat"` so a
+ * slot named any of the three counts toward the same personal best and the
+ * same big-three progression. The lookup is trim+lowercase, but the output is
+ * the alias value verbatim (preserves casing). Non-string inputs pass through
+ * unchanged (callers may pass null/undefined defensively).
  */
 
 const ALIASES = {
   "back squat": "Squat",
+  "squats": "Squat",
 };
 
 /**
@@ -40,6 +44,7 @@ const ALIASES = {
  *
  * @example
  * canonicalExerciseName('Back Squat')     // 'Squat'
+ * canonicalExerciseName('Squats')         // 'Squat'
  * canonicalExerciseName('  BACK SQUAT  ') // 'Squat' (trim + lower)
  * canonicalExerciseName('Squat')          // 'Squat' (already canonical)
  * canonicalExerciseName('Bench Press')    // 'Bench Press' (no alias)
@@ -75,6 +80,7 @@ export function canonicalExerciseName(name) {
  * @example
  * const pbs = { Squat: 405, 'Bench Press': 245 };
  * getPersonalBest(pbs, 'Back Squat')          // 405 (alias resolves)
+ * getPersonalBest(pbs, 'Squats')              // 405 (alias resolves)
  * getPersonalBest(pbs, 'OHP')                 // 0 (default fallback)
  * getPersonalBest(pbs, 'OHP', null)           // null (explicit fallback)
  * getPersonalBest({ Bench: 0 }, 'Bench', 999) // 0 (stored 0 preserved)
