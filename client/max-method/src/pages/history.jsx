@@ -5,6 +5,7 @@ import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import { useUser } from '../context/UserContext';
 import Toast from '../components/Toast';
 import { ALL_EXERCISES } from './exerciseLibrary';
+import { dateKey } from '../utils/dateUtils';
 
 function resolveWeekValue(value, wi) {
   if (Array.isArray(value)) return value[wi] ?? null;
@@ -25,8 +26,6 @@ function typeFromTitle(title = '') {
   if (t.includes('core'))  return { type: 'core',  color: '#c084fc' };
   return { type: 'full', color: '#cc0404' };
 }
-
-function dateKey(d) { return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`; }
 
 // ISO 8601 (YYYY-MM-DD) for <time dateTime>. Always pads to 4-2-2.
 function isoDate(d) {
