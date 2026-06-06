@@ -208,6 +208,21 @@ export const VIDEO_NAME_ALIASES = {
   'Close Grip Lat Pulldowns': 'Close Grip Pulldowns',
 };
 
+// ─── EXERCISE_NAME_ALIASES ───────────────────────────────────────────────────
+//
+// Lowercased legacy / synonymous exercise name → canonical library name.
+// Applied when navigating into the library (e.g. from a workout day) so older
+// program entries like "Squats" or "Back Squat" still resolve to the single
+// consolidated "Squat" card. Relocated from exerciseLibrary.jsx in Batch 12 so
+// the alias map has one home; exerciseLibrary is the only consumer today.
+// reviewProgram keeps its own local squat-swap overlay and does NOT consume
+// this map — see docs/decisions.md#reviewprogram-squat-alias-overlay.
+
+export const EXERCISE_NAME_ALIASES = {
+  'squats':     'Squat',
+  'back squat': 'Squat',
+};
+
 // ---------------------------------------------------------------------------
 // Derived catalog (relocated verbatim from pages/exerciseLibrary.jsx in
 // Batch 12). buildExerciseList expands MOVEMENT_PATTERNS into one entry per
