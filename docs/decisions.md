@@ -388,6 +388,36 @@ If you see `typescript` in `node_modules` and wonder "I thought TypeScript was o
 
 ---
 
+### onboarding-epley-unification
+
+**Decision.** `onboarding.jsx` now estimates entered-best-set 1RMs via `floorTo5(estimateOneRepMax(...))` from `utils/epley.js`, replacing a private `REP_COEFFS` percentage-coefficient table (`round((weight / coeff) / 5) * 5`). This is a **deliberate behavior change**, signed off mid-Batch-9a.
+
+**Premise correction.** The plan listed `classification.jsx` + `onboarding.jsx` as "L (route through `utils/epley.js`)", framed as a behavior-preserving dedup. Reading the code revealed the premise was wrong (same shape as the Phase-1 combobox premise correction): these pages did **not** use the Epley formula — they used a Brzycki-style percentage table that yields different numbers (e.g. bench 100×5 → 110 via the table vs 115 via `floorTo5(epley)`). So "route through epley" could not be a verbatim lift; it is a real behavior change.
+
+**What changed for users.** Entered-best-set baselines estimate slightly higher and **floor** (not round) to the nearest 5: bench 100×5 110→115, squat 150×3 160→165; true singles (reps === 1) unchanged at the lifted weight. Non-integer reps in [1,15] previously produced `NaN`; they now produce the em-dash placeholder (the util requires integer reps). Beginner/skip bodyweight-defaults never used the table and are untouched. Because onboarding feeds these maxes to `/loading` → `/classification`, a new user's seeded classification can shift by a level boundary in edge cases. Frontend-contained: onboarding submits the final maxes (not raw weight×reps), so the server consumes the new numbers with no backend change.
+
+**Alternatives considered.** (a) *Pin the percentage table verbatim, dedup only between the two pages, defer reconciliation* — the disciplined behavior-freeze default; rejected by sign-off in favor of converging on one estimator now. (b) *Skip both files* — defers the question. (c) *Unify* (chosen) — one estimator across onboarding, the OneRMCalc tool, and the server's post-log estimate.
+
+**Rationale.** A single 1RM estimator across the app removes a silent divergence where the signup estimate disagreed with every later estimate the user sees. The percentage table had no other consumer once `classification.jsx` (its dead twin) was removed.
+
+**Revisit conditions.** A product decision that the onboarding baseline should be *conservative* (round down harder) or use a different model than post-log estimation — at which point the estimator split would be reintroduced intentionally, documented, and tested.
+
+---
+
+### classification-page-removal
+
+**Decision.** `src/pages/classification.jsx` is **deleted** along with its `/classification` route and `App.jsx` navigation-hiding entry; `welcomepage.jsx`'s incomplete-onboarding login redirect is repointed from `/classification` to `/onboarding`.
+
+**Why it was dead.** `classification.jsx` was the original standalone strength-baseline screen. Commit `cf7031e` ("Added classification.jsx to onboard.jsx") folded its logic into the multi-step `onboarding.jsx`, which is the live flow (createAcc → `/onboarding`). The leftover `/classification` route rendered `<Classification />` with **no props**, but the component reads `formData.benchPressWeight` — so actually reaching the route (an existing user logging in with `onboarding_complete === false`, via `welcomepage.jsx`) crashed at render. The page held the same percentage-table estimator as onboarding (see `#onboarding-epley-unification`); removing the page removed the table's last duplicate.
+
+**Alternatives considered.** (a) *Characterize + unify it anyway by passing props in tests* — pins/changes logic that never runs live; rejected. (b) *Leave it* — leaves a crash-on-render route reachable from login; rejected. (c) *Delete + redirect* (chosen).
+
+**Rationale.** Removing dead, crash-on-render code is strictly safer than documenting around it. The welcomepage repoint is a necessary companion (its old target no longer exists) and is itself a crash fix — incomplete-onboarding logins now resume the working onboarding flow instead of hitting the broken screen.
+
+**Revisit conditions.** N/A — the behavior it implemented lives in `onboarding.jsx`.
+
+---
+
 ### rest-timer-shape-checkpoint
 
 **Decision.** Batch 10's first commit is `docs(workout): RestTimer shape comparison across day/logger` at `docs/comparisons/rest-timer.md`. The artifact resolves whether `logger.jsx`'s timer is a literal copy of `day.jsx`'s (migrate both) or a near-duplicate (extract from day only, defer logger consolidation). The determination drives the rest of the batch.
