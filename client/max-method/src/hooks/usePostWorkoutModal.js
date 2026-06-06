@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
 import { fineLevel, mirrorClassificationResponse } from '../utils/classification';
 
@@ -70,7 +69,6 @@ import { fineLevel, mirrorClassificationResponse } from '../utils/classification
 export function usePostWorkoutModal({ saveAndGetPBs, doneNavigate, onSummaryBackdrop }) {
   const navigate = useNavigate();
   const { user, setUser } = useUser();
-  const { personalBests } = useWorkout();
 
   const [postWorkoutData, setPostWorkoutData] = useState(null);
   const [modalScreen, setModalScreen] = useState('summary');
