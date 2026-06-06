@@ -1,24 +1,62 @@
 import { collapseSetDetails, formatSetLine } from '../utils/setDisplay';
 
-// Post-workout summary screen — streak row + volume/sets totals + breakdown
-// + PRs + Continue button. Self-contained; consumes data via props. Sibling
-// of PostWorkoutScreen2 (the post-recompute strength-profile view).
-// Rendered by PostWorkoutModal when modalScreen === 'summary'.
-//
-// Props:
-//   title — Screen 1 subtitle (day shows day.title; logger shows quick-session title)
-//   summaryData — { totalVolume, totalSets, breakdown, prs }
-//   streakStats — { totalSessions, weeksLogged, thisMonth, daysThisWeek }; parent-computed
-//     (day passes raw historySessions through useWorkoutStats; logger applies a
-//     synthetic-today patch first because saveAndExit fires post-dismiss)
-//   continuing — drives Continue button disabled + aria-busy state
-//   continueLabel (default 'Continue') / savingLabel (optional) — button text
-//     swap when continuing && savingLabel; absent savingLabel keeps continueLabel
-//   continueAriaLabel / savingAriaLabel — optional explicit aria-label overrides
-//   onContinue — Continue-button click handler (hook's handleContinue)
-//   ariaIdPrefix (default 'post-workout') — title/subtitle ID prefix; logger
-//     passes 'lg-post-workout' to keep summary IDs disjoint from
-//     PostWorkoutScreen2's hardcoded 'post-workout-screen2-*' IDs.
+/**
+ * The first screen a user sees after finishing a workout: a celebratory
+ * "Workout Complete" summary. It shows how the workout went — streak stats
+ * (how many sessions they've done, how consistent they've been), the totals
+ * (how much weight they moved and how many sets they did), an optional
+ * exercise-by-exercise breakdown, any personal records they hit, and a big
+ * "Continue" button that takes them to the next screen (their strength
+ * profile, PostWorkoutScreen2).
+ *
+ * This screen draws nothing on its own behalf — it is handed everything it
+ * needs through its inputs (props) and just lays it out. It is shown by
+ * PostWorkoutModal while the modal is on its "summary" step.
+ *
+ * Accessibility note: every number is shown twice. Once as a styled visual
+ * (hidden from screen readers with aria-hidden) and once as plain spoken-out
+ * text (the "sr-only" spans), e.g. "Total sessions: 12". That way a sighted
+ * user sees the polished layout and a screen-reader user hears a full sentence.
+ *
+ * @param {string} title
+ *   The subtitle shown under "Workout Complete". For a program day this is the
+ *   day's name; for an ad-hoc logger session it's the quick-session title.
+ * @param {{ totalVolume: number, totalSets: number,
+ *   breakdown?: Array<{ name: string, sets: number, volume: number,
+ *     setDetails?: Array<{ reps: number|string, weight: number|string }> }>,
+ *   prs?: Array<{ exercise: string, weight: number, reps?: number }> }} summaryData
+ *   The numbers for this workout. `breakdown` (per-exercise) and `prs`
+ *   (personal records) are optional — each section is hidden when its list is
+ *   empty or missing.
+ * @param {{ totalSessions: number, weeksLogged: number, thisMonth: number,
+ *   daysThisWeek: number }} streakStats
+ *   The consistency stats shown in the top row. The parent computes these:
+ *   day.jsx passes its workout history straight through; logger.jsx first adds
+ *   a stand-in entry for today, because logger only saves the session after
+ *   this screen is dismissed.
+ * @param {boolean} continuing
+ *   True while the "Continue" action is still saving/working. Disables the
+ *   button and marks it busy so the user can't double-tap.
+ * @param {string} [continueLabel='Continue']
+ *   The normal button text.
+ * @param {string} [savingLabel]
+ *   Optional text to show on the button while `continuing` is true (e.g.
+ *   "Saving…"). If omitted, the button keeps showing `continueLabel`.
+ * @param {string} [continueAriaLabel]
+ *   Optional spoken label for the button in its normal state (for screen
+ *   readers), when the visible text alone isn't descriptive enough.
+ * @param {string} [savingAriaLabel]
+ *   Optional spoken label for the button while it's saving.
+ * @param {() => void} onContinue
+ *   What to run when the user taps Continue (the hook's handleContinue, which
+ *   recomputes their classification and advances to the strength-profile screen).
+ * @param {string} [ariaIdPrefix='post-workout']
+ *   Prefix used to build the title/subtitle element ids. logger passes
+ *   'lg-post-workout' so these ids never collide with PostWorkoutScreen2's
+ *   fixed 'post-workout-screen2-*' ids (both screens can briefly coexist in
+ *   the DOM during transitions, and duplicate ids would break the labelling).
+ * @returns {JSX.Element} The summary screen.
+ */
 function PostWorkoutScreen1({
   title,
   summaryData,
@@ -35,6 +73,9 @@ function PostWorkoutScreen1({
   const { totalSessions, weeksLogged, thisMonth, daysThisWeek } = streakStats;
   const titleId = `${ariaIdPrefix}-title`;
   const subtitleId = `${ariaIdPrefix}-subtitle`;
+  // Pick what the button says and how it's announced. While saving, show the
+  // saving text (only if one was provided) and the saving spoken-label;
+  // otherwise show the normal text and spoken-label.
   const buttonText = continuing && savingLabel ? savingLabel : continueLabel;
   const buttonAria = continuing ? savingAriaLabel : continueAriaLabel;
 
