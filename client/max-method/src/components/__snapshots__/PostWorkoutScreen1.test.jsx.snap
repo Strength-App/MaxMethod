@@ -1,0 +1,429 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PostWorkoutScreen1 — snapshots (static state; see #snapshot-conventions) > matches the fully-populated summary (breakdown + PRs) 1`] = `
+<DocumentFragment>
+  <div
+    class="post-workout-header"
+  >
+    <div
+      class="post-workout-title"
+      id="post-workout-title"
+    >
+      Workout Complete
+    </div>
+    <div
+      class="post-workout-subtitle"
+      id="post-workout-subtitle"
+    >
+      Upper Body A
+    </div>
+  </div>
+  <div
+    aria-label="Workout streaks"
+    class="post-workout-streak-row"
+    role="group"
+  >
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          12
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Total Sessions
+      </div>
+      <span
+        class="sr-only"
+      >
+        Total sessions: 12
+      </span>
+    </div>
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          4
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Weeks Logged
+      </div>
+      <span
+        class="sr-only"
+      >
+        Weeks logged: 4
+      </span>
+    </div>
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          1
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        This Month
+      </div>
+      <span
+        class="sr-only"
+      >
+        This month: 1 session
+      </span>
+    </div>
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          3 / 7
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Days This Week
+      </div>
+      <span
+        class="sr-only"
+      >
+        Days this week: 3 of 7
+      </span>
+    </div>
+  </div>
+  <div
+    aria-label="Workout totals"
+    class="post-workout-stats-row"
+    role="group"
+  >
+    <div
+      class="post-workout-volume-block"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-volume-val"
+      >
+        12,345
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-volume-lbl"
+      >
+        Total Volume (lbs)
+      </div>
+      <span
+        class="sr-only"
+      >
+        Total volume: 12,345 pounds
+      </span>
+    </div>
+    <div
+      class="post-workout-volume-block"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-volume-val"
+      >
+        18
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-volume-lbl"
+      >
+        Total Sets
+      </div>
+      <span
+        class="sr-only"
+      >
+        Total sets: 18
+      </span>
+    </div>
+  </div>
+  <div
+    class="post-workout-breakdown"
+  >
+    <div
+      class="post-workout-breakdown-title"
+    >
+      By Exercise
+    </div>
+    <div
+      class="post-workout-breakdown-exercise"
+    >
+      <div
+        class="post-workout-breakdown-row"
+      >
+        <span
+          class="post-workout-breakdown-name"
+        >
+          Bench Press
+        </span>
+        <span
+          class="post-workout-breakdown-sets"
+        >
+          3 sets
+        </span>
+        <span
+          class="post-workout-breakdown-vol"
+        >
+          4,050 lbs
+        </span>
+      </div>
+      <ul
+        aria-label="Sets for Bench Press"
+        class="post-workout-breakdown-set-list"
+      >
+        <li
+          class="post-workout-breakdown-set-line"
+        >
+          2x5 @ 135 lbs
+        </li>
+        <li
+          class="post-workout-breakdown-set-line"
+        >
+          1x8 @ 150 lbs
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div
+    class="post-workout-breakdown post-workout-prs"
+  >
+    <div
+      class="post-workout-breakdown-title"
+    >
+      Personal Records
+    </div>
+    <div
+      class="post-workout-breakdown-row"
+    >
+      <span
+        class="post-workout-breakdown-name"
+      >
+        Squat
+      </span>
+      <span
+        class="post-workout-pr-detail"
+      >
+        315 lbs x 3 reps
+      </span>
+    </div>
+    <div
+      class="post-workout-breakdown-row"
+    >
+      <span
+        class="post-workout-breakdown-name"
+      >
+        Deadlift
+      </span>
+      <span
+        class="post-workout-pr-detail"
+      >
+        405 lbs
+      </span>
+    </div>
+  </div>
+  <button
+    class="post-workout-btn"
+  >
+    Continue
+  </button>
+</DocumentFragment>
+`;
+
+exports[`PostWorkoutScreen1 — snapshots (static state; see #snapshot-conventions) > matches the minimal summary (no breakdown, no PRs, zero volume) 1`] = `
+<DocumentFragment>
+  <div
+    class="post-workout-header"
+  >
+    <div
+      class="post-workout-title"
+      id="post-workout-title"
+    >
+      Workout Complete
+    </div>
+    <div
+      class="post-workout-subtitle"
+      id="post-workout-subtitle"
+    >
+      Upper Body A
+    </div>
+  </div>
+  <div
+    aria-label="Workout streaks"
+    class="post-workout-streak-row"
+    role="group"
+  >
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          0
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Total Sessions
+      </div>
+      <span
+        class="sr-only"
+      >
+        Total sessions: 0
+      </span>
+    </div>
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          0
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Weeks Logged
+      </div>
+      <span
+        class="sr-only"
+      >
+        Weeks logged: 0
+      </span>
+    </div>
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          0
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        This Month
+      </div>
+      <span
+        class="sr-only"
+      >
+        This month: 0 sessions
+      </span>
+    </div>
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          0 / 7
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Days This Week
+      </div>
+      <span
+        class="sr-only"
+      >
+        Days this week: 0 of 7
+      </span>
+    </div>
+  </div>
+  <div
+    aria-label="Workout totals"
+    class="post-workout-stats-row"
+    role="group"
+  >
+    <div
+      class="post-workout-volume-block"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-volume-val"
+      >
+        —
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-volume-lbl"
+      >
+        Total Volume (lbs)
+      </div>
+      <span
+        class="sr-only"
+      >
+        Total volume: none recorded
+      </span>
+    </div>
+    <div
+      class="post-workout-volume-block"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-volume-val"
+      >
+        0
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-volume-lbl"
+      >
+        Total Sets
+      </div>
+      <span
+        class="sr-only"
+      >
+        Total sets: 0
+      </span>
+    </div>
+  </div>
+  <button
+    class="post-workout-btn"
+  >
+    Continue
+  </button>
+</DocumentFragment>
+`;
