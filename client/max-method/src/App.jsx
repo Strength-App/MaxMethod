@@ -4,7 +4,6 @@ import { useUser } from './context/UserContext';
 // import pages for navigation
 import Home from './pages/home'
 import Day from './pages/day'
-import Classification from './pages/classification'
 import Goals from './pages/goals'
 import ExerciseLibrary from './pages/exerciseLibrary'
 import History from './pages/history'
@@ -88,7 +87,6 @@ function App() {
   const hideNavigation =
   location.pathname === '/welcomepage' ||
   location.pathname === '/create-account' ||
-  location.pathname === '/classification' ||
   location.pathname === '/goals' ||
   location.pathname === '/onboarding' ||
   location.pathname === '/loading' ||
@@ -125,7 +123,6 @@ function App() {
               <Route path="/create-account" element={user ? <Navigate to="/onboarding" replace /> : <CreateAcc />} />
 
               {/* ONBOARDING — requires login but not onboarding_complete */}
-              <Route path="/classification" element={user ? <Classification /> : <Navigate to="/welcomepage" replace />} />
               <Route path="/onboarding" element={user ? <Onboarding /> : <Navigate to="/welcomepage" replace />} />
               <Route path="/loading" element={user ? <LoadingPage /> : <Navigate to="/welcomepage" replace />} />
 
