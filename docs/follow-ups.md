@@ -139,6 +139,13 @@ When an entry is acted on, move it to a "Resolved" section at the bottom (with a
 - **Trigger conditions.** A third concrete consumer (likely history if its migration ever happens, or a new feature) needs something the current hook doesn't provide.
 - **Effort / risk.** N/A until triggered.
 
+### customday-dbhydration-set-state-in-effect
+
+- **What.** `customDay.jsx`'s "pull from DB once the workout loads" effect calls `setExercises(dbExercises)` synchronously inside `useEffect` (guarded by a one-shot `initialised` ref). React Compiler's `react-hooks/set-state-in-effect` flags this. It was masked until Batch 13: the page's earlier `react-hooks/immutability` violation made the compiler bail before reaching this effect, and removing the inline combobox logic (the useCombobox extraction) cleared that bail so the diagnostic now surfaces. Batch 13 added a single `set-state-in-effect` entry to `eslint-suppressions.json` and pruned the now-stale `immutability` entry — net suppression count for the file unchanged.
+- **Design space.** The effect hydrates local `exercises` state from the async-loaded `workout` context the first time it arrives non-empty. Compiler-friendly alternatives: derive the initial value during render from a stable source, key the component on the loaded workout so it re-mounts with the right initial state, or lift the precedence logic (route-state → localStorage → DB) into a small `useMemo`/initializer. All are behavior-sensitive because the localStorage-vs-DB-vs-route-state precedence is delicate (see Risk #5 two-tier persistence) — not a verbatim change.
+- **Trigger conditions.** Batch 15 or a later pass touches `customDay.jsx`'s persistence/hydration for another reason. A bug surfaces in first-load hydration. A broader sweep to make components React-Compiler-clean.
+- **Effort / risk.** Small code effort; medium risk (must preserve the route-state/localStorage/DB precedence and the no-auto-save-in-creation gate).
+
 ### rest-timer-tools-context-consolidation
 
 - **What.** Consolidate `RestTimer` (currently independent) with `ToolsContext`'s stopwatch/timer FAB — i.e., should rest timers and the FAB stopwatch share state?
