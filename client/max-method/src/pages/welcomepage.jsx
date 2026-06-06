@@ -39,8 +39,10 @@ function Welcomepage() {
         await fetchWorkout(userId)
         navigate('/home', { replace: true })
       } else {
-        // Onboarding not finished — send them to classification
-        navigate('/classification', { replace: true })
+        // Onboarding not finished — resume the multi-step onboarding flow.
+        // (Previously sent users to the standalone /classification screen,
+        // which was removed — its logic now lives in /onboarding.)
+        navigate('/onboarding', { replace: true })
       }
     } else {
       alert('Login failed: ' + response.message)
