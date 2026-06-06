@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ALL_EXERCISES } from '../config/exercises';
 import { useWorkout } from '../context/WorkoutContext';
 import { useUser } from '../context/UserContext';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
@@ -10,6 +9,7 @@ import PostWorkoutModal from '../components/PostWorkoutModal';
 import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
 import { useCombobox } from '../hooks/useCombobox';
 import { getPersonalBest } from '../utils/exerciseNameNormalize';
+import { getAllExerciseNames, isValidExercise, addToCustomExercises } from '../utils/customExercises';
 import Toast from '../components/Toast';
 import { RestTimer } from '../components/workout';
 
@@ -18,25 +18,6 @@ function getRestSeconds(name) {
   const lower = (name || '').toLowerCase();
   return BIG_THREE.some(n => lower.includes(n)) ? 120 : 90;
 }
-
-const ALL_EXERCISE_NAMES = [...new Set(ALL_EXERCISES.map(e => e.name))];
-const getCustomExerciseNames = () => { try { return JSON.parse(localStorage.getItem('customExercises') || '[]'); } catch { return []; } };
-const getAllExerciseNames = () => [...ALL_EXERCISE_NAMES, ...getCustomExerciseNames()];
-const isValidExercise = name => getAllExerciseNames().some(n => n.toLowerCase() === name.toLowerCase());
-
-const addToCustomExercises = (name) => {
-  const existing = getCustomExerciseNames();
-  if (existing.some(n => n.toLowerCase() === name.toLowerCase())) return;
-  localStorage.setItem('customExercises', JSON.stringify([...existing, name]));
-  const userId = localStorage.getItem('userId');
-  if (userId) {
-    fetch(`${API_URL}/api/users/${userId}/custom-exercises`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    }).catch(() => {});
-  }
-};
 
 function Logger() {
   const navigate = useNavigate();
