@@ -418,6 +418,20 @@ If you see `typescript` in `node_modules` and wonder "I thought TypeScript was o
 
 ---
 
+### day-display-title-filter
+
+**Decision.** The schedule grids filter day cells with `week.days.filter(d => d?.title != null)` — a **presence check** (a day is shown iff it has a non-null title), not a truthiness check. This is locked, not changed. Ground-truth matrix: `docs/comparisons/day-filter-truth-table.md`; lock: `home.test.jsx` "day-title filter (Risk #6)".
+
+**Ground-truth (Risk #6 protocol — record actual behavior before locking).** Evaluated the unmodified filter against the full input matrix: titled → shown; `null`/missing-field/`null`-day-entry → dropped; **empty-string `''` and whitespace-only `'   '` → shown**, with the literal (empty/whitespace) text as the label (the `?? \`Day N\`` fallback does not fire for them, since they aren't nullish). The recorded intent (`feedback_day_filter.md`: "title-only check") matches reality — it is a presence/non-null check, and the empty/whitespace edges the convention didn't spell out are kept rather than treated as placeholders.
+
+**Scope.** The exact filter appears at three sites: `home.jsx:151` (locked here, Batch 9a), `viewProgram.jsx:142` (Batch 9b), `reviewProgram.jsx:374` (Batch 11). The truth table is the shared reference; the other two lock when their batches touch them. Note an observed divergence (not changed): the progress counters (`totalDays`/`completedDays`) iterate **all** days including untitled placeholders, while the rendered cells are filtered — so a program padded with untitled days would show more "total days" than visible cells. Captured as a follow-up.
+
+**Alternatives considered.** Tightening to a truthiness check (`d?.title?.trim()`) so empty/whitespace days are also hidden — rejected: that's a behavior change with no demonstrated need, and Risk #6's mandate is to lock current behavior, not improve it.
+
+**Revisit conditions.** A product decision that empty/whitespace-titled days are bugs to hide — at which point all three sites change together, with the truth table updated.
+
+---
+
 ### rest-timer-shape-checkpoint
 
 **Decision.** Batch 10's first commit is `docs(workout): RestTimer shape comparison across day/logger` at `docs/comparisons/rest-timer.md`. The artifact resolves whether `logger.jsx`'s timer is a literal copy of `day.jsx`'s (migrate both) or a near-duplicate (extract from day only, defer logger consolidation). The determination drives the rest of the batch.
