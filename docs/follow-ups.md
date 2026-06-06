@@ -299,6 +299,13 @@ When an entry is acted on, move it to a "Resolved" section at the bottom (with a
 - **Trigger conditions.** A batch touching `goals.jsx`, or a UX report. Not changed in 9a.
 - **Effort / risk.** Trivial; low risk.
 
+### exercise-name-alias-map-single-source
+
+- **What.** The frontend carries **two** exercise-name alias maps that must be kept in agreement by hand: `utils/exerciseNameNormalize.js#ALIASES` (mirrored FE↔BE, used on the personal-best / big-three canonicalization path) and `config/exercises.js#EXERCISE_NAME_ALIASES` (FE-only, used by `exerciseLibrary.jsx`'s focus-exercise deep-link lookup). After [`docs/decisions.md#squat-alias-normalization-coverage`](decisions.md#squat-alias-normalization-coverage) added `"squats"` to the mirrored map, the two now hold the same squat-family entries — so they *agree today* — but nothing structurally prevents them from drifting again, and a future alias added to one and not the other would silently desync the library lookup from the PB path.
+- **Design space.** Have `exerciseLibrary.jsx` consume `canonicalExerciseName` (from the mirrored util) for its focus-exercise resolution and delete `config/exercises.js#EXERCISE_NAME_ALIASES`, leaving the mirrored util as the single FE alias source. The two are behaviorally equivalent for real exercise names (both lowercase-match and return the canonical spelling; `canonicalExerciseName` additionally trims). Note the `day.jsx`/`reviewProgram.jsx` *swap lists* are a deliberately separate concern — they carry alias spellings as real pickable entries and are **not** consumers of this normalization (see [`docs/decisions.md#reviewprogram-squat-alias-overlay`](decisions.md#reviewprogram-squat-alias-overlay)); this dedup is only about the two *lookup/normalization* maps.
+- **Trigger conditions.** A batch touching `exerciseLibrary.jsx` for another reason (cheap to fold in then); or a new alias being added that makes the two-map maintenance burden bite.
+- **Effort / risk.** Low. One import swap + one deletion + adjust `exerciseLibrary.test.jsx`'s alias test to assert via the resolved card rather than the named constant. Risk is the minor trim-vs-no-trim difference on the `focusExercise` navigation value, which is always a clean exercise name in practice.
+
 ---
 
 ## Resolved follow-ups
