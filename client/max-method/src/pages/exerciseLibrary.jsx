@@ -5,7 +5,7 @@ import { useWorkout } from '../context/WorkoutContext'
 import './exerciseLibrary.css'
 import { API_URL } from '../config/api';
 import { getPersonalBest } from '../utils/exerciseNameNormalize';
-import { ALL_EXERCISES, VIDEO_NAME_ALIASES } from '../config/exercises';
+import { ALL_EXERCISES, VIDEO_NAME_ALIASES, EXERCISE_NAME_ALIASES } from '../config/exercises';
 
 // ─── Library Video Lookup ─────────────────────────────────────────────────────
 
@@ -23,15 +23,6 @@ function sortedKey(name) {
     .map(t => t.replace(/s$/, ''))
     .sort()
     .join('')
-}
-
-// Legacy / synonymous exercise names that should resolve to a single canonical
-// library card. Applied when navigating into the library (e.g. from a workout
-// day) so that older program entries like "Squats" or "Back Squat" still land
-// on the consolidated "Squat" card.
-const EXERCISE_NAME_ALIASES = {
-  'squats':     'Squat',
-  'back squat': 'Squat',
 }
 
 function buildVideoLookup(videos) {
