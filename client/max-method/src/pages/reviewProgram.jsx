@@ -29,6 +29,10 @@ const MOVEMENT_PATTERNS = {
   ],
 };
 
+// One exercise row inside a circuit. Shows the exercise (or a "Rest"
+// placeholder) and, for non-rest moves that have alternatives, a Swap control
+// that opens an equipment-aware picker. A pick here swaps just this one
+// exercise within the circuit.
 function CircuitExRow({ ex, exIdx, slotIdx, dayIdx, onSwap }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(ex.exercise ?? ex.fixed ?? ex.label);
@@ -94,6 +98,8 @@ function CircuitExRow({ ex, exIdx, slotIdx, dayIdx, onSwap }) {
   );
 }
 
+// A circuit block: a labeled header (name · type · total time) followed by
+// its exercise rows.
 function CircuitGroup({ slot, dayIdx, onSwap }) {
   const parts = [slot.label];
   if (slot.circuitType) parts.push(slot.circuitType);
@@ -117,16 +123,22 @@ function CircuitGroup({ slot, dayIdx, onSwap }) {
   );
 }
 
-// slot here is a deduplicated slot — it has `slotIdxs: number[]` instead of `slotIdx`
+// One ordinary (non-circuit) exercise row. `slot` is a *deduplicated* slot:
+// it carries `slotIdxs: number[]` (every original slot that shared this
+// exercise) instead of a single `slotIdx`, so a swap here applies to all of
+// them at once. Shows the exercise name, its movement-pattern tag, an
+// equipment pill, and a Swap control that opens the alternatives picker.
 function SlotRow({ slot, dayIdx, onSwap }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(slot.exercise);
   const isFixed = !!slot.fixed;
   const dropdownId = `rp-slot-dd-${dayIdx}-${slot.slotIdxs.join('_')}`;
 
-  // Find alternatives: try label match, then scan all patterns for the exercise name.
-  // Fixed exercises may have slot.label set to the exercise name rather than the
-  // pattern name, so we also try resolving via FIXED_EXERCISE_PATTERN as a fallback.
+  // Work out the list of swap alternatives for this exercise. Try the
+  // movement-pattern label first; if that misses, scan every pattern for one
+  // that already contains this exercise; as a last resort (for fixed exercises
+  // whose label is the exercise name rather than a pattern name) scan the
+  // patterns for the label instead.
   const alternatives = useMemo(() => {
     if (slot.label && MOVEMENT_PATTERNS[slot.label]) {
       return MOVEMENT_PATTERNS[slot.label];
@@ -192,6 +204,32 @@ function SlotRow({ slot, dayIdx, onSwap }) {
   );
 }
 
+/**
+ * ReviewProgram — the "Review Your Program" screen.
+ *
+ * Shown right after a new program is generated and before it becomes the
+ * user's active program. It lists the days of week 1 and the exercises in
+ * each, and lets the user trade any non-fixed exercise for an
+ * equipment-appropriate alternative (for example, swapping a barbell movement
+ * for a dumbbell one). A swap chosen here is applied to that exercise across
+ * every week of the program. The core lifts ("fixed" exercises) can't be
+ * changed.
+ *
+ * The program to review is handed in through the router's navigation state
+ * (location.state), not fetched here:
+ *   - workoutLogId   — which saved program to finalize (used in the save call).
+ *   - weeks          — the generated weeks; only week 1's days are displayed.
+ *   - userId         — whose program it is (used to refresh after finalizing).
+ *   - classification — the user's strength tier, shown as a banner (optional).
+ * If workoutLogId or weeks are missing (e.g. the page was opened directly
+ * without going through generation) the user is sent back home rather than
+ * shown an empty screen.
+ *
+ * Pressing "Finalize & Start Program" saves every pending swap to the backend,
+ * refreshes the now-active workout, and returns the user to the home screen.
+ *
+ * @returns {JSX.Element|null} The review screen, or null while redirecting home.
+ */
 function ReviewProgram() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -239,6 +277,11 @@ function ReviewProgram() {
     return null;
   }
 
+  // Record a chosen replacement and reflect it immediately in the on-screen
+  // days. Swaps are tracked separately in `swaps`, keyed by day+slot (plus the
+  // position inside a circuit, when relevant), so finalizing can replay each
+  // one to the backend. A deduplicated row passes all of its slotIdxs, so a
+  // single pick updates every slot that shared the exercise.
   const handleSwap = (dayIdx, slotIdxs, newExercise, circuitExIdx = null) => {
     setSwaps(prev => {
       const next = { ...prev };
@@ -270,6 +313,9 @@ function ReviewProgram() {
     );
   };
 
+  // Persist every pending swap (one request per slot), refresh the active
+  // workout, and go home. On any failure, stay on the page and let the user
+  // retry rather than leaving them in a half-saved state.
   const handleFinalize = async () => {
     setSaving(true);
     try {
