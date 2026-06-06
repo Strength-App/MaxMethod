@@ -6,8 +6,9 @@
 // Behavior change here = parity violation requiring coordinated backend
 // updates (see docs/decisions.md#mirrored-utils).
 //
-// Currently only one alias: "back squat" → "Squat". The lookup is
-// trim+lowercase on the input but the OUTPUT is the alias value
+// Squat-family aliases: "back squat" → "Squat" and "squats" → "Squat"
+// (the same barbell lift, spelled three ways in legacy program data). The
+// lookup is trim+lowercase on the input but the OUTPUT is the alias value
 // verbatim ("Squat" preserves casing).
 
 import { describe, it, expect } from 'vitest';
@@ -33,6 +34,28 @@ describe('canonicalExerciseName', () => {
 
     it('"BaCk SqUaT" (mixed case) → "Squat"', () => {
       expect(canonicalExerciseName('BaCk SqUaT')).toBe('Squat');
+    });
+  });
+
+  describe('"squats" alias', () => {
+    it('exact "squats" → "Squat"', () => {
+      expect(canonicalExerciseName('squats')).toBe('Squat');
+    });
+
+    it('"Squats" (titlecase) → "Squat" (lowercase lookup)', () => {
+      expect(canonicalExerciseName('Squats')).toBe('Squat');
+    });
+
+    it('"SQUATS" (upper) → "Squat"', () => {
+      expect(canonicalExerciseName('SQUATS')).toBe('Squat');
+    });
+
+    it('"  Squats  " (whitespace) → "Squat" (trimmed)', () => {
+      expect(canonicalExerciseName('  Squats  ')).toBe('Squat');
+    });
+
+    it('singular "Squat" is unchanged (only the plural is an alias)', () => {
+      expect(canonicalExerciseName('Squat')).toBe('Squat');
     });
   });
 
@@ -104,6 +127,10 @@ describe('getPersonalBest', () => {
 
     it('canonicalizes "Back Squat" alias to "Squat" before lookup', () => {
       expect(getPersonalBest(personalBests, 'Back Squat')).toBe(405);
+    });
+
+    it('canonicalizes "Squats" alias to "Squat" before lookup', () => {
+      expect(getPersonalBest(personalBests, 'Squats')).toBe(405);
     });
 
     it('canonicalizes case + whitespace before lookup', () => {
