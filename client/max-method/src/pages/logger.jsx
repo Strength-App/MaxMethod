@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ALL_EXERCISES } from './exerciseLibrary';
+import { ALL_EXERCISES } from '../config/exercises';
 import { useWorkout } from '../context/WorkoutContext';
 import { useUser } from '../context/UserContext';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
