@@ -13,6 +13,23 @@ const FEATURED = [
 ];
 
 
+/**
+ * The "Programs" screen — where a logged-in user picks, manages, or
+ * creates a training program.
+ *
+ * When it opens it loads the user's saved programs from the server and
+ * lists them under "My Programs" (showing a friendly message if they
+ * have none yet). The main things a user can do here:
+ *   - Open one of their programs (taps a program card to view it).
+ *   - Delete a program they no longer want.
+ *   - Generate a brand-new program by entering their three big lifts
+ *     (bench, deadlift, squat) and bodyweight; this saves their
+ *     strength level and moves them on to the goals screen.
+ *   - Start a blank custom workout from the footer button.
+ *
+ * It also shows the user's current strength badge, a banner to step away
+ * from an active program, and a few read-only "Featured Programs" examples.
+ */
 function PickNewProgram() {
   const navigate = useNavigate();
   const { user, setUser } = useUser();
