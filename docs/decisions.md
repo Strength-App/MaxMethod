@@ -740,3 +740,71 @@ name-list helpers onto `utils/customExercises.js` in their own batches (13/14),
 at which point those duplicate copies disappear. The reviewProgram overlay's
 revisit triggers are unchanged — see
 [#reviewprogram-squat-alias-overlay](#reviewprogram-squat-alias-overlay).
+
+### squat-alias-normalization-coverage
+
+**Decision.** Complete the squat-family alias coverage on the **PB / progression
+canonicalization path** by adding `"squats" → "Squat"` to the mirrored
+`exerciseNameNormalize.ALIASES` map (client **and**
+`Backend_structure/src/utils/exerciseNameNormalize.js`, edited together per the
+[#mirrored-utils](#mirrored-utils) discipline). The map already held
+`"back squat" → "Squat"`; `"squats"` was missing, so a workout slot literally
+named `"Squats"` (legacy un-normalized MongoDB program data) wrote its personal
+best under `"Squats"` and was **not** counted toward the Squat 1RM by
+`services/processBig3Progression.js`. This is the minimal fix that makes all
+three spellings — `Squat`, `Squats`, `Back Squat` — resolve to the one canonical
+`Squat` everywhere a name is canonicalized.
+
+**Context — what was asked vs. what was needed.** The request began as "make
+movement patterns one universal map across frontend and backend." Investigation
+found the word "movement patterns" names **five distinct jobs** with
+deliberately different membership: the FE catalog (`config/exercises.js`, iterated
+to build one library card per name), the FE manual-swap lists
+(`day`/`reviewProgram`), the BE auto-select pool (`exerciseSelector.js`, mirrors
+`userRoutes.js`), the Python variation families (`variation_families.py`,
+fine-grained equivalence for the no-mesocycle-repeat rule), and the **trained
+weight model's feature schema** (`feature_names.json` one-hot-encodes the pattern
+names, so the *set of pattern keys is a frozen ML contract*). The two repos are
+also separate git repositories in two languages. The user's actual intent,
+clarified, was **alias normalization** ("Squat / Squats / Back Squat all mean the
+same lift; generation should only emit `Squat`; legacy data must still resolve")
+— not a restructuring of those five maps. The universal FE↔BE normalization
+mechanism the user wanted *already exists* as the mirrored `exerciseNameNormalize`
+util; only its coverage was incomplete.
+
+**Alternatives considered.**
+- *Full cross-repo "universal pool" unification* (canonical superset + per-purpose
+  projections + a synced `*.canonical.json` + expanding the BE auto-select pool to
+  include main lifts). Rejected: overkill for the stated need; changes
+  program-generation output; pushes the weight model to extrapolate on pool
+  members it was not trained on; spans two repos and two languages. Drafted and
+  retired before any code landed.
+- *Behavior-preserving overlay only* (the [#reviewprogram-squat-alias-overlay](#reviewprogram-squat-alias-overlay)
+  pattern, applied to `day.jsx`). Rejected as the *primary* fix: it addresses the
+  swap-list display but does **not** fix the real defect, which is on the
+  PB/progression canonicalization path.
+
+**Why this doesn't touch the other alias maps.** Adding `"squats"` to
+`exerciseNameNormalize.ALIASES` brings its coverage to parity with the FE-only
+`config/exercises.js#EXERCISE_NAME_ALIASES` (`squats` + `back squat`), so the two
+maps now *agree* — the behavioral drift is resolved without editing
+`exerciseLibrary.jsx` or `config/exercises.js`. The remaining concern is purely
+*structural* (two alias maps that could re-diverge); that is logged as a
+follow-up, not absorbed here, per Meta-Rule #17. The swap-list spellings shown in
+`day.jsx`/`reviewProgram.jsx` are a separate concern owned by their own batches
+(see [#reviewprogram-squat-alias-overlay](#reviewprogram-squat-alias-overlay)).
+
+**Rationale.** One added alias on each mirrored side, covered by characterization
+tests, fixes a real correctness bug (a `"Squats"` slot now counts toward the
+user's Squat PB and big-three progression) at the lowest possible scope and risk,
+with no change to program generation or the ML feature schema. (User-confirmed
+scope decision: focused alias fix over pool unification.)
+
+**Revisit conditions.** A genuine need emerges to share *movement-pattern
+membership* (not just exercise-name aliases) across the two repos — at which point
+the retired superset/projection/sync design is the starting point, and the ML
+feature-key freeze in `feature_names.json` is the governing constraint. Or a new
+un-normalized spelling appears in the program data (add it to both mirrored
+`ALIASES` copies in one change). The structural single-source dedup of the two FE
+alias maps is tracked at
+[`docs/follow-ups.md#exercise-name-alias-map-single-source`](follow-ups.md#exercise-name-alias-map-single-source).
