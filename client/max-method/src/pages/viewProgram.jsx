@@ -60,18 +60,28 @@ function ViewProgram() {
   useEffect(() => {
     if (!program?.workoutLogId || !editTitle || editTitle === workoutData?.title) return;
     clearTimeout(titleTimer.current);
+    // One AbortController per scheduled save. The cleanup below aborts it, so a
+    // save that's already in flight (the 500ms timer fired) is cancelled when
+    // the title changes again or the page unmounts — preventing a superseded
+    // save from landing out of order and an orphan write after navigation.
+    const controller = new AbortController();
     titleTimer.current = setTimeout(async () => {
       try {
         await fetch(`${API_URL}/api/users/workout-log/${program.workoutLogId}/title`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ title: editTitle })
+          body: JSON.stringify({ title: editTitle }),
+          signal: controller.signal
         });
       } catch (err) {
-        console.error('Failed to update title:', err);
+        // An aborted save is expected (superseded / unmounted), not an error.
+        if (err.name !== 'AbortError') console.error('Failed to update title:', err);
       }
     }, 500);
-    return () => clearTimeout(titleTimer.current);
+    return () => {
+      clearTimeout(titleTimer.current);
+      controller.abort();
+    };
   }, [editTitle]);
 
   const handleSetActive = async () => {
