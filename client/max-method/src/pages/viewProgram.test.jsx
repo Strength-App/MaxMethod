@@ -104,3 +104,39 @@ describe('viewProgram — debounced title save', () => {
     expect(titlePatches).toHaveLength(0);
   });
 });
+
+describe('viewProgram — in-flight save abort (fix armor)', () => {
+  // Behavior change: once the debounce timer fires, the PATCH is in flight; if
+  // the page then unmounts, the AbortController cancels it rather than letting
+  // it complete as an orphan write. This fails against the pre-fix code (no
+  // signal was passed, so unmount couldn't abort the request).
+  it('aborts a title save that is in flight when the page unmounts', async () => {
+    const state = { started: false, aborted: false };
+    server.use(
+      http.get(`${API_URL}/api/users/workout-log/:id`, () =>
+        HttpResponse.json({ title: 'Old Title', type: 'custom', weeks: [{ days: [] }] }),
+      ),
+      http.patch(`${API_URL}/api/users/workout-log/:id/title`, ({ request }) => {
+        state.started = true;
+        // Hold the response open until the request is aborted.
+        return new Promise((resolve) => {
+          request.signal.addEventListener('abort', () => {
+            state.aborted = true;
+            resolve(HttpResponse.json({ ok: true }));
+          });
+        });
+      }),
+    );
+
+    const { unmount } = renderViewProgram();
+    const input = await screen.findByDisplayValue('Old Title');
+    fireEvent.change(input, { target: { value: 'In Flight' } });
+
+    // Wait for the debounce to fire and the PATCH to actually start.
+    await waitFor(() => expect(state.started).toBe(true), { timeout: 2000 });
+
+    unmount();
+
+    await waitFor(() => expect(state.aborted).toBe(true), { timeout: 2000 });
+  });
+});
