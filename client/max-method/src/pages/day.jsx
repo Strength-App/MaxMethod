@@ -10,12 +10,7 @@ import PostWorkoutModal from '../components/PostWorkoutModal';
 import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
 import { getPersonalBest } from '../utils/exerciseNameNormalize';
 import { RestTimer } from '../components/workout';
-
-const BIG_THREE = ['bench', 'squat', 'deadlift'];
-function getRestSeconds(exerciseName) {
-  const lower = (exerciseName || '').toLowerCase();
-  return BIG_THREE.some(n => lower.includes(n)) ? 120 : 90;
-}
+import { getRestSeconds } from '../utils/restDuration';
 
 const movementPatterns = {
   "Horizontal Push": ["Bench Press", "Incline Bench Press", "Decline Bench Press", "Floor Press"],
