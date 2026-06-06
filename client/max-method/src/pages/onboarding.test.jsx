@@ -10,10 +10,11 @@
 // real route table. window.alert is spied (the page uses it for inline
 // validation). MSW backs the one fetch (PUT /update/:userId on skip).
 //
-// The estimated-1RM numbers asserted here pin the CURRENT percentage-table
-// estimator (REP_COEFFS). Batch 9a's refactor unifies onboarding onto the
-// Epley util (utils/epley.js), at which point these specific numbers change
-// — see the "estimated 1RM" block, which is the seam that flips.
+// The estimated-1RM numbers asserted here are the Epley util's output
+// (utils/epley.js — `floorTo5(estimateOneRepMax(...))`), shared with the
+// OneRMCalc tool and the server's post-log estimate. Batch 9a unified
+// onboarding onto this util; the prior percentage-table numbers (bench
+// 110, squat 160) are noted alongside the new ones for the historical diff.
 //
 // .test.jsx per #test-file-extension-convention — the wrappers contain JSX.
 
@@ -94,39 +95,38 @@ describe('onboarding — step navigation + validation', () => {
   });
 });
 
-describe('onboarding — estimated 1RM (percentage table)', () => {
+describe('onboarding — estimated 1RM (Epley)', () => {
   // Each lift row shows a live "EST 1RM" readout computed from weight × reps.
   // The tests fill a single lift so its readout number is the only one on the
-  // page, then assert that number directly. These numbers are the
-  // percentage-table estimator's output; the Epley unification changes them
-  // (noted per-assertion).
+  // page, then assert that number directly. Numbers are `floorTo5(epley())`;
+  // the old percentage-table value is noted for the historical diff.
   function enterBestSetMode() {
     renderOnboarding();
     completeStep1();
     fireEvent.click(screen.getByRole('radio', { name: /know my numbers/i }));
   }
 
-  it('estimates bench from a 100×5 set as 110 lbs', () => {
+  it('estimates bench from a 100×5 set as 115 lbs', () => {
     enterBestSetMode();
     fireEvent.change(screen.getByLabelText(/bench press weight/i), { target: { value: '100' } });
     fireEvent.change(screen.getByLabelText(/bench press reps/i), { target: { value: '5' } });
-    // Percentage table: round((100 / 0.89) / 5) * 5 = 110. (Epley → 115.)
-    expect(screen.getByText('110')).toBeInTheDocument();
+    // Epley: floorTo5(100 × (1 + 5/30)) = floorTo5(116.67) = 115. (Was 110.)
+    expect(screen.getByText('115')).toBeInTheDocument();
   });
 
-  it('estimates squat from a 150×3 set as 160 lbs', () => {
+  it('estimates squat from a 150×3 set as 165 lbs', () => {
     enterBestSetMode();
     fireEvent.change(screen.getByLabelText(/squat weight/i), { target: { value: '150' } });
     fireEvent.change(screen.getByLabelText(/squat reps/i), { target: { value: '3' } });
-    // Percentage table: round((150 / 0.94) / 5) * 5 = 160. (Epley → 165.)
-    expect(screen.getByText('160')).toBeInTheDocument();
+    // Epley: floorTo5(150 × (1 + 3/30)) = floorTo5(165) = 165. (Was 160.)
+    expect(screen.getByText('165')).toBeInTheDocument();
   });
 
   it('returns the weight unchanged for a true single (deadlift 200×1)', () => {
     enterBestSetMode();
     fireEvent.change(screen.getByLabelText(/deadlift weight/i), { target: { value: '200' } });
     fireEvent.change(screen.getByLabelText(/deadlift reps/i), { target: { value: '1' } });
-    // Both estimators agree at reps === 1: 200.
+    // reps === 1 returns the weight directly under both estimators: 200.
     expect(screen.getByText('200')).toBeInTheDocument();
   });
 
@@ -135,7 +135,7 @@ describe('onboarding — estimated 1RM (percentage table)', () => {
     fireEvent.change(screen.getByLabelText(/bench press weight/i), { target: { value: '100' } });
     fireEvent.change(screen.getByLabelText(/bench press reps/i), { target: { value: '20' } });
     // No valid estimate rendered; all three readouts stay dashed.
-    expect(screen.queryByText('110')).not.toBeInTheDocument();
+    expect(screen.queryByText('115')).not.toBeInTheDocument();
     expect(screen.getAllByText('—')).toHaveLength(3);
   });
 });
@@ -180,9 +180,9 @@ describe('onboarding — submit hands computed maxes to /loading', () => {
 
     expect(mockNavigate).toHaveBeenCalledWith('/loading', expect.objectContaining({
       state: expect.objectContaining({
-        // Percentage table: bench 110, squat 160, deadlift 200. (Epley → 115/165/200.)
-        benchPress: 110,
-        squat: 160,
+        // Epley: bench 115, squat 165, deadlift 200. (Was 110/160/200.)
+        benchPress: 115,
+        squat: 165,
         deadlift: 200,
       }),
     }));
