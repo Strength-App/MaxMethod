@@ -22,6 +22,22 @@ const focusOptions = [
   },
 ];
 
+/**
+ * The "Set Your Goals" screen.
+ *
+ * This is the last step before the app builds a personalized program. It
+ * arrives carrying the user's strength-test result (their classification, e.g.
+ * "Intermediate", and optionally their combined one-rep-max total), which it
+ * shows back to them as a "Your Strength Profile" banner.
+ *
+ * The user then makes two choices: how many days a week they want to train
+ * (3, 4, or 5) and what their training focus is (muscle building, strength, or
+ * calorie burning). When they press "Build My Program", the screen makes sure
+ * both choices are filled in and that they're still signed in, then sends them
+ * to the loading screen along with all of those answers so the program can be
+ * generated. If something is missing it shows a reminder; if their sign-in has
+ * been lost it sends them back to the start.
+ */
 function Goals() {
   const navigate = useNavigate();
   const location = useLocation();
