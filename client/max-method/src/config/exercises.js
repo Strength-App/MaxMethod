@@ -10,10 +10,12 @@
  * Sourced from `pages/exerciseLibrary.jsx`, `pages/reviewProgram.jsx`, and
  * `pages/day.jsx`. The same maps were inlined across those files (or some
  * subset of them) at Batch 3's starting commit. This module is the
- * consolidated canonical home. The original files retain their inline
- * copies until their own batches migrate to consume from here:
- * `reviewProgram.jsx` in Batch 11, `exerciseLibrary.jsx` in Batch 12,
- * `day.jsx` in Batch 15. **No call-site updates in Batch 3.**
+ * consolidated canonical home. Each source file migrates to consume from here
+ * in its own batch: `reviewProgram.jsx` (Batch 11) and `exerciseLibrary.jsx`
+ * (Batch 12) are done; `day.jsx` follows in Batch 15. Batch 12 also relocated
+ * the exercise *catalog* (buildExerciseList / ALL_EXERCISES) and the
+ * `EXERCISE_NAME_ALIASES` map out of `exerciseLibrary.jsx` into the catalog and
+ * alias sections below. **No call-site updates were made in Batch 3.**
  *
  * **Within-file dedup framing.** The original files' inline maps contain
  * 32 within-file duplicate keys total (22 in `exerciseLibrary.jsx`, 10
@@ -23,15 +25,17 @@
  * observable behavior change. See
  * `docs/decisions.md#within-file-key-duplication-finding` (amended) and
  * `docs/comparisons/exercise-map-truth-table.md` for the full evidence.
- * The `no-dupe-keys` suppressions on the two source files don't shrink
- * in Batch 3; they shrink in Batches 11/12 when those files migrate to
- * consume this module and the inline duplicates physically go away.
+ * The `no-dupe-keys` suppressions on the two source files did not shrink
+ * in Batch 3; they were pruned in Batches 11/12 when those files migrated
+ * to consume this module and the inline duplicates physically went away.
  *
- * **Cross-consumer alias note.** `exerciseLibrary.jsx` defines a local
- * `EXERCISE_NAME_ALIASES` map ({ 'squats': 'Squat', 'back squat': 'Squat' })
- * that normalizes program-data names before lookup. `reviewProgram.jsx`
- * and `day.jsx` don't normalize — they look up `EXERCISE_EQUIPMENT[name]`
- * with the raw name directly. To serve all three consumer patterns,
+ * **Cross-consumer alias note.** The `EXERCISE_NAME_ALIASES` map
+ * ({ 'squats': 'Squat', 'back squat': 'Squat' }) — relocated here from
+ * `exerciseLibrary.jsx` in Batch 12 (see the alias section below) —
+ * normalizes program-data names before lookup, but only `exerciseLibrary.jsx`
+ * uses it. `reviewProgram.jsx` and `day.jsx` don't normalize — they look up
+ * `EXERCISE_EQUIPMENT[name]` with the raw name directly. To serve all three
+ * consumer patterns,
  * `EXERCISE_EQUIPMENT` below includes `'Squats'` and `'Back Squat'` as
  * keys (both → `'Barbell'`) alongside the canonical `'Squat'` and
  * `'Deadlift'` keys. `exerciseLibrary`'s aliasing layer continues to
@@ -44,10 +48,10 @@
  * (one card per name per pattern), so including alias names like
  * `'Squats'` and `'Back Squat'` would produce duplicate cards. The
  * 9-entry version is the canonical iteration shape. `reviewProgram.jsx`
- * needs the 2 alias entries in its array for the swap-UI; until it
- * migrates in Batch 11 it retains its inline 11-entry definition. The
- * deferred consumer-shape question is tracked at
- * `docs/follow-ups.md#reviewprogram-movement-patterns-alias-strategy`.
+ * needs the 2 alias entries in its array for the swap-UI; since Batch 11 it
+ * overlays them locally onto this canonical array rather than carrying its own
+ * full copy (resolved at
+ * `docs/decisions.md#reviewprogram-squat-alias-overlay`).
  *
  * No imports, no I/O. The maps are pure data; the catalog section at the
  * bottom (relocated from exerciseLibrary in Batch 12) adds the pure builder

@@ -1,3 +1,18 @@
+/**
+ * Exercise Library screen.
+ *
+ * The app's reference catalog. It shows a searchable, body-region-tabbed grid of
+ * every movement the app knows about — each card carrying the movement's pattern,
+ * the equipment it uses, its primary muscle, and a small body-muscle diagram.
+ * Tapping a card opens a detail view with a how-to video, step-by-step coaching
+ * cues, the user's personal record for that lift, and their all-time history of
+ * doing it. A separate "Custom" tab lets the user add and remove their own
+ * exercises (e.g. gym machines the catalog doesn't list).
+ *
+ * All the exercise *data* (which exercises exist, their muscles, cues, tips, and
+ * equipment) lives in config/exercises.js; this file is the screen that renders
+ * it plus the logic for matching an exercise to its uploaded video.
+ */
 import { useState, useMemo, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import MuxPlayer from '@mux/mux-player-react'
@@ -26,6 +41,20 @@ function sortedKey(name) {
     .join('')
 }
 
+/**
+ * Build a function that finds the right how-to video for an exercise name.
+ *
+ * The videos stored on the server use slightly different spellings than the
+ * app's exercise names (plurals, spacing, word order). This pre-indexes the
+ * available videos under both a strict and a token-sorted key so a later lookup
+ * can match despite those differences, applying the VIDEO_NAME_ALIASES map first
+ * for the handful of cases the automatic matching can't bridge.
+ *
+ * @param {Array<{exercise_name: string, mux_playback_id: string}>} videos - The
+ *   library videos returned by the server.
+ * @returns {(exerciseName: string) => string|null} A lookup that returns the
+ *   matching video's playback id, or null when no video exists for that name.
+ */
 function buildVideoLookup(videos) {
   const byNorm = {}
   const bySorted = {}
@@ -42,6 +71,17 @@ function buildVideoLookup(videos) {
 
 // ─── Muscle Diagram SVG ───────────────────────────────────────────────────────
 
+/**
+ * A small front-facing body silhouette with the worked muscles shaded red.
+ *
+ * Darker red = a muscle the exercise works harder; faint red = a supporting
+ * muscle. The accessible label lists exactly which muscle groups are highlighted
+ * so screen-reader users get the same information the picture conveys.
+ *
+ * @param {Object} props
+ * @param {Object<string,string>} props.muscles - Muscle key → fill color. Keys
+ *   absent from this map are drawn uncolored.
+ */
 function BodyDiagram({ muscles = {} }) {
   const c  = (k) => muscles[k] || 'transparent'
   const b  = 'rgba(0,0,0,0.35)'
@@ -100,6 +140,17 @@ function BodyDiagram({ muscles = {} }) {
 
 // ─── Exercise Card ────────────────────────────────────────────────────────────
 
+/**
+ * One tappable card in the library grid: the exercise's muscle diagram, its
+ * name, its body-region / pattern / equipment tags, and its primary muscle.
+ * Clicking it (or pressing Enter/Space) opens that exercise's detail view.
+ *
+ * @param {Object} props
+ * @param {Object} props.exercise - A built catalog entry (name, pattern, body,
+ *   primary, muscles, equipment).
+ * @param {(exercise: Object) => void} props.onSelect - Called with this exercise
+ *   when the card is activated.
+ */
 function ExerciseCard({ exercise, onSelect }) {
   const bodyLabel = exercise.body === 'upper' ? 'Upper' : exercise.body === 'lower' ? 'Lower' : exercise.body === 'cardio' ? 'Cardio' : 'Core'
   const onActivate = () => onSelect(exercise)
@@ -148,6 +199,18 @@ function ExerciseCard({ exercise, onSelect }) {
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
 const DAYS_SHORT_EL = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
 
+/**
+ * The full detail screen for a standard catalog exercise: a how-to video (or a
+ * "coming soon" placeholder), and three tabs — Coaching Cues (step-by-step
+ * technique), Personal Record (the user's best for this lift), and Exercise
+ * History (every past time they did it, fetched from the server).
+ *
+ * @param {Object} props
+ * @param {Object} props.exercise - The selected catalog entry.
+ * @param {() => void} props.onBack - Return to the library list.
+ * @param {string|null} props.playbackId - The matched video's playback id, or
+ *   null to show the "video coming soon" placeholder.
+ */
 function DetailView({ exercise, onBack, playbackId }) {
   const { personalBests } = useWorkout()
   const [detailTab, setDetailTab] = useState('cues')
@@ -393,6 +456,15 @@ function DetailView({ exercise, onBack, playbackId }) {
 
 // ─── Custom Detail View ───────────────────────────────────────────────────────
 
+/**
+ * The detail screen for a user-created custom exercise. Custom exercises have no
+ * built-in video, cues, or muscle diagram, so this is a slimmer version of
+ * DetailView with just the Personal Record and Exercise History tabs.
+ *
+ * @param {Object} props
+ * @param {string} props.name - The custom exercise's name.
+ * @param {() => void} props.onBack - Return to the library list.
+ */
 function CustomDetailView({ name, onBack }) {
   const { personalBests } = useWorkout()
   const [detailTab, setDetailTab] = useState('pr')
@@ -547,6 +619,16 @@ function CustomDetailView({ name, onBack }) {
 
 // ─── Custom Exercises Section ─────────────────────────────────────────────────
 
+/**
+ * The "Custom" tab body: a form to add an exercise the catalog doesn't include,
+ * plus the grid of exercises the user has already added (each removable). Custom
+ * exercises are stored on the server when signed in and mirrored to localStorage
+ * so they're available offline and to the custom-workout builder.
+ *
+ * @param {Object} props
+ * @param {(name: string) => void} props.onSelect - Called with a custom
+ *   exercise's name when its card is opened.
+ */
 function CustomExercisesSection({ onSelect }) {
   const [customExercises, setCustomExercises] = useState(getCustomExerciseNames)
   const [inputVal, setInputVal] = useState('')
@@ -706,6 +788,23 @@ function CustomExercisesSection({ onSelect }) {
 
 // ─── Library View ─────────────────────────────────────────────────────────────
 
+/**
+ * The library list itself: the title, result count, search box, body-region
+ * filter tabs, and the exercises grouped into Upper / Lower / Core / Cardio
+ * sections (and within each, by movement pattern). The "Custom" tab swaps the
+ * grid out for the custom-exercises manager.
+ *
+ * @param {Object} props
+ * @param {Object[]} props.exercises - The exercises to show (already filtered by
+ *   the active tab and search term).
+ * @param {string} props.activeTab - Which body-region tab is selected
+ *   ('all' | 'upper' | 'lower' | 'core' | 'cardio' | 'custom').
+ * @param {string} props.search - The current search text.
+ * @param {(tab: string) => void} props.onTabChange - Switch tabs.
+ * @param {(text: string) => void} props.onSearchChange - Update the search text.
+ * @param {(exercise: Object) => void} props.onSelect - Open a catalog exercise.
+ * @param {(name: string) => void} props.onCustomSelect - Open a custom exercise.
+ */
 function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange, onSelect, onCustomSelect }) {
   const grouped = useMemo(() => {
     const upper  = {}
@@ -853,6 +952,15 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 
+/**
+ * Top-level Exercise Library page. Holds the screen state (active tab, search
+ * text, which exercise — if any — is open), fetches the how-to videos once on
+ * mount, and honors two inbound navigation signals: `focusExercise` (deep-link
+ * straight into one exercise's detail, e.g. tapped from a workout day) and
+ * `resetToList` (the nav-bar link asking an open detail to collapse back to the
+ * list). Renders the detail view when an exercise is selected, otherwise the
+ * library list.
+ */
 function ExerciseLibrary() {
   const location = useLocation()
   const navigate = useNavigate()
