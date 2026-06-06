@@ -281,6 +281,36 @@ When an entry is acted on, move it to a "Resolved" section at the bottom (with a
 
 ---
 
+### customworkout-save-toast-uncleared-timeout
+
+- **What.** In `src/pages/customWorkout.jsx`'s `saveWorkout`, `setTimeout(() => setSaved(false), 2000)` is fired with no stored timer id and no cleanup. If the user clicks Save and the component unmounts within 2s, the timer still calls `setSaved(false)` on an unmounted component. Surfaced while writing Batch 9a's characterization tests. Same family as the WorkoutContext debounce bug (Risk #8) and the viewProgram debounced-title cleanup (Batch 9b) — a pending timer that outlives the component.
+- **Design space.** Store the id in a ref and clear it on unmount (and on a re-save) via a `useEffect` cleanup; or fold "saved" into a small reusable flash-message hook if a second consumer appears. React 19 silently drops the orphan `setState`, so there's no visible bug today — it's a latent-leak / discipline issue, not a user-facing defect. The characterization tests do NOT pin it (it produces no observable effect to assert under React 19, same invisibility noted for the usePostWorkoutModal guards).
+- **Trigger conditions.** Batch 13 (`customDay.jsx`) or any batch that touches `customWorkout.jsx` substantively (it's classified L, "defer heavy version"). Not fixed in 9a per "no bug fixes" scope.
+- **Effort / risk.** Trivial (ref + cleanup effect). Low risk.
+
+### customworkout-dead-commented-fetchworkout
+
+- **What.** `src/pages/customWorkout.jsx` lines ~91-92 carry commented-out `fetchWorkout(userId)` / `setActiveProgram(null)` calls left below the active `localStorage.removeItem` lines in `finishWorkout` — leftover from when the create-vs-edit branching was reshaped. Harmless noise.
+- **Design space.** Delete the two comment lines. Verify the live create branch already calls `fetchWorkout` + `setActiveProgram(null)` (it does, inside the `else`), so the comments are truly dead.
+- **Trigger conditions.** Any batch touching `customWorkout.jsx`. Not absorbed in 9a ("while I'm here is not a license").
+- **Effort / risk.** Trivial; low risk.
+
+### home-progress-counts-untitled-days
+
+- **What.** In `src/pages/home.jsx` the progress counters (`totalDays` / `completedDays`, and the per-week `weekTotal` / `weekDone`) iterate **all** `week.days`, including untitled placeholder days that the day-cell grid filters out (`d?.title != null` — see `docs/decisions.md#day-display-title-filter`). So a program padded with untitled days reports more "Total Days" (and a different percent) than the number of visible day cells. Surfaced while ground-truthing Risk #6.
+- **Design space.** Decide the intended denominator: if untitled days are placeholders that shouldn't count toward progress, filter the same way before counting (`week.days.filter(d => d?.title != null)`); if they legitimately represent schedulable-but-unnamed days, leave it and document that "Total Days" counts all days, not just shown ones. The same divergence likely exists in `customWorkout.jsx` (which renders every day, titled or not) — audit when picked up. Needs a product call on what a "day" means for progress.
+- **Trigger conditions.** Batch 15 (`day.jsx`) / a home-page pass, or a user report that the percent/total looks off. Out of 9a's "no bug fixes" scope; recorded as the divergence the truth-table ADR notes.
+- **Effort / risk.** Small change, but the *decision* (which denominator) is the real work; low implementation risk once decided.
+
+### goals-validation-precedes-session-check
+
+- **What.** In `src/pages/goals.jsx`'s `handleSubmit`, the form-completeness validation runs **before** the `userId` session check. A fully signed-out user who submits an empty form sees "Please complete: ..." first and only gets the "Session error — please sign in again" bounce after filling both selections. Surfaced by Batch 9a's characterization. Minor UX ordering, not a correctness bug (both checks fire; the session check still protects the navigation).
+- **Design space.** Hoist the `userId` check above the field validation if "you're signed out" should pre-empt "fill the form"; or leave it (the form is short and the route is gated upstream by `protectedRoute`). Low value either way.
+- **Trigger conditions.** A batch touching `goals.jsx`, or a UX report. Not changed in 9a.
+- **Effort / risk.** Trivial; low risk.
+
+---
+
 ## Resolved follow-ups
 
 <!--
