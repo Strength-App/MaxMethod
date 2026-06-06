@@ -1,0 +1,260 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PostWorkoutScreen2 — snapshots (static state; see #snapshot-conventions) > matches the normal strength profile with e1RM deltas 1`] = `
+<DocumentFragment>
+  <div
+    class="post-workout-header"
+  >
+    <div
+      class="post-workout-title"
+      id="post-workout-screen2-title"
+    >
+      Workout Complete
+    </div>
+    <div
+      class="post-workout-subtitle"
+      id="post-workout-screen2-subtitle"
+    >
+      Your Strength Profile
+    </div>
+  </div>
+  <div
+    class="post-workout-classification-section"
+  >
+    <div
+      class="user-level-badge user-level-badge--wide"
+    >
+      <div
+        class="user-level-badge__label"
+      >
+        Novice 3
+      </div>
+      <div
+        class="user-level-badge__bar-region"
+      >
+        <div
+          class="user-level-badge__bar-top-row"
+        >
+          <div
+            class="user-level-badge__bar-corner-name"
+          >
+            Novice 3
+          </div>
+          <div
+            class="user-level-badge__bar-mid-progress"
+          >
+            <span
+              class="user-level-badge__bar-progress-lbs"
+            >
+              11 lbs
+            </span>
+             to Intermediate 1
+          </div>
+          <div
+            class="user-level-badge__bar-corner-name user-level-badge__bar-corner-name--right"
+          >
+            Intermediate 1
+          </div>
+        </div>
+        <div
+          aria-label="81% to Intermediate 1"
+          aria-valuemax="100"
+          aria-valuemin="0"
+          aria-valuenow="81"
+          class="user-level-badge__bar-track"
+          role="progressbar"
+        >
+          <div
+            class="user-level-badge__bar-fill"
+            style="width: 80.7017543859649%;"
+          />
+        </div>
+        <div
+          class="user-level-badge__bar-bottom-row"
+        >
+          <div
+            class="user-level-badge__bar-corner-value"
+          >
+            899
+          </div>
+          <div
+            class="user-level-badge__bar-mid-percent"
+          >
+            81%
+          </div>
+          <div
+            class="user-level-badge__bar-corner-value user-level-badge__bar-corner-value--right"
+          >
+            956
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    aria-label="Estimated 1RM updates"
+    class="post-workout-e1rm-deltas"
+    role="group"
+  >
+    <div
+      class="post-workout-e1rm-delta-row"
+    >
+      <span
+        aria-hidden="true"
+      >
+        Bench Press 200 → 225 (+25)
+      </span>
+      <span
+        class="sr-only"
+      >
+        Bench Press estimated 1 rep max raised from 200 to 225 pounds, an increase of 25 pounds.
+      </span>
+    </div>
+  </div>
+  <div
+    class="post-workout-big3-total"
+  >
+    <div
+      aria-hidden="true"
+      class="post-workout-volume-val"
+    >
+      <span>
+        945 lbs
+      </span>
+    </div>
+    <div
+      aria-hidden="true"
+      class="post-workout-volume-lbl"
+    >
+      Big 3 Total
+    </div>
+    <span
+      class="sr-only"
+    >
+      Big 3 total: 945 pounds
+    </span>
+  </div>
+  <div
+    aria-label="Big three lifts"
+    class="post-workout-streak-row"
+    role="group"
+    style="grid-template-columns: repeat(3, 1fr);"
+  >
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          315 lbs
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Squat
+      </div>
+      <span
+        class="sr-only"
+      >
+        Squat: 315 pounds
+      </span>
+    </div>
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          225 lbs
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Bench
+      </div>
+      <span
+        class="sr-only"
+      >
+        Bench: 225 pounds
+      </span>
+    </div>
+    <div
+      class="post-workout-streak-card"
+    >
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-val"
+      >
+        <span>
+          405 lbs
+        </span>
+      </div>
+      <div
+        aria-hidden="true"
+        class="post-workout-streak-lbl"
+      >
+        Deadlift
+      </div>
+      <span
+        class="sr-only"
+      >
+        Deadlift: 405 pounds
+      </span>
+    </div>
+  </div>
+  <button
+    aria-label="Done"
+    class="post-workout-btn"
+  >
+    Done
+  </button>
+</DocumentFragment>
+`;
+
+exports[`PostWorkoutScreen2 — snapshots (static state; see #snapshot-conventions) > matches the null-state profile 1`] = `
+<DocumentFragment>
+  <div
+    class="post-workout-header"
+  >
+    <div
+      class="post-workout-title"
+      id="post-workout-screen2-title"
+    >
+      Workout Complete
+    </div>
+    <div
+      class="post-workout-subtitle"
+      id="post-workout-screen2-subtitle"
+    >
+      Your Strength Profile
+    </div>
+  </div>
+  <div
+    class="post-workout-classification-section"
+  >
+    <div
+      class="user-level-badge user-level-badge--wide"
+    >
+      <div
+        class="user-level-badge__empty-message"
+      >
+        Log a workout with a Bench Press, Squat, or Deadlift to start your level progression.
+      </div>
+    </div>
+  </div>
+  <button
+    aria-label="Done"
+    class="post-workout-btn"
+  >
+    Done
+  </button>
+</DocumentFragment>
+`;
