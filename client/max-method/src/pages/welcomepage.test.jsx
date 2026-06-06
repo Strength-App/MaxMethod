@@ -102,10 +102,10 @@ describe('welcomepage — login outcomes', () => {
     renderWelcome();
     signIn();
 
-    // CURRENT behavior: routes to the (dead) /classification screen. Batch 9a's
-    // fix repoints this to /onboarding when classification.jsx is removed.
+    // Resumes the live onboarding flow. (Was /classification — a dead,
+    // crash-on-render screen — until removed in Batch 9a.)
     await waitFor(() =>
-      expect(mockNavigate).toHaveBeenCalledWith('/classification', { replace: true }),
+      expect(mockNavigate).toHaveBeenCalledWith('/onboarding', { replace: true }),
     );
   });
 
