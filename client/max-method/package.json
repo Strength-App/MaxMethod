@@ -18,7 +18,6 @@
   "dependencies": {
     "@mux/mux-player-react": "^3.10.2",
     "@tailwindcss/vite": "^4.1.18",
-    "axios": "^1.13.4",
     "react": "^19.2.0",
     "react-calendar": "^6.0.0",
     "react-dom": "^19.2.0",
