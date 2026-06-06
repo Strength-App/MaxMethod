@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
-import axios from "axios";
 import { API_URL } from '../config/api';
 import MaxMethodLogo from '../components/MaxMethodLogo';
 
@@ -22,15 +21,26 @@ function CreateAcc() {
     setIsSubmitting(true);
     try {
       const userData = { firstName, lastName, email, password };
-      const response = await axios.post(`${API_URL}/api/users/create-account`, userData);
+      const response = await fetch(`${API_URL}/api/users/create-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
 
-      console.log("Status: ", response.status);
+      // fetch (unlike axios) does not throw on a 4xx/5xx — check explicitly and
+      // surface the server's error message the same way axios's catch did.
+      if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.message || 'Error creating account');
+      }
+
+      const data = await response.json();
 
       // Save user to UserContext
-      setUser(response.data);
+      setUser(data);
 
       // Save userId to WorkoutContext (also saves to localStorage internally)
-      setUserId(response.data._id);
+      setUserId(data._id);
 
       setFirstName('');
       setLastName('');
@@ -40,7 +50,7 @@ function CreateAcc() {
       navigate('/onboarding');
     } catch (error) {
       console.error('Error creating account:', error);
-      alert(error.response?.data?.message || 'Error creating account');
+      alert(error.message || 'Error creating account');
       setIsSubmitting(false);
     }
   };
