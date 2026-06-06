@@ -146,6 +146,13 @@ When an entry is acted on, move it to a "Resolved" section at the bottom (with a
 - **Trigger conditions.** Product/UX decision that the two should share state. Requires its own sign-off.
 - **Effort / risk.** Small code effort; medium UX risk.
 
+### get-rest-seconds-duplication
+
+- **What.** `getRestSeconds` (and its `BIG_THREE = ['bench', 'squat', 'deadlift']` constant) is duplicated verbatim between `src/pages/day.jsx` and `src/pages/logger.jsx` — identical except `day.jsx`'s parameter is named `exerciseName` and `logger.jsx`'s `name`. It maps an exercise name to a rest duration (120s for a big-three lift, else 90s). Surfaced by Batch 10's `RestTimer` shape comparison ([`comparisons/rest-timer.md`](comparisons/rest-timer.md)). Batch 10 extracted `RestTimer` but deliberately left `getRestSeconds` at the call sites because it is a call-site helper (it computes the `initialSeconds` prop), not part of the component — folding it in would reshape the component's prop contract, which is an API change, not a verbatim lift.
+- **Design space.** Two homes. (1) A small shared helper — e.g. `utils/restDuration.js` exporting `getRestSeconds(name)` and the `BIG_THREE` list — imported by both pages. Trivial, behavior-identical (the two bodies are byte-identical modulo the parameter name). (2) Co-locate it with `RestTimer` and have the component accept `exerciseName` and compute its own `initialSeconds` — a prop-contract reshape that couples the rest-duration *policy* to the timer component; only worth it if the policy and the timer always travel together. Option 1 is the lower-risk, smaller-scope cut. Note the `BIG_THREE` constant also appears in other big-three contexts (PR detection); a shared `restDuration` helper should NOT try to absorb those — they are a different concern that happens to share the same three lift names.
+- **Trigger conditions.** Batch 14 (`logger.jsx`) or Batch 15 (`day.jsx`) — whichever touches one of the two files next for a non-bug-fix reason absorbs the dedup as part of its natural scope. A change to the rest-duration policy (e.g. configurable rest, a fourth tier) that would otherwise have to be made in two places. Batch 16's synthesis would surface it if no organic trigger arrives.
+- **Effort / risk.** Trivial for Option 1 (one util file + two import/delete edits; the bodies are identical). Low risk — a characterization test on the chosen home pins the 120/90 mapping. Higher scope for Option 2 (prop-contract reshape of `RestTimer` plus all three call sites).
+
 ### custom-workout-heavy-refactor
 
 - **What.** Heavy refactor of `customWorkout.jsx` — mixed UI/form/DB/routing concerns; currently scoped only to a light pass in Batch 9a.

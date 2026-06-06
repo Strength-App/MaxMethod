@@ -452,7 +452,39 @@ If you see `typescript` in `node_modules` and wonder "I thought TypeScript was o
 
 **Rationale.** Same pattern as the combobox comparison: explicit checkpoint, persisted artifact, decision before execution.
 
-**Revisit conditions.** N/A.
+**Revisit conditions.** Resolved by [`#rest-timer-primitive`](#rest-timer-primitive) — the comparison concluded "literal copy."
+
+---
+
+### rest-timer-primitive
+
+**Decision.** `RestTimer` is extracted verbatim from `day.jsx` to
+`src/components/workout/RestTimer.jsx` (the first component in the new
+`components/workout/` directory) and consumed by **both** `day.jsx` (2 call
+sites) and `logger.jsx` (1 call site). The `day.jsx` definition is the canonical
+source — it carries the explanatory `aria-live="off"` comment, which is kept. The
+full analysis is [`comparisons/rest-timer.md`](comparisons/rest-timer.md).
+
+**Why.** The two inline definitions are a **literal copy**: same signature, same
+state, same two effects, same `adjust`, same JSX with identical `className`s and
+ARIA. The only differences are non-semantic whitespace and the one explanatory
+comment; the **rendered DOM is byte-identical**. All three call sites pass the
+same `{ key, initialSeconds, onSkip }` contract and `RestTimer` closes over
+nothing page-local, so the lift is verbatim — each closure is already a prop with
+the same name; no new props, no closure-to-prop conversion.
+
+**Alternatives considered.** Extract from `day.jsx` only and defer `logger.jsx`
+to a follow-up — rejected because the copies are literal (the deferral exists for
+the near-duplicate case, which this is not). Move `getRestSeconds` into the
+component too — rejected: it is a call-site helper, not part of `RestTimer`, and
+folding it in would reshape the prop contract (`exerciseName` instead of
+`initialSeconds`); its duplication is logged at
+[`follow-ups.md#get-rest-seconds-duplication`](follow-ups.md#get-rest-seconds-duplication).
+
+**Revisit conditions.** If a third rest-countdown consumer appears with a
+different contract, or if the product decides the per-exercise rest timer should
+share state with the `ToolsContext` FAB stopwatch
+([`follow-ups.md#rest-timer-tools-context-consolidation`](follow-ups.md#rest-timer-tools-context-consolidation)).
 
 ---
 
