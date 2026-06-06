@@ -2,18 +2,28 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { API_URL } from "../config/api";
+import { estimateOneRepMax, floorTo5 } from "../utils/epley";
 
-const REP_COEFFS = {
-  1: 1.0, 2: 0.97, 3: 0.94, 4: 0.92, 5: 0.89,
-  6: 0.86, 7: 0.83, 8: 0.81, 9: 0.78, 10: 0.75,
-  11: 0.73, 12: 0.71, 13: 0.70, 14: 0.68, 15: 0.67,
-};
-
+/**
+ * Turn a recent best set (a weight lifted for some reps) into an estimated
+ * one-rep max, rounded down to the nearest 5 lb so it reads as a clean gym
+ * number.
+ *
+ * This routes through the shared Epley utility (`utils/epley.js`) so the
+ * whole app estimates strength the same way — the same formula the server
+ * uses after a logged workout. Reps must be a whole number from 1 to 15;
+ * anything outside that (or a missing/zero weight) can't be estimated, so
+ * the function returns an empty string. Callers show that empty string as a
+ * placeholder ("—") rather than a number.
+ *
+ * @param {number|string} weight - The weight lifted, in pounds.
+ * @param {number|string} reps - How many reps were completed (1–15).
+ * @returns {number|""} The estimated 1RM floored to a multiple of 5, or
+ *   "" when the input can't produce an estimate.
+ */
 function estimate1RM(weight, reps) {
-  const w = Number(weight);
-  const r = Number(reps);
-  if (!w || !r || r < 1 || r > 15) return "";
-  return Math.round((w / REP_COEFFS[r]) / 5) * 5;
+  const e1RM = estimateOneRepMax(weight, reps);
+  return e1RM == null ? "" : floorTo5(e1RM);
 }
 
 function Onboarding() {
