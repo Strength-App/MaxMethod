@@ -612,3 +612,58 @@ Snapshot via RTL's `asFragment()` (not `container`) to stay clear of `testing-li
 **Rationale.** `#snapshots` decided *which* files may use snapshots and why (stable JSX where structure regressions matter); this entry decides *how*, so the three files — and any future addition to the allowed set — share one shape. The static-only and clean-numeric rules are what keep a snapshot a durable structural lock rather than a churn source: a snapshot that captures a mid-animation frame or a `57.142857142857146%` width re-baselines on noise and trains reviewers to `--update` reflexively, defeating the regression-catching purpose. First applied in Batch 7 (`UserLevelBadge` — the codebase's first snapshot); Batch 8's `PostWorkoutScreen1/2` follow the same shape.
 
 **Revisit conditions.** A future component added to `#snapshots`' allowed set has a render containing genuinely nondeterministic values (live timestamps, server-generated IDs) — the full-DOM-by-default rule then needs an amendment naming the scrub/subset approach for that file. A permitted snapshot becomes a churn source despite the static-only rule (investigate whether the component's "static" state is actually deterministic). The team adopts a snapshot serializer (e.g. for a CSS-in-JS library) that changes the serialized shape.
+
+### reviewprogram-squat-alias-overlay
+
+**Decision.** When `pages/reviewProgram.jsx` migrated to consume the shared
+`config/exercises.js` maps in Batch 11, it resolves the one place its data
+diverged from the canonical map — the 2-entry alias extension of
+`MOVEMENT_PATTERNS['Squat Pattern']` (`'Squats'`, `'Back Squat'`) — with
+**Option A: a local overlay**. reviewProgram imports the canonical
+`MOVEMENT_PATTERNS` (aliased `CANONICAL_MOVEMENT_PATTERNS`) and rebuilds only
+the `'Squat Pattern'` key as `[...canonical, 'Squats', 'Back Squat']`.
+`EXERCISE_EQUIPMENT` is consumed directly with no overlay — the canonical map
+is already the 154-key superset that includes those alias keys.
+
+**Why the divergence exists.** reviewProgram looks up swap alternatives by the
+raw program-data exercise name with no alias normalization; `exerciseLibrary.jsx`
+normalizes through its private `EXERCISE_NAME_ALIASES` first. So reviewProgram's
+swap list needs the alias spellings as real entries, whereas the canonical map
+omits them on purpose: `exerciseLibrary`'s `buildExerciseList` iterates the map
+to render one library card per name, and including the aliases would produce
+duplicate cards. Full analysis in
+[`docs/comparisons/exercise-map-truth-table.md`](comparisons/exercise-map-truth-table.md).
+
+**Alternatives considered.**
+- *Option B — import `EXERCISE_NAME_ALIASES` from `exerciseLibrary.jsx` and
+  normalize before lookup.* Rejected: a page reaching into a peer page is exactly
+  the cross-page coupling this refactor exists to remove.
+- *Option C — move `EXERCISE_NAME_ALIASES` into `config/exercises.js` and unify
+  both consumers.* Rejected for Batch 11: it edits `exerciseLibrary.jsx`,
+  Batch 12's primary file, which breaks per-batch isolation (Meta-Rule #11). Left
+  open for Batch 12 to adopt if it wants to unify the alias strategy then.
+- *Drop the aliases (consume the bare 9-entry canonical).* Rejected: it removes
+  two options a user currently sees in the squat swap list — a behavior change,
+  not a verbatim migration.
+
+**Behavior note.** The overlay appends the two aliases, so they now sit at the
+**end** of the squat swap list rather than mid-list (after `'SSB Squats'`) as
+before. The list *membership* is unchanged; only the position of those two
+entries moved. Order is not load-bearing — `reviewProgram.test.jsx` asserts the
+swap list by membership + count, not order — so this is an accepted cosmetic
+change, recorded here rather than silently absorbed.
+
+**Rationale.** Option A is the lowest-scope resolution that preserves observable
+behavior and keeps Batch 11 to a single file. It honors the verbatim-lift
+default (the migration is a data-source swap, not a behavior change) and defers
+the genuinely cross-file alias-unification question to the batch that owns
+`exerciseLibrary.jsx`. Resolves
+[`docs/follow-ups.md#reviewprogram-movement-patterns-alias-strategy`](follow-ups.md#reviewprogram-movement-patterns-alias-strategy)
+(Batch 11, PR #94).
+
+**Revisit conditions.** Batch 12 unifies the alias strategy by moving
+`EXERCISE_NAME_ALIASES` into `config/exercises.js` (Option C) — at which point
+this overlay can be replaced by normalization. A third consumer of the swap maps
+emerges and the per-consumer overlay becomes a maintenance smell. The order of
+the squat swap list is found to matter (e.g. a product decision about how
+alternatives are ordered) — then the append position needs revisiting.
