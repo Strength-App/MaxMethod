@@ -661,9 +661,82 @@ the genuinely cross-file alias-unification question to the batch that owns
 [`docs/follow-ups.md#reviewprogram-movement-patterns-alias-strategy`](follow-ups.md#reviewprogram-movement-patterns-alias-strategy)
 (Batch 11, PR #94).
 
-**Revisit conditions.** Batch 12 unifies the alias strategy by moving
+**Revisit conditions.** ~~Batch 12 unifies the alias strategy by moving
 `EXERCISE_NAME_ALIASES` into `config/exercises.js` (Option C) — at which point
-this overlay can be replaced by normalization. A third consumer of the swap maps
-emerges and the per-consumer overlay becomes a maintenance smell. The order of
-the squat swap list is found to matter (e.g. a product decision about how
-alternatives are ordered) — then the append position needs revisiting.
+this overlay can be replaced by normalization.~~ **Update (Batch 12):**
+`EXERCISE_NAME_ALIASES` *was* moved into `config/exercises.js`, but the overlay
+was deliberately **kept** — see
+[#exercise-data-layer-relocation-and-alias-home](#exercise-data-layer-relocation-and-alias-home).
+Replacing it with normalization would have changed reviewProgram's behavior (the
+squat swap dropdown would shrink from 11 entries to the canonical 9, dropping the
+redundant `'Squats'`/`'Back Squat'` spellings) and broken the locked
+`reviewProgram.test.jsx` invariant, so it was not done. The remaining revisit
+triggers stand: a third consumer of the swap maps emerges and the per-consumer
+overlay becomes a maintenance smell; or the order of the squat swap list is found
+to matter (e.g. a product decision about how alternatives are ordered) — then the
+append position needs revisiting.
+
+### exercise-data-layer-relocation-and-alias-home
+
+**Decision.** Batch 12 migrated `pages/exerciseLibrary.jsx` onto the shared
+`config/exercises.js` maps and, because the user opted into the fuller scope,
+also (a) **relocated the exercise catalog out of the page into config** —
+`buildExerciseList`, the derived `ALL_EXERCISES` (168 entries) and
+`ALL_EXERCISE_NAMES` (151 unique names), the `PATTERN_PRIMARY`/`PATTERN_STEPS`/
+`PATTERN_TIPS` tables, and the `UPPER_PATTERNS`/`LOWER_PATTERNS`/`bodyOf`
+body-region helpers; (b) **relocated `EXERCISE_NAME_ALIASES` into config**
+(Option C of [#reviewprogram-squat-alias-overlay](#reviewprogram-squat-alias-overlay));
+and (c) **completed `utils/customExercises.js`** with `getAllExerciseNames` and
+`isValidExercise`, which the Batch 3 plan named but deferred. `exerciseLibrary`
+now imports `ALL_EXERCISES`/`VIDEO_NAME_ALIASES`/`EXERCISE_NAME_ALIASES` from
+config and keeps only its video-lookup helpers and React components; `customDay`,
+`history`, and `logger` switched their `ALL_EXERCISES` import from the page to
+config (one line each).
+
+**Why relocate the catalog.** `ALL_EXERCISES` living under `pages/` forced three
+sibling pages and (would have forced) `utils/customExercises.js` to reach *up*
+into a page module for shared data — the upside-down `utils/ → pages/` import
+that blocked the Batch 3 helper extraction. Moving the catalog beside the maps it
+is built from puts the data where the dependency arrows already point and unblocks
+[`docs/follow-ups.md#customExercises-batch-12-completion`](follow-ups.md#customExercises-batch-12-completion).
+The move is a verbatim lift: the catalog builds byte-for-byte identically
+(verified entry-by-entry), and the page's characterization tests — written first,
+against the pre-move page — stay green throughout.
+
+**Alias home: relocate, don't normalize (Option C, "relocate only").**
+`EXERCISE_NAME_ALIASES` moved into config so the alias map has a single home and
+`exerciseLibrary` imports it. The second half of Option C — switching
+`reviewProgram` to *normalize* through the shared map instead of carrying its
+local squat-swap overlay — was **rejected**. Normalization yields the canonical
+9-entry squat list, dropping the redundant `'Squats'`/`'Back Squat'` spellings
+the overlay deliberately keeps; that shrinks the visible swap dropdown (a
+behavior change) and breaks the membership invariant Batch 11 locked in
+`reviewProgram.test.jsx`. Preserving observable behavior outranks removing one
+small per-page overlay, so reviewProgram is left untouched. (User-confirmed
+scope decision.)
+
+**Alternatives considered.**
+- *Leave the catalog in `pages/exerciseLibrary.jsx`.* Rejected: keeps the
+  upside-down import and leaves the customExercises helpers permanently blocked.
+- *Full Option C (reviewProgram adopts normalization).* Rejected as above —
+  behavior change to a locked invariant for marginal code savings.
+- *Put the catalog in a new sibling data file rather than `config/exercises.js`.*
+  Rejected: the catalog is built directly from the maps already in
+  `config/exercises.js`; splitting them across two files would re-introduce a
+  cross-file dependency for no benefit. The file gains a clearly-headed catalog
+  section instead.
+
+**Rationale.** The relocation is the lowest-risk way to satisfy the user's
+fuller-scope choice: it is a pure data move verified to be behavior-preserving,
+each concern lands in its own commit (consume maps → prune suppressions →
+relocate catalog → relocate alias → complete helpers → docs), and the one place a
+behavior change loomed (reviewProgram normalization) was surfaced and declined
+rather than absorbed.
+
+**Revisit conditions.** A consumer needs the catalog *names only* and importing
+the full `ALL_EXERCISES` (with cues/tips/muscles) is measurably wasteful — then
+lean on `ALL_EXERCISE_NAMES`. `customDay`/`logger` migrate their inline
+name-list helpers onto `utils/customExercises.js` in their own batches (13/14),
+at which point those duplicate copies disappear. The reviewProgram overlay's
+revisit triggers are unchanged — see
+[#reviewprogram-squat-alias-overlay](#reviewprogram-squat-alias-overlay).
