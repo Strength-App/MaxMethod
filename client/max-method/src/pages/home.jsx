@@ -5,6 +5,19 @@ import UserLevelBadge from '../components/UserLevelBadge';
 import { bigThreeTotalForUser, isNullState } from '../utils/classification';
 import { useEffect } from 'react';
 
+/**
+ * The home screen a signed-in user lands on.
+ *
+ * It re-checks the server for the user's current program every time it opens,
+ * so the title and progress are always fresh. At the top it shows the user's
+ * strength-level badge (hidden for one-off custom workouts). Below that it
+ * shows whichever of four situations applies: a "loading" note while the
+ * program is being fetched, an error note if that failed, a friendly
+ * "no program yet" prompt with two ways to get started, or — the normal case —
+ * the training schedule: a progress summary plus each week's day cells.
+ * Tapping a day opens it. Only days that have a name are shown (see the
+ * filter comment below).
+ */
 function Home() {
   const navigate = useNavigate();
   const { displayWorkout, loading, error, fetchWorkout } = useWorkout();
@@ -148,6 +161,12 @@ function Home() {
                     </div>
                   </div>
                   <div className="week-days">
+                    {/* Show only days that HAVE a title (a presence check, not a
+                        truthiness check): null/undefined/missing-title days are
+                        placeholders and hidden; empty-string and whitespace
+                        titles are kept. Ground-truth + lock:
+                        docs/comparisons/day-filter-truth-table.md and
+                        home.test.jsx "day-title filter (Risk #6)". */}
                     {week.days.filter(d => d?.title != null).map((day, di) => {
                       const dayLabel = day.title ?? `Day ${di + 1}`;
                       return (
