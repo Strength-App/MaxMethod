@@ -12,15 +12,72 @@ const LIFT_DISPLAY_NAMES = {
   deadlift: 'Deadlift',
 };
 
+/**
+ * The second screen after a workout: the user's "strength profile". It shows
+ * their current strength level (the UserLevelBadge with a progress bar toward
+ * the next level), a celebratory "LEVEL UP" banner if this workout pushed them
+ * into a new level, a list of any estimated-1RM increases (their lifts got
+ * stronger), and their big-3 total broken down by lift. It's shown by
+ * PostWorkoutModal after the user taps Continue on PostWorkoutScreen1.
+ *
+ * Like Screen 1, this screen only lays out what it's given — it does no saving
+ * or fetching of its own.
+ *
+ * How "did they level up?" is decided (this is the load-bearing part):
+ *   - `preFineLevel` and `preTotal` are a SNAPSHOT of where the user stood
+ *     BEFORE this workout, captured once by usePostWorkoutModal and passed in.
+ *   - The CURRENT level is computed here from `oneRMs`.
+ *   - If the snapshot level differs from the current level, it's a level-up.
+ *   This screen never recomputes the "before" value from live data — it trusts
+ *   the passed-in snapshot, which is what keeps the comparison stable even if
+ *   the user's maxes change while the modal is open (Risk #7).
+ *
+ * @param {'female'|'male'|'other'|string} sex
+ *   Used to pick the right strength-level table for the badge.
+ * @param {number|string} bodyweight
+ *   The user's bodyweight, also needed to pick their level table.
+ * @param {{ squat?: number, bench?: number, deadlift?: number } | null} oneRMs
+ *   The user's current one-rep maxes for the big three. Their sum is the big-3
+ *   total shown on screen and used to compute the current level.
+ * @param {boolean} nullState
+ *   True when the user has no big-3 data yet. In that case the big-3 cards and
+ *   deltas are hidden and the badge shows a "log a lift to start" prompt.
+ * @param {number|null} beginner1Anchor
+ *   Passed through to the badge; only matters for brand-new (Beginner 1) users,
+ *   where it sets where their progress bar starts filling from.
+ * @param {Array<{ lift: string, before?: number, after: number, delta: number }>} e1rmUpdates
+ *   The lifts whose estimated 1RM went up this workout. Empty → the section is
+ *   hidden. `lift` is an internal key (bench/squat/deadlift) translated to a
+ *   display name at render time.
+ * @param {string|null} preFineLevel
+ *   The user's strength level BEFORE this workout (the captured snapshot).
+ *   Drives the level-up comparison. Null when there's no snapshot (e.g. a
+ *   null-state user) — in which case no banner is shown.
+ * @param {number|null} preTotal
+ *   The user's big-3 total BEFORE this workout (the captured snapshot). Handed
+ *   to the badge as the point its progress bar animates up FROM.
+ * @param {string} doneLabel
+ *   Text (and spoken label) for the Done button. Default 'Done' is supplied by
+ *   the modal.
+ * @param {boolean} doneDisabled
+ *   When true, the Done button can't be tapped.
+ * @param {() => void} onDone
+ *   What to run when the user taps Done (closes the modal and navigates away).
+ * @returns {JSX.Element} The strength-profile screen.
+ */
 function PostWorkoutScreen2({ sex, bodyweight, oneRMs, nullState, beginner1Anchor, e1rmUpdates, preFineLevel, preTotal, doneLabel, doneDisabled, onDone }) {
   const squat = Number(oneRMs?.squat ?? 0);
   const bench = Number(oneRMs?.bench ?? 0);
   const deadlift = Number(oneRMs?.deadlift ?? 0);
   const total = squat + bench + deadlift;
 
+  // Work out the user's CURRENT level from their current maxes (only possible
+  // when we have a positive total plus sex + bodyweight to pick the table).
   const post = total > 0 && sex && bodyweight
     ? levelProgress({ sex, bodyweight, total })
     : null;
+  // It's a level-up when we have a before-snapshot, we could compute an after,
+  // and the two levels are different. (preFineLevel is the captured "before".)
   const isLevelUp = preFineLevel && post?.fineLevel && preFineLevel !== post.fineLevel;
 
   // Banner reveal coordinates with the badge's tier-transition moment via
