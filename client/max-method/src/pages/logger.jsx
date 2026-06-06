@@ -12,12 +12,7 @@ import { getPersonalBest } from '../utils/exerciseNameNormalize';
 import { getAllExerciseNames, isValidExercise, addToCustomExercises } from '../utils/customExercises';
 import Toast from '../components/Toast';
 import { RestTimer } from '../components/workout';
-
-const BIG_THREE = ['bench', 'squat', 'deadlift'];
-function getRestSeconds(name) {
-  const lower = (name || '').toLowerCase();
-  return BIG_THREE.some(n => lower.includes(n)) ? 120 : 90;
-}
+import { getRestSeconds } from '../utils/restDuration';
 
 function Logger() {
   const navigate = useNavigate();
