@@ -432,6 +432,18 @@ If you see `typescript` in `node_modules` and wonder "I thought TypeScript was o
 
 ---
 
+### viewprogram-title-save-cancel-on-unmount
+
+**Decision.** `viewProgram.jsx`'s debounced title PATCH now carries an `AbortController` that the effect cleanup aborts. A title save that is in flight when the page unmounts — or that has been superseded by a newer keystroke — is **cancelled**, not silently completed. This is a deliberate behavior change, made as part of Batch 9b (the bug-fix-pages batch).
+
+**Why.** The effect already cleared its pending *timer* on cleanup, so an edit abandoned within the 500ms debounce window never saved. But once the timer fired, the PATCH was in flight with no cancellation path: navigating away left an orphan write, and a fast second edit could let the superseded request land *after* the newer one (out-of-order final state). Same failure family and same fix shape as the WorkoutContext debounce cleanup (Risk #8) — `AbortController` + abort-in-cleanup, swallow `AbortError`.
+
+**Alternatives considered.** Leave it (orphan/out-of-order writes are rare and usually self-correct on next load) — rejected: the fix is small, mirrors an established in-repo pattern, and removes a real correctness gap. A server-side last-write-wins guard — out of scope (frontend initiative; would also still leave the orphan write).
+
+**Revisit conditions.** If title editing moves to an explicit Save button (no debounce), the controller becomes unnecessary. If a global fetch layer (e.g. React Query) lands, its cancellation supersedes this.
+
+---
+
 ### rest-timer-shape-checkpoint
 
 **Decision.** Batch 10's first commit is `docs(workout): RestTimer shape comparison across day/logger` at `docs/comparisons/rest-timer.md`. The artifact resolves whether `logger.jsx`'s timer is a literal copy of `day.jsx`'s (migrate both) or a near-duplicate (extract from day only, defer logger consolidation). The determination drives the rest of the batch.
