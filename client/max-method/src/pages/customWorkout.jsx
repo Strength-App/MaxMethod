@@ -4,6 +4,30 @@ import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
 import { useModalA11y } from '../hooks/useModalA11y';
 
+/**
+ * The "build your own workout" screen.
+ *
+ * This is where someone hand-builds a training program from scratch: they give
+ * it a name, add as many weeks as they want, and add days inside each week.
+ * Every day is a tappable cell that opens its own page for filling in exercises.
+ *
+ * Their work is kept safe in two ways:
+ *   - As they go, the name and the week/day layout are quietly saved on their
+ *     own device (in the browser) so nothing is lost if they leave and come
+ *     back. "Save" makes that save explicit and shows a brief "Saved!" note.
+ *   - "Finish Workout" sends the whole thing to the server so it becomes a real
+ *     program tied to their account.
+ *
+ * The screen works in two modes:
+ *   - Create mode (the normal case): finishing makes a brand-new workout.
+ *   - Edit mode (when the page is opened with an existing workout's id in the
+ *     web address): finishing updates that existing workout instead of making
+ *     a new one.
+ *
+ * There are no inputs or outputs in the usual sense — it reads the in-progress
+ * draft from the device and the optional workout id from the web address, and
+ * it shows the editing screen.
+ */
 function CustomWorkout() {
   // At the top of CustomWorkout(), read the existing workoutLogId if editing
   const { workoutLogId } = useParams(); // add this if editing routes use /:workoutLogId
