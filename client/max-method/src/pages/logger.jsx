@@ -8,6 +8,7 @@ import { API_URL } from '../config/api';
 import ContextMenu from '../components/ContextMenu';
 import PostWorkoutModal from '../components/PostWorkoutModal';
 import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
+import { useCombobox } from '../hooks/useCombobox';
 import { getPersonalBest } from '../utils/exerciseNameNormalize';
 import Toast from '../components/Toast';
 import { RestTimer } from '../components/workout';
@@ -42,11 +43,6 @@ function Logger() {
   const [title, setTitle] = useState('');
   const [exercises, setExercises] = useState([]);
   const [openCards, setOpenCards] = useState({});
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  // a11y: tracks the option highlighted by keyboard or hover within the open
-  // listbox. Drives aria-activedescendant. Reset to null whenever the dropdown
-  // closes or the typed query changes — see openDropdown / closeDropdown below.
-  const [highlightedIndex, setHighlightedIndex] = useState(null);
 
   const { personalBests, refreshPersonalBests } = useWorkout();
   const { user, setUser } = useUser();
@@ -79,82 +75,31 @@ function Logger() {
     return [{ kind: 'add', name: name.trim() }];
   }, []);
 
-  // Centralized open/close so highlightedIndex resets are guaranteed.
-  const closeDropdown = useCallback(() => {
-    setActiveDropdown(null);
-    setHighlightedIndex(null);
-  }, []);
-  const openDropdown = useCallback((ei, idx = null) => {
-    setActiveDropdown(ei);
-    setHighlightedIndex(idx);
-  }, []);
-
-  // WAI-ARIA combobox keydown handler. Empty-options guard: if optionsFor
-  // returns [] (i.e. ex.name is empty), Arrow/Enter no-op so we never point
-  // aria-activedescendant at a non-existent id.
-  const handleComboKeyDown = useCallback((e, ei, name) => {
-    const opts = optionsFor(name);
-    const open = activeDropdown === ei;
-
-    switch (e.key) {
-      case 'ArrowDown': {
-        if (opts.length === 0) return;
-        e.preventDefault();
-        if (!open) { openDropdown(ei, 0); return; }
-        setHighlightedIndex(prev => prev == null ? 0 : (prev + 1) % opts.length);
-        return;
-      }
-      case 'ArrowUp': {
-        if (opts.length === 0) return;
-        e.preventDefault();
-        if (!open) { openDropdown(ei, opts.length - 1); return; }
-        setHighlightedIndex(prev => prev == null ? opts.length - 1 : (prev - 1 + opts.length) % opts.length);
-        return;
-      }
-      case 'Home': {
-        if (!open || opts.length === 0) return;
-        e.preventDefault();
-        setHighlightedIndex(0);
-        return;
-      }
-      case 'End': {
-        if (!open || opts.length === 0) return;
-        e.preventDefault();
-        setHighlightedIndex(opts.length - 1);
-        return;
-      }
-      // Note: Space is intentionally NOT handled here. This is a text-input-
-      // trigger combobox per WAI-ARIA — Space is text entry, not a UI command.
-      // Enter alone selects the highlighted option (matches Google search,
-      // browser address bars, IDE autocomplete). Diverges from EquipmentSelect's
-      // button-trigger combobox where Space-to-select is correct.
-      case 'Enter': {
-        if (!open || opts.length === 0 || highlightedIndex == null) return;
-        const opt = opts[highlightedIndex];
-        if (!opt) return;
-        e.preventDefault();
-        if (opt.kind === 'match') {
-          updateName(ei, opt.name);
-        } else {
-          addToCustomExercises(opt.name);
-        }
-        closeDropdown();
-        return;
-      }
-      case 'Escape': {
-        if (!open) return;
-        e.preventDefault();
-        closeDropdown();
-        return;
-      }
-      case 'Tab': {
-        if (open) closeDropdown();
-        return;
-      }
-      default:
-        return;
+  // What pressing Enter on (or clicking) a chosen suggestion does — the one
+  // screen-specific piece the shared combobox needs. A real match fills the
+  // exercise name; the "add" row (shown only when nothing matches) saves the
+  // typed name as a new custom exercise — logger's free-text contract, which
+  // customDay deliberately does not offer. The hook closes the list afterwards.
+  const onSelectExercise = (ei, opt) => {
+    if (opt.kind === 'match') {
+      updateName(ei, opt.name);
+    } else {
+      addToCustomExercises(opt.name);
     }
-  }, [activeDropdown, highlightedIndex, optionsFor, openDropdown, closeDropdown]);
+  };
+
+  // The shared exercise-autocomplete brain: which card's list is open, which
+  // suggestion is highlighted, and all the keyboard/open-close handling. This
+  // logic is identical on the customDay screen, so it lives in one hook
+  // (hooks/useCombobox.js) that both screens consume.
+  const {
+    activeDropdown,
+    highlightedIndex,
+    setHighlightedIndex,
+    openDropdown,
+    closeDropdown,
+    handleComboKeyDown,
+  } = useCombobox({ optionsFor, onSelect: onSelectExercise });
 
   const recordPRIfBeaten = (exerciseName, weight, reps) => {
     const w = parseFloat(weight) || 0;
