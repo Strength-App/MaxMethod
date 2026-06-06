@@ -5,6 +5,7 @@ import { useWorkout } from '../context/WorkoutContext'
 import './exerciseLibrary.css'
 import { API_URL } from '../config/api';
 import { getPersonalBest } from '../utils/exerciseNameNormalize';
+import { getCustomExerciseNames } from '../utils/customExercises';
 import { ALL_EXERCISES, VIDEO_NAME_ALIASES, EXERCISE_NAME_ALIASES } from '../config/exercises';
 
 // ─── Library Video Lookup ─────────────────────────────────────────────────────
@@ -547,9 +548,7 @@ function CustomDetailView({ name, onBack }) {
 // ─── Custom Exercises Section ─────────────────────────────────────────────────
 
 function CustomExercisesSection({ onSelect }) {
-  const [customExercises, setCustomExercises] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('customExercises') || '[]') } catch { return [] }
-  })
+  const [customExercises, setCustomExercises] = useState(getCustomExerciseNames)
   const [inputVal, setInputVal] = useState('')
   const [error, setError] = useState('')
 
@@ -893,8 +892,7 @@ function ExerciseLibrary() {
       if (match) {
         setSelected(match)
       } else {
-        let customs = []
-        try { customs = JSON.parse(localStorage.getItem('customExercises') || '[]') } catch { /* noop */ }
+        const customs = getCustomExerciseNames()
         if (customs.some(n => n.toLowerCase() === focus.toLowerCase())) {
           setCustomSelected(focus)
         }
