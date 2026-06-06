@@ -15,10 +15,11 @@
 // .test.jsx per #test-file-extension-convention.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
+import { render, screen, act } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/msw/server.js';
-import { UserProvider } from '../context/UserContext';
+import { UserProvider, useUser } from '../context/UserContext';
 import { API_URL } from '../config/api.js';
 import Settings from './settings.jsx';
 
@@ -36,6 +37,15 @@ vi.mock('recharts', () => {
     CartesianGrid: Empty,
   };
 });
+
+// Module-level setUser probe so the transition test can flip user state on a
+// mounted instance (the case that exposes the hook-order bug).
+let exposedSetUser = null;
+function UserSetExposer() {
+  const { setUser } = useUser();
+  useEffect(() => { exposedSetUser = setUser; }, [setUser]);
+  return null;
+}
 
 // Track how many times Settings' profile fetch fires.
 let profileHits = 0;
@@ -59,6 +69,7 @@ function renderSettings({ initialUser = null } = {}) {
 
 beforeEach(() => {
   profileHits = 0;
+  exposedSetUser = null;
 });
 
 afterEach(() => {
@@ -99,5 +110,29 @@ describe('settings — effect firing discipline', () => {
     // effect flush before we assert that none fetched.
     await screen.findByRole('alert');
     expect(profileHits).toBe(0);
+  });
+});
+
+describe('settings — null→populated transition (Risk #11 fix armor)', () => {
+  // This is the case the moved early return protects: a Settings instance that
+  // mounts with no user (so the early return runs) and then receives one. Before
+  // the fix the useEffect sat below the early return, so logging in mid-mount
+  // changed the hook-call count and React threw "Rendered more hooks than during
+  // the previous render." This test fails against the unmodified component.
+  it('survives a login on a mounted instance and renders the profile', async () => {
+    stubProfile({ firstName: 'Ada' });
+    render(
+      <UserProvider>
+        <UserSetExposer />
+        <Settings />
+      </UserProvider>,
+    );
+    // Mounted signed-out.
+    expect(screen.getByRole('alert')).toHaveTextContent(/not logged in/i);
+
+    // Now log in on the same mounted instance.
+    act(() => exposedSetUser({ _id: 'u-1', email: 'ada@example.com' }));
+
+    expect(await screen.findByRole('heading', { name: 'Profile', level: 1 })).toBeInTheDocument();
   });
 });
