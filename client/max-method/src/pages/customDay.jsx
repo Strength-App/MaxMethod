@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
-import { ALL_EXERCISES } from './exerciseLibrary';
+import { ALL_EXERCISES } from '../config/exercises';
 import { API_URL } from '../config/api';
 import { useModalA11y } from '../hooks/useModalA11y';
 

@@ -4,7 +4,7 @@ import { useModalA11y } from '../hooks/useModalA11y';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import { useUser } from '../context/UserContext';
 import Toast from '../components/Toast';
-import { ALL_EXERCISES } from './exerciseLibrary';
+import { ALL_EXERCISES } from '../config/exercises';
 import { dateKey } from '../utils/dateUtils';
 
 function resolveWeekValue(value, wi) {
