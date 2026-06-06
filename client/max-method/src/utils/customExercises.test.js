@@ -11,15 +11,21 @@
 //   - addToCustomExercises: case-insensitive dedup, localStorage write,
 //     best-effort POST. Side effects are documented in the module header.
 //
-// The other two helpers named in the Batch 3 plan
-// (`getAllExerciseNames`, `isValidExercise`) are deferred to Batch 12;
-// see `docs/follow-ups.md#customExercises-batch-12-completion`.
+// The other two helpers named in the Batch 3 plan (`getAllExerciseNames`,
+// `isValidExercise`) were added in Batch 12 once the catalog name list moved
+// into config/exercises.js; their tests are at the bottom of this file.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/msw/server.js';
 import { API_URL } from '../config/api.js';
-import { getCustomExerciseNames, addToCustomExercises } from './customExercises.js';
+import { ALL_EXERCISE_NAMES } from '../config/exercises.js';
+import {
+  getCustomExerciseNames,
+  addToCustomExercises,
+  getAllExerciseNames,
+  isValidExercise,
+} from './customExercises.js';
 
 describe('getCustomExerciseNames', () => {
   beforeEach(() => localStorage.clear());
@@ -143,5 +149,45 @@ describe('addToCustomExercises', () => {
       expect(JSON.parse(localStorage.getItem('customExercises'))).toEqual(['Pendlay Row']);
       await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1));
     });
+  });
+});
+
+describe('getAllExerciseNames', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('returns just the catalog names when there are no custom exercises', () => {
+    expect(getAllExerciseNames()).toEqual(ALL_EXERCISE_NAMES);
+  });
+
+  it('appends the user custom names after the catalog names', () => {
+    localStorage.setItem('customExercises', JSON.stringify(['Sled Push', 'Yoke Carry']));
+    const result = getAllExerciseNames();
+    expect(result).toEqual([...ALL_EXERCISE_NAMES, 'Sled Push', 'Yoke Carry']);
+  });
+
+  it('reflects a custom exercise added during the session (read fresh each call)', () => {
+    expect(getAllExerciseNames()).not.toContain('Sled Push');
+    localStorage.setItem('customExercises', JSON.stringify(['Sled Push']));
+    expect(getAllExerciseNames()).toContain('Sled Push');
+  });
+});
+
+describe('isValidExercise', () => {
+  beforeEach(() => localStorage.clear());
+
+  it('accepts a catalog name regardless of case', () => {
+    expect(isValidExercise('Bench Press')).toBe(true);
+    expect(isValidExercise('bench press')).toBe(true);
+    expect(isValidExercise('BENCH PRESS')).toBe(true);
+  });
+
+  it('rejects a name that is not in the catalog or the custom list', () => {
+    expect(isValidExercise('Totally Made Up Lift')).toBe(false);
+  });
+
+  it('accepts a custom name once it has been added', () => {
+    expect(isValidExercise('Sled Push')).toBe(false);
+    localStorage.setItem('customExercises', JSON.stringify(['Sled Push']));
+    expect(isValidExercise('sled push')).toBe(true);
   });
 });
