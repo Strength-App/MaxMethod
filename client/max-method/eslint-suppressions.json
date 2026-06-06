@@ -62,9 +62,6 @@
     }
   },
   "src/pages/exerciseLibrary.jsx": {
-    "no-dupe-keys": {
-      "count": 22
-    },
     "react-hooks/set-state-in-effect": {
       "count": 3
     },
