@@ -3,30 +3,56 @@ import PostWorkoutScreen2 from './PostWorkoutScreen2';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { isNullState } from '../utils/classification';
 
-// Post-workout modal shell — backdrop overlay + dialog panel + screen
-// routing between PostWorkoutScreen1 (summary) and PostWorkoutScreen2
-// (post-recompute strength profile). Consumes the usePostWorkoutModal hook
-// output via the `modal` prop. Backdrop behavior is screen-aware: summary
-// backdrop runs the parent's onSummaryBackdrop (day → navigate to /home;
-// logger → saveAndExit + navigate to /history); classification-screen
-// backdrop is a plain close-and-navigate to doneNavigate.
-//
-// A11y (useModalA11y): Esc-to-close, focus-trap, initial-focus on first
-// focusable, focus-restore-to-opener on close, body scroll lock. Esc routes
-// to the same per-screen handler as backdrop click (handleSummaryBackdrop on
-// summary, handleScreen2Backdrop on classification) — keyboard and pointer
-// dismissal converge on the same intent. Notably this means Esc on logger's
-// summary screen triggers saveAndExit (commits the batch session) — the same
-// commit-on-dismiss semantic as backdrop click.
-//
-// Props:
-//   modal — usePostWorkoutModal output (state + handlers)
-//   title, streakStats — pass-throughs to PostWorkoutScreen1 (parent-specific)
-//   user — pass-through to PostWorkoutScreen2 (sex, bodyweight, oneRMs)
-//   continueLabel / savingLabel / continueAriaLabel / savingAriaLabel —
-//     optional Screen 1 button label/aria overrides
-//   ariaIdPrefix — optional Screen 1 title/subtitle id prefix override
-//   doneLabel — optional Screen 2 Done-button label (default 'Done')
+/**
+ * The pop-up ("modal") that appears after a workout. It's the frame around the
+ * two post-workout screens: a dim backdrop covering the page, a centered panel,
+ * and the logic for which screen to show — PostWorkoutScreen1 (the summary)
+ * first, then PostWorkoutScreen2 (the strength profile) after the user taps
+ * Continue.
+ *
+ * All of its state and behavior come from the usePostWorkoutModal hook, handed
+ * in as the `modal` prop. The modal shows whenever `modal.postWorkoutData`
+ * exists and renders nothing otherwise.
+ *
+ * Closing it: there are two ways out per screen, and they do the SAME thing —
+ * tapping the dim backdrop OR pressing the Escape key. On the summary screen
+ * both run the summary handler; on the strength-profile screen both run the
+ * profile handler. (For the logger flow, dismissing the summary this way also
+ * saves the session — the "leaving commits the workout" behavior the hook owns.)
+ * Clicks INSIDE the panel are ignored so the user doesn't dismiss it by tapping
+ * its own content.
+ *
+ * Accessibility is handled by the useModalA11y hook: keyboard focus is moved
+ * into the panel when it opens, kept trapped inside while open (so Tab can't
+ * wander onto the page behind it), Escape closes it, focus returns to whatever
+ * opened it on close, and the page behind is locked from scrolling.
+ *
+ * @param {object} modal
+ *   The usePostWorkoutModal hook's output — the current state (which screen,
+ *   the workout data, the captured pre-session snapshot) plus the handlers for
+ *   continuing, finishing, and dismissing.
+ * @param {string} title
+ *   Subtitle for the summary screen (passed straight to PostWorkoutScreen1).
+ * @param {object} streakStats
+ *   The consistency stats for the summary screen (passed to PostWorkoutScreen1).
+ * @param {object} user
+ *   The current user — supplies sex, bodyweight, and one-rep maxes to the
+ *   strength-profile screen (PostWorkoutScreen2).
+ * @param {string} [continueLabel]
+ *   Optional override for the summary screen's Continue button text.
+ * @param {string} [savingLabel]
+ *   Optional text for the Continue button while it's working.
+ * @param {string} [continueAriaLabel]
+ *   Optional spoken label for the Continue button (normal state).
+ * @param {string} [savingAriaLabel]
+ *   Optional spoken label for the Continue button while it's working.
+ * @param {string} [ariaIdPrefix='post-workout']
+ *   Prefix for the summary screen's title/subtitle element ids (logger passes a
+ *   distinct prefix to avoid id clashes).
+ * @param {string} [doneLabel='Done']
+ *   Optional override for the strength-profile screen's Done button text.
+ * @returns {JSX.Element|null} The modal, or null when it's closed.
+ */
 function PostWorkoutModal({
   modal,
   title,
@@ -80,6 +106,10 @@ function PostWorkoutModal({
             ariaIdPrefix={ariaIdPrefix}
           />
         ) : (() => {
+          // Pick which set of "one-rep max" numbers to show the user. We prefer
+          // the ESTIMATED maxes (the values the leveling system tracks); if the
+          // user has none of those yet, we fall back to their CURRENT maxes.
+          //
           // Post-Phase-6: leveling reads from estimated_one_rep_maxes. Per-source
           // fallback (estimated → current) mirrors bigThreeTotalForUser's rule —
           // use estimated if ANY lift is non-null, otherwise fall back to current.
