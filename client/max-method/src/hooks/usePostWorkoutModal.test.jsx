@@ -362,80 +362,77 @@ describe('usePostWorkoutModal', () => {
       });
     });
 
-    // Cancellation-guard tests below — assertion-mechanism note.
+    // Cancellation-guard tests below — observe the guard via the hook's public
+    // output (historySessions), NOT console.error.
     //
-    // The cancellation guard's purpose is to prevent React's state-update-
-    // after-unmount warning. Asserting that `console.error` stays uncalled
-    // IS asserting the guard's effect; that is the load-bearing observable.
+    // The guard (`if (cancelled) return;` in the success .then, `if (!cancelled)`
+    // in the catch) stops a stale in-flight all-history fetch from writing
+    // historySessions after the modal has moved on. The original tests asserted
+    // `console.error` stayed silent after unmount — but React 19 silently
+    // swallows setState-on-unmounted (no warning, no act error), so those
+    // assertions passed even against a guard-REMOVED hook (false armor). See
+    // docs/follow-ups.md#usepostworkoutmodal-cancellation-guard-tests-react19-invisibility.
     //
-    // Tradeoff: this couples the test to React's current warning-shape. If
-    // a future React surfaces post-unmount state updates differently (a
-    // different message, a thrown error, a silent no-op), the spy may not
-    // fire and the guard's failure would be invisible to these tests. That
-    // is acceptable because the alternative — asserting on the hook's
-    // internal `cancelled` flag — would be testing implementation. Coupling
-    // to a warning shape that hasn't changed in years is weaker coupling
-    // than reaching into private state. Same shape as Risk #8's debounce-
-    // cleanup invariant (Batch 5) for fetches: state updates after unmount
-    // are not attempted; the cancellation flag is the mechanism, the
-    // warning-absence is the contract.
+    // Reshape (Batch 8): trip the SAME guard by CLOSING the modal mid-flight.
+    // The effect's cleanup flips `cancelled` on a deps change ([postWorkoutData]
+    // → null) exactly as it does on unmount — but the hook stays mounted, so its
+    // historySessions output is readable. A guard-removed hook would visibly
+    // write the stale fetch result; the guarded hook leaves historySessions
+    // untouched. Real regression armor, with no coupling to a React warning shape.
 
-    it('cancellation guard: success-path setHistorySessions is skipped when unmount fires before the fetch resolves', async () => {
-      // Pins the `if (cancelled) return;` truthy branch inside the success .then.
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      try {
-        const user = makeUser();
-        let releaseFetch;
-        const fetchHeld = new Promise((resolve) => { releaseFetch = resolve; });
-        server.use(
-          http.get(`${API_URL}/api/users/workout/:userId/all-history`, async () => {
-            await fetchHeld;
-            return HttpResponse.json({ sessions: [{ _id: 's1', date: new Date().toISOString() }] });
-          }),
-        );
-        const { result, unmount } = renderModalHook(defaultArgs, { initialUser: user, initialUserId: user._id });
-        act(() => result.current.open({ summary: 'x' }));
-        // Fetch in-flight. Unmount.
-        unmount();
-        // Let the fetch resolve. The cancellation guard should swallow the
-        // setHistorySessions call.
-        releaseFetch();
-        await new Promise((r) => setTimeout(r, 10));
-        expect(consoleErrorSpy).not.toHaveBeenCalled();
-      } finally {
-        consoleErrorSpy.mockRestore();
-      }
+    it('success-path guard: a fetch that resolves AFTER the modal closes does not populate historySessions', async () => {
+      // Exercises the `if (cancelled) return;` truthy branch in the success .then.
+      const user = makeUser();
+      let releaseFetch;
+      const fetchHeld = new Promise((resolve) => { releaseFetch = resolve; });
+      server.use(
+        http.get(`${API_URL}/api/users/workout/:userId/all-history`, async () => {
+          await fetchHeld;
+          return HttpResponse.json({ sessions: [{ _id: 's1', date: '2026-03-15T12:00:00.000Z' }] });
+        }),
+      );
+      const { result } = renderModalHook(defaultArgs, { initialUser: user, initialUserId: user._id });
+      act(() => result.current.open({ summary: 'x' }));
+      // Fetch is in-flight (held) — nothing populated yet.
+      expect(result.current.historySessions).toEqual([]);
+      // Close mid-flight: the effect cleanup flips `cancelled` for this fetch.
+      act(() => result.current.close());
+      // Release the now-stale fetch and let it settle. The guard must skip the write.
+      await act(async () => { releaseFetch(); await new Promise((r) => setTimeout(r, 10)); });
+      // Guard held: a guard-removed hook would have written [{ s1 }] here.
+      expect(result.current.historySessions).toEqual([]);
     });
 
-    it('cancellation guard: catch-path setHistorySessions is skipped when unmount fires before the fetch rejects', async () => {
-      // Pins the `if (!cancelled)` falsy branch inside the catch. Same
-      // invariant as the success-path test above, error rail. Pattern: hold
-      // the fetch until after unmount, then return HttpResponse.error() so
-      // the client-side fetch rejects (rather than having the handler itself
-      // reject, which MSW would surface differently).
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      try {
-        const user = makeUser();
-        let releaseFetch;
-        const fetchHeld = new Promise((resolve) => { releaseFetch = resolve; });
-        server.use(
-          http.get(`${API_URL}/api/users/workout/:userId/all-history`, async () => {
-            await fetchHeld;
-            return HttpResponse.error();
-          }),
-        );
-        const { result, unmount } = renderModalHook(defaultArgs, { initialUser: user, initialUserId: user._id });
-        act(() => result.current.open({ summary: 'x' }));
-        unmount();
-        // Release the held fetch — the handler resolves to HttpResponse.error(),
-        // the client-side fetch rejects, the .catch fires with cancelled=true,
-        // and the `if (!cancelled)` falsy branch skips setHistorySessions.
-        releaseFetch();
-        await new Promise((r) => setTimeout(r, 10));
-        expect(consoleErrorSpy).not.toHaveBeenCalled();
-      } finally {
-        consoleErrorSpy.mockRestore();
-      }
+    it('catch-path guard: a fetch that REJECTS after the modal closes does not reset historySessions', async () => {
+      // Exercises the `if (!cancelled)` falsy branch in the catch. We first load
+      // a real session so historySessions is non-empty, then prove a stale
+      // rejecting fetch does NOT reset it back to [].
+      const user = makeUser();
+      server.use(
+        http.get(`${API_URL}/api/users/workout/:userId/all-history`, () =>
+          HttpResponse.json({ sessions: [{ _id: 's1', date: '2026-03-15T12:00:00.000Z' }] }),
+        ),
+      );
+      const { result } = renderModalHook(defaultArgs, { initialUser: user, initialUserId: user._id });
+      act(() => result.current.open({ summary: 'x' }));
+      await waitFor(() => expect(result.current.historySessions).toHaveLength(1));
+
+      // Re-open against a held-then-reject handler; closing mid-flight trips the
+      // guard for this second fetch.
+      let releaseFetch;
+      const fetchHeld = new Promise((resolve) => { releaseFetch = resolve; });
+      server.use(
+        http.get(`${API_URL}/api/users/workout/:userId/all-history`, async () => {
+          await fetchHeld;
+          return HttpResponse.error();
+        }),
+      );
+      act(() => result.current.open({ summary: 'y' })); // truthy→truthy: cancels fetch #1, starts the held fetch #2
+      act(() => result.current.close());                // cleanup flips `cancelled` for fetch #2
+      await act(async () => { releaseFetch(); await new Promise((r) => setTimeout(r, 10)); });
+      // Guard held: the catch's setHistorySessions([]) was skipped, so the
+      // previously-loaded session survives. A guard-removed hook would show [].
+      expect(result.current.historySessions).toHaveLength(1);
     });
 
     it('does not fetch when userId is missing from localStorage', () => {
