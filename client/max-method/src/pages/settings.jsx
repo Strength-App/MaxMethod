@@ -35,13 +35,6 @@ function Settings() {
     const [squatOpen, setSquatOpen] = useState(false)
     const [deadliftOpen, setDeadliftOpen] = useState(false)
 
-    // 🚨 guard against null user
-    // NOTE: pre-existing rules-of-hooks issue — this conditional return sits
-    // BEFORE the useEffect below. If `user` flips between null and non-null,
-    // hook-call counts diverge across renders. Flagged for follow-up; not
-    // restructured in this audit pass.
-    if (!user) return <p role="alert">Not logged in</p>
-
     useEffect(() => {
         const fetchUser = async () => {
             try {
@@ -78,6 +71,13 @@ function Settings() {
             setLoading(false)
         }
     }, [user])
+
+    // Guard against a null user. This return sits AFTER every hook (the
+    // useState block + the useEffect above) so the hook-call count stays
+    // constant whether `user` is null or populated — moving it above the
+    // useEffect was the Risk #11 Rules-of-Hooks violation. The effect is safe
+    // to run with a null user: its body no-ops via the `if (user?._id)` guard.
+    if (!user) return <p role="alert">Not logged in</p>
 
     if (loading) return <p role="status" aria-live="polite">Loading…</p>
 
