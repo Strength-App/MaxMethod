@@ -289,7 +289,7 @@ function CustomDay() {
   const [applyConfirm, setApplyConfirm] = useState(false);
   const [applyDone, setApplyDone] = useState(false);
   const cancelApplyBtnRef = useRef(null);
-  const closeApplyConfirm = useCallback(() => setApplyConfirm(false), []);
+  const closeApplyConfirm = useCallback(() => setApplyConfirm(false), [setApplyConfirm]);
   // Modal a11y: focus trap, Esc to close, return focus on close. Initial
   // focus lands on Cancel (safer default for a destructive overwrite).
   const applyModalRef = useModalA11y({
