@@ -100,9 +100,6 @@
     "no-unused-vars": {
       "count": 1
     },
-    "react-hooks/rules-of-hooks": {
-      "count": 1
-    },
     "react-hooks/set-state-in-effect": {
       "count": 1
     }
