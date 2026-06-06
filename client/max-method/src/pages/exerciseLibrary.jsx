@@ -5,6 +5,12 @@ import { useWorkout } from '../context/WorkoutContext'
 import './exerciseLibrary.css'
 import { API_URL } from '../config/api';
 import { getPersonalBest } from '../utils/exerciseNameNormalize';
+import {
+  MOVEMENT_PATTERNS,
+  EXERCISE_EQUIPMENT,
+  PATTERN_MUSCLES,
+  VIDEO_NAME_ALIASES,
+} from '../config/exercises';
 
 // ─── Library Video Lookup ─────────────────────────────────────────────────────
 
@@ -22,12 +28,6 @@ function sortedKey(name) {
     .map(t => t.replace(/s$/, ''))
     .sort()
     .join('')
-}
-
-// Cases the normalizers can't bridge (e.g. mongo "Close Grip Pulldowns" has
-// no "Lat", but the frontend label does).
-const VIDEO_NAME_ALIASES = {
-  'Close Grip Lat Pulldowns': 'Close Grip Pulldowns',
 }
 
 // Legacy / synonymous exercise names that should resolve to a single canonical
@@ -55,31 +55,6 @@ function buildVideoLookup(videos) {
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
-const MOVEMENT_PATTERNS = {
-  'Horizontal Push':             ['Bench Press','Incline Bench Press','Decline Bench Press','Floor Press'],
-  'Vertical Push':               ['Military Press','Seated Military Press','Push Press'],
-  'Unilateral Push':             ['DB Incline Bench','DB Flat Bench','DB Shoulder Press','Arnold Press','DB Floor Press'],
-  'Tricep Accessory':            ['Dips','Weighted Dips','Skullcrushers','Tricep Pushdowns','Tricep Extensions','Dip Machine','Overhead Tricep Extensions','One Arm Extensions','Close Grip Bench Press'],
-  'Shoulder Accessory':          ['Front Raises','Lateral Raises','Cable Lateral Raises','Upright Rows','Face Pulls','Band Pull Aparts'],
-  'Chest Accessory':             ['Chest Fly Machine','DB Chest Flys','Pushups','Weighted Pushups','Floor Chest Flys','Incline Chest Flys','Cable Chest Flys','Low to High Cable Flys'],
-  'Push Machine':                ['Chest Press Machine','Shoulder Press Machine','Decline Press Machine','Incline Press Machine'],
-  'Vertical Pull':               ['Neutral Grip Pullups','Weighted Neutral Grip Pullups','Pullups','Weighted Pull Ups','Chin Ups','Weighted Chin Ups','Lat Pulldowns','Close Grip Lat Pulldowns','Wide Grip Lat Pulldowns','Single Arm Pulldowns'],
-  'Horizontal Pull':             ['Barbell Row','Underhand Barbell Row','Cable Row','T Bar Rows','Single Arm Cable Rows','Single Arm Dumbbell Rows','Chest Supported Row','Seal Row','Pendlay Row'],
-  'Posterior Upper Accessory':   ['Scarecrows','Rear Delt Flys','Machine Rear Delt Flys','Pullovers','Cable Pullovers','Shrugs','DB Shrugs','Trap Bar Shrugs','YTWLs'],
-  'Bicep Accessory':             ['DB Curls','Barbell Curls','Ez Bar Curls','Hammer Curls','Preacher Curls','Cable Curls','Rope Curls','Incline DB Curls','Concentration Curls','Cross Body Hammer Curls'],
-  'Hinge':                       ['Deadlift','Hip Thrusts','Bodyweight Hip Thrusts','RDLs','Trap Bar Deadlifts','Barbell Glute Bridges','Bodyweight Glute Bridges','Single Leg RDLs','Sumo Deadlift','Good Mornings'],
-  'Squat Pattern':               ['Squat','Front Squat','SSB Squats','Box Squats','Bodyweight Squat','Pendulum Squat','Leg Press','Goblet Squat','Zercher Squat'],
-  'Posterior Chain Accessory':   ['Back Extensions','Bodyweight Back Extensions','Nordics','Reverse Hypers','GHD Raises','Single Leg Hip Thrusts'],
-  'Unilateral Lower':            ['Bulgarians','Bodyweight Bulgarians','Walking Lunges','Bodyweight Lunges','ATG Lunges','Bodyweight ATG Lunges','Reverse Lunges','Step Ups'],
-  'Isolation Lower':             ['Leg Extensions','Single Leg Extensions','Seated Leg Curls','Lying Leg Curls','Abductor Machine','Adductor Machine'],
-  'Calves & Shins':              ['Single Leg Calf Raises','Calf Raise Machine','Seated Calf Raises','Bodyweight Calf Raises','Weighted Calf Raises','Donkey Calf Raises','Tibia Raises','Tibia Curls','Banded Tibia Curls'],
-  'Machine Lower':               ['Leg Press','Hack Squat','Hack Squat Machine','Pendulum Squat','Reverse Hack Squat'],
-  'Core':                        ['Plank','Ab Wheel Rollouts','Hanging Leg Raises','Cable Crunches','Decline Crunches','Pallof Press','Dead Bugs','Suitcase Carries','Farmer Carries'],
-  'Bodyweight Strength Upper':   ['Pushups','Incline Pushups','Diamond Pushups','Wide Pushups','Dips','Pullups','Chin Ups','Neutral Grip Pullups','Inverted Bodyweight Row','Burpees'],
-  'Bodyweight Lower':            ['Bodyweight Squat','Bodyweight Lunges','Bodyweight ATG Lunges','Bodyweight Bulgarians','Bodyweight Hip Thrusts','Bodyweight Glute Bridges','Bodyweight Back Extensions','Nordics','GHD Raises','Bodyweight Calf Raises'],
-  'Cardio':                      ['Treadmill','Curved Treadmill','Assault Bike','Bike','Recumbent Bike','Elliptical','Stairmaster','Rowing Machine','Ski Erg'],
-}
-
 const UPPER_PATTERNS = ['Horizontal Push','Vertical Push','Unilateral Push','Tricep Accessory','Shoulder Accessory','Chest Accessory','Push Machine','Vertical Pull','Horizontal Pull','Posterior Upper Accessory','Bicep Accessory','Bodyweight Strength Upper']
 const LOWER_PATTERNS = ['Hinge','Squat Pattern','Posterior Chain Accessory','Unilateral Lower','Isolation Lower','Calves & Shins','Machine Lower','Bodyweight Lower']
 
@@ -88,31 +63,6 @@ function bodyOf(p) {
   if (LOWER_PATTERNS.includes(p)) return 'lower'
   if (p === 'Cardio') return 'cardio'
   return 'core'
-}
-
-const PATTERN_MUSCLES = {
-  'Horizontal Push':           { chest: '#cc0404', shoulders: 'rgba(204,4,4,0.4)',  triceps:  'rgba(204,4,4,0.25)' },
-  'Vertical Push':             { shoulders: '#cc0404', traps: 'rgba(204,4,4,0.4)',  triceps:  'rgba(204,4,4,0.3)'  },
-  'Unilateral Push':           { chest: '#cc0404', shoulders: 'rgba(204,4,4,0.45)', triceps:  'rgba(204,4,4,0.25)' },
-  'Tricep Accessory':          { triceps: '#cc0404', chest: 'rgba(204,4,4,0.12)' },
-  'Shoulder Accessory':        { shoulders: '#cc0404', traps: 'rgba(204,4,4,0.35)' },
-  'Chest Accessory':           { chest: '#cc0404', shoulders: 'rgba(204,4,4,0.2)' },
-  'Push Machine':              { chest: '#cc0404', shoulders: 'rgba(204,4,4,0.3)',  triceps:  'rgba(204,4,4,0.2)'  },
-  'Vertical Pull':             { lats: '#cc0404', biceps: 'rgba(204,4,4,0.5)',      traps:    'rgba(204,4,4,0.3)'  },
-  'Horizontal Pull':           { lats: '#cc0404', traps: 'rgba(204,4,4,0.45)',      biceps:   'rgba(204,4,4,0.35)' },
-  'Posterior Upper Accessory': { traps: '#cc0404', shoulders: 'rgba(204,4,4,0.4)', lats:     'rgba(204,4,4,0.25)' },
-  'Bicep Accessory':           { biceps: '#cc0404', forearms: 'rgba(204,4,4,0.4)' },
-  'Hinge':                     { hamstrings: '#cc0404', glutes: 'rgba(204,4,4,0.65)', lats:  'rgba(204,4,4,0.2)'  },
-  'Squat Pattern':             { quads: '#cc0404', glutes: 'rgba(204,4,4,0.5)',     hamstrings: 'rgba(204,4,4,0.2)' },
-  'Posterior Chain Accessory': { hamstrings: '#cc0404', glutes: 'rgba(204,4,4,0.5)' },
-  'Unilateral Lower':          { quads: '#cc0404', glutes: 'rgba(204,4,4,0.55)',   hamstrings: 'rgba(204,4,4,0.2)' },
-  'Isolation Lower':           { hamstrings: '#cc0404', quads: 'rgba(204,4,4,0.3)' },
-  'Calves & Shins':            { calves: '#cc0404' },
-  'Machine Lower':             { quads: '#cc0404', glutes: 'rgba(204,4,4,0.4)' },
-  'Core':                      { abs: '#cc0404', lats: 'rgba(204,4,4,0.15)' },
-  'Bodyweight Strength Upper': { chest: '#cc0404', lats: 'rgba(204,4,4,0.5)', triceps: 'rgba(204,4,4,0.4)', shoulders: 'rgba(204,4,4,0.3)' },
-  'Bodyweight Lower':          { quads: '#cc0404', glutes: 'rgba(204,4,4,0.6)', hamstrings: 'rgba(204,4,4,0.35)', calves: 'rgba(204,4,4,0.15)' },
-  'Cardio':                    { quads: 'rgba(204,4,4,0.25)', hamstrings: 'rgba(204,4,4,0.2)', calves: 'rgba(204,4,4,0.2)' },
 }
 
 const PATTERN_PRIMARY = {
@@ -320,83 +270,6 @@ const PATTERN_TIPS = {
   'Bodyweight Strength Upper': ['Full range is non-negotiable — chest to floor, chin over bar','Hollow body position improves every bodyweight movement','Slow the eccentric — tempo builds more strength than speed','These movements build real-world, transferable upper body strength'],
   'Bodyweight Lower':          ['Full depth every rep — no shortcuts','Tempo matters more than load with bodyweight','Drive through the heel for maximum glute emphasis','High volume works well — bodyweight lower responds to density'],
   'Cardio':                    ['Keep heart rate in your target zone for your goal','Steady state: conversational pace — RPE 5–6','Intervals: push hard then recover fully before repeating','Hydrate before, during, and after every session','Consistency and frequency matter more than any single session'],
-}
-
-// ─── Equipment Map ────────────────────────────────────────────────────────────
-
-const EXERCISE_EQUIPMENT = {
-  // Horizontal Push
-  'Bench Press': 'Barbell', 'Incline Bench Press': 'Barbell', 'Decline Bench Press': 'Barbell', 'Floor Press': 'Barbell',
-  // Vertical Push
-  'Military Press': 'Barbell', 'Seated Military Press': 'Barbell', 'Push Press': 'Barbell',
-  // Unilateral Push
-  'DB Incline Bench': 'Dumbbell', 'DB Flat Bench': 'Dumbbell', 'DB Shoulder Press': 'Dumbbell', 'Arnold Press': 'Dumbbell', 'DB Floor Press': 'Dumbbell',
-  // Tricep Accessory
-  'Dips': 'Bodyweight', 'Weighted Dips': 'Dumbbell', 'Skullcrushers': 'Barbell', 'Tricep Pushdowns': 'Cable',
-  'Tricep Extensions': 'Cable', 'Dip Machine': 'Machine', 'Overhead Tricep Extensions': 'Cable',
-  'One Arm Extensions': 'Dumbbell', 'Close Grip Bench Press': 'Barbell',
-  // Shoulder Accessory
-  'Front Raises': 'Dumbbell', 'Lateral Raises': 'Dumbbell', 'Cable Lateral Raises': 'Cable',
-  'Upright Rows': 'Barbell', 'Face Pulls': 'Cable', 'Band Pull Aparts': 'Dumbbell',
-  // Chest Accessory
-  'Chest Fly Machine': 'Machine', 'DB Chest Flys': 'Dumbbell', 'Pushups': 'Bodyweight', 'Weighted Pushups': 'Dumbbell',
-  'Floor Chest Flys': 'Dumbbell', 'Incline Chest Flys': 'Dumbbell', 'Cable Chest Flys': 'Cable', 'Low to High Cable Flys': 'Cable',
-  // Push Machine
-  'Chest Press Machine': 'Machine', 'Shoulder Press Machine': 'Machine', 'Decline Press Machine': 'Machine', 'Incline Press Machine': 'Machine',
-  // Vertical Pull
-  'Neutral Grip Pullups': 'Bodyweight', 'Weighted Neutral Grip Pullups': 'Dumbbell', 'Pullups': 'Bodyweight', 'Weighted Pull Ups': 'Dumbbell',
-  'Chin Ups': 'Bodyweight', 'Weighted Chin Ups': 'Dumbbell', 'Lat Pulldowns': 'Cable', 'Close Grip Lat Pulldowns': 'Cable',
-  'Wide Grip Lat Pulldowns': 'Cable', 'Single Arm Pulldowns': 'Cable',
-  // Horizontal Pull
-  'Barbell Row': 'Barbell', 'Underhand Barbell Row': 'Barbell', 'Cable Row': 'Cable', 'T Bar Rows': 'Barbell',
-  'Single Arm Cable Rows': 'Cable', 'Single Arm Dumbbell Rows': 'Dumbbell', 'Chest Supported Row': 'Machine',
-  'Seal Row': 'Barbell', 'Pendlay Row': 'Barbell',
-  // Posterior Upper Accessory
-  'Scarecrows': 'Dumbbell', 'Rear Delt Flys': 'Dumbbell', 'Machine Rear Delt Flys': 'Machine', 'Pullovers': 'Dumbbell',
-  'Cable Pullovers': 'Cable', 'Shrugs': 'Barbell', 'DB Shrugs': 'Dumbbell', 'Trap Bar Shrugs': 'Barbell', 'YTWLs': 'Dumbbell',
-  // Bicep Accessory
-  'DB Curls': 'Dumbbell', 'Barbell Curls': 'Barbell', 'Ez Bar Curls': 'Barbell', 'Hammer Curls': 'Dumbbell',
-  'Preacher Curls': 'Barbell', 'Cable Curls': 'Cable', 'Rope Curls': 'Cable', 'Incline DB Curls': 'Dumbbell',
-  'Concentration Curls': 'Dumbbell', 'Cross Body Hammer Curls': 'Dumbbell',
-  // Hinge
-  'Hip Thrusts': 'Barbell', 'Bodyweight Hip Thrusts': 'Bodyweight', 'RDLs': 'Barbell', 'Trap Bar Deadlifts': 'Barbell',
-  'Barbell Glute Bridges': 'Barbell', 'Bodyweight Glute Bridges': 'Bodyweight', 'Single Leg RDLs': 'Dumbbell',
-  'Sumo Deadlift': 'Barbell', 'Good Mornings': 'Barbell',
-  // Squat Pattern
-  'Squat': 'Barbell', 'Front Squat': 'Barbell', 'SSB Squats': 'Barbell', 'Box Squats': 'Barbell',
-  'Bodyweight Squat': 'Bodyweight', 'Pendulum Squat': 'Machine', 'Leg Press': 'Machine', 'Goblet Squat': 'Dumbbell', 'Zercher Squat': 'Barbell',
-  // Posterior Chain Accessory
-  'Back Extensions': 'Machine', 'Bodyweight Back Extensions': 'Bodyweight', 'Nordics': 'Bodyweight', 'Reverse Hypers': 'Machine',
-  'GHD Raises': 'Bodyweight', 'Single Leg Hip Thrusts': 'Barbell',
-  // Unilateral Lower
-  'Bulgarians': 'Dumbbell', 'Bodyweight Bulgarians': 'Bodyweight', 'Walking Lunges': 'Dumbbell', 'Bodyweight Lunges': 'Bodyweight',
-  'ATG Lunges': 'Dumbbell', 'Bodyweight ATG Lunges': 'Bodyweight', 'Reverse Lunges': 'Dumbbell', 'Step Ups': 'Dumbbell',
-  // Isolation Lower
-  'Leg Extensions': 'Machine', 'Single Leg Extensions': 'Machine', 'Seated Leg Curls': 'Machine', 'Lying Leg Curls': 'Machine',
-  'Abductor Machine': 'Machine', 'Adductor Machine': 'Machine',
-  // Calves & Shins
-  'Single Leg Calf Raises': 'Dumbbell', 'Calf Raise Machine': 'Machine', 'Seated Calf Raises': 'Machine', 'Bodyweight Calf Raises': 'Bodyweight',
-  'Weighted Calf Raises': 'Dumbbell', 'Donkey Calf Raises': 'Machine', 'Tibia Raises': 'Bodyweight', 'Tibia Curls': 'Machine', 'Banded Tibia Curls': 'Bodyweight',
-  // Machine Lower
-  'Hack Squat': 'Machine', 'Hack Squat Machine': 'Machine', 'Reverse Hack Squat': 'Machine',
-  // Core
-  'Plank': 'Bodyweight', 'Ab Wheel Rollouts': 'Bodyweight', 'Hanging Leg Raises': 'Bodyweight', 'Cable Crunches': 'Cable',
-  'Decline Crunches': 'Bodyweight', 'Pallof Press': 'Cable', 'Dead Bugs': 'Bodyweight', 'Suitcase Carries': 'Dumbbell', 'Farmer Carries': 'Dumbbell',
-  // Cardio
-  'Treadmill': 'Cardio Machine', 'Curved Treadmill': 'Cardio Machine', 'Assault Bike': 'Cardio Machine', 'Bike': 'Cardio Machine',
-  'Recumbent Bike': 'Cardio Machine', 'Elliptical': 'Cardio Machine', 'Stairmaster': 'Cardio Machine', 'Rowing Machine': 'Cardio Machine', 'Ski Erg': 'Cardio Machine',
-  // Fixed template exercises
-  'Deadlift': 'Barbell',
-  // Bodyweight exercises
-  'Pullups': 'Bodyweight', 'Chin Ups': 'Bodyweight', 'Neutral Grip Pullups': 'Bodyweight',
-  'Dips': 'Bodyweight', 'Pushups': 'Bodyweight',
-  'Nordics': 'Bodyweight', 'Bodyweight Back Extensions': 'Bodyweight', 'GHD Raises': 'Bodyweight',
-  'Bodyweight Calf Raises': 'Bodyweight', 'Tibia Raises': 'Bodyweight', 'Banded Tibia Raises': 'Bodyweight', 'Banded Tibia Curls': 'Bodyweight',
-  'Plank': 'Bodyweight', 'Ab Wheel Rollouts': 'Bodyweight', 'Hanging Leg Raises': 'Bodyweight', 'Decline Crunches': 'Bodyweight', 'Dead Bugs': 'Bodyweight',
-  'Bodyweight Squat': 'Bodyweight', 'Bodyweight Lunges': 'Bodyweight', 'Bodyweight ATG Lunges': 'Bodyweight',
-  'Bodyweight Bulgarians': 'Bodyweight', 'Bodyweight Hip Thrusts': 'Bodyweight', 'Bodyweight Glute Bridges': 'Bodyweight',
-  'Incline Pushups': 'Bodyweight', 'Diamond Pushups': 'Bodyweight', 'Wide Pushups': 'Bodyweight',
-  'Inverted Bodyweight Row': 'Bodyweight', 'Burpees': 'Bodyweight',
 }
 
 // ─── Build Exercise List ──────────────────────────────────────────────────────
