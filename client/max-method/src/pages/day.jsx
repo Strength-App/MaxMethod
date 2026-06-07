@@ -11,29 +11,22 @@ import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
 import { getPersonalBest } from '../utils/exerciseNameNormalize';
 import { RestTimer } from '../components/workout';
 import { getRestSeconds } from '../utils/restDuration';
+import { EXERCISE_EQUIPMENT, MOVEMENT_PATTERNS as CANONICAL_MOVEMENT_PATTERNS } from '../config/exercises';
 
+// day.jsx resolves swap/edit alternatives by a slot's pattern label. It consumes
+// the canonical MOVEMENT_PATTERNS from config/exercises.js — which intentionally
+// gives Deadlift in the Hinge list and the canonical "Squat" spelling (legacy
+// "Squats"/"Back Squat" spellings normalize to "Squat" on the PB path; see
+// docs/decisions.md#squat-alias-normalization-coverage) — and overlays the one
+// pattern the canonical catalog omits on purpose: "Vertical Pull Cable Only".
+// The catalog leaves that cable-only subset out because exerciseLibrary iterates
+// the map to build one library card per name and it would duplicate the Vertical
+// Pull cards; day needs it as a real swap key, so it is restored here only. Same
+// per-page overlay shape as reviewProgram — see
+// docs/decisions.md#day-movement-patterns-consumption.
 const movementPatterns = {
-  "Horizontal Push": ["Bench Press", "Incline Bench Press", "Decline Bench Press", "Floor Press"],
-  "Vertical Push": ["Military Press", "Seated Military Press", "Push Press"],
-  "Unilateral Push": ["DB Incline Bench", "DB Flat Bench", "DB Shoulder Press", "Arnold Press", "DB Floor Press"],
-  "Tricep Accessory": ["Dips", "Weighted Dips", "Skullcrushers", "Tricep Pushdowns", "Tricep Extensions", "Dip Machine", "Overhead Tricep Extensions", "One Arm Extensions", "Close Grip Bench Press"],
-  "Shoulder Accessory": ["Front Raises", "Lateral Raises", "Cable Lateral Raises", "Upright Rows", "Face Pulls", "Band Pull Aparts"],
-  "Chest Accessory": ["Chest Fly Machine", "DB Chest Flys", "Pushups", "Weighted Pushups", "Floor Chest Flys", "Incline Chest Flys", "Cable Chest Flys", "Low to High Cable Flys"],
-  "Push Machine": ["Chest Press Machine", "Shoulder Press Machine", "Decline Press Machine", "Incline Press Machine"],
-  "Vertical Pull": ["Neutral Grip Pullups", "Weighted Neutral Grip Pullups", "Pullups", "Weighted Pull Ups", "Chin Ups", "Weighted Chin Ups", "Lat Pulldowns", "Close Grip Lat Pulldowns", "Wide Grip Lat Pulldowns", "Single Arm Pulldowns"],
+  ...CANONICAL_MOVEMENT_PATTERNS,
   "Vertical Pull Cable Only": ["Lat Pulldowns", "Close Grip Lat Pulldowns", "Wide Grip Lat Pulldowns", "Single Arm Pulldowns"],
-  "Horizontal Pull": ["Barbell Row", "Underhand Barbell Row", "Cable Row", "T Bar Rows", "Single Arm Cable Rows", "Single Arm Dumbbell Rows", "Chest Supported Row", "Seal Row", "Pendlay Row"],
-  "Posterior Upper Accessory": ["Scarecrows", "Rear Delt Flys", "Machine Rear Delt Flys", "Pullovers", "Cable Pullovers", "Shrugs", "DB Shrugs", "Trap Bar Shrugs", "YTWLs"],
-  "Bicep Accessory": ["DB Curls", "Barbell Curls", "Ez Bar Curls", "Hammer Curls", "Preacher Curls", "Cable Curls", "Rope Curls", "Incline DB Curls", "Concentration Curls", "Cross Body Hammer Curls"],
-  "Hinge": ["Hip Thrusts", "Bodyweight Hip Thrusts", "RDLs", "Trap Bar Deadlifts", "Barbell Glute Bridges", "Bodyweight Glute Bridges", "Single Leg RDLs", "Sumo Deadlift", "Good Mornings"],
-  "Squat Pattern": ["Front Squat", "SSB Squats", "Squats", "Box Squats", "Bodyweight Squat", "Pendulum Squat", "Leg Press", "Goblet Squat", "Zercher Squat"],
-  "Posterior Chain Accessory": ["Back Extensions", "Bodyweight Back Extensions", "Nordics", "Reverse Hypers", "GHD Raises", "Single Leg Hip Thrusts"],
-  "Unilateral Lower": ["Bulgarians", "Bodyweight Bulgarians", "Walking Lunges", "Bodyweight Lunges", "ATG Lunges", "Bodyweight ATG Lunges", "Reverse Lunges", "Step Ups"],
-  "Isolation Lower": ["Leg Extensions", "Single Leg Extensions", "Seated Leg Curls", "Lying Leg Curls", "Abductor Machine", "Adductor Machine"],
-  "Calves & Shins": ["Single Leg Calf Raises", "Calf Raise Machine", "Seated Calf Raises", "Bodyweight Calf Raises", "Weighted Calf Raises", "Donkey Calf Raises", "Tibia Raises", "Tibia Curls", "Banded Tibia Curls"],
-  "Machine Lower": ["Leg Press", "Hack Squat", "Hack Squat Machine", "Pendulum Squat", "Reverse Hack Squat"],
-  "Core": ["Plank", "Ab Wheel Rollouts", "Hanging Leg Raises", "Cable Crunches", "Decline Crunches", "Pallof Press", "Dead Bugs", "Suitcase Carries", "Farmer Carries"],
-  "Cardio": ["Treadmill", "Curved Treadmill", "Assault Bike", "Bike", "Recumbent Bike", "Elliptical", "Stairmaster", "Rowing Machine", "Ski Erg"],
 };
 
 function resolveWeekValue(value, wi) {
@@ -64,55 +57,6 @@ const DISTANCE_EXERCISES = new Set(["Farmer Carries", "Suitcase Carries"]);
 const isTimedSlot = (slot) => slot.repsType === "time" || TIMED_EXERCISES.has(slot.exercise ?? '');
 const isDistanceSlot = (slot) => slot.repsType === "distance" || DISTANCE_EXERCISES.has(slot.exercise ?? '');
 
-// Mirrors reviewProgram.jsx EXERCISE_EQUIPMENT — duplicated intentionally per
-// the no-refactor rule for this task. Powers the equipment pills shown in the
-// "Swap for today" dropdown so the swap UX matches reviewProgram visually.
-// If a third consumer appears, extract to a shared module then.
-const EXERCISE_EQUIPMENT = {
-  'Bench Press': 'Barbell', 'Incline Bench Press': 'Barbell', 'Decline Bench Press': 'Barbell', 'Floor Press': 'Barbell',
-  'Military Press': 'Barbell', 'Seated Military Press': 'Barbell', 'Push Press': 'Barbell',
-  'DB Incline Bench': 'Dumbbell', 'DB Flat Bench': 'Dumbbell', 'DB Shoulder Press': 'Dumbbell', 'Arnold Press': 'Dumbbell', 'DB Floor Press': 'Dumbbell',
-  'Dips': 'Bodyweight', 'Weighted Dips': 'Dumbbell', 'Skullcrushers': 'Barbell', 'Tricep Pushdowns': 'Cable',
-  'Tricep Extensions': 'Cable', 'Dip Machine': 'Machine', 'Overhead Tricep Extensions': 'Cable',
-  'One Arm Extensions': 'Dumbbell', 'Close Grip Bench Press': 'Barbell',
-  'Front Raises': 'Dumbbell', 'Lateral Raises': 'Dumbbell', 'Cable Lateral Raises': 'Cable',
-  'Upright Rows': 'Barbell', 'Face Pulls': 'Cable', 'Band Pull Aparts': 'Dumbbell',
-  'Chest Fly Machine': 'Machine', 'DB Chest Flys': 'Dumbbell', 'Pushups': 'Bodyweight', 'Weighted Pushups': 'Dumbbell',
-  'Floor Chest Flys': 'Dumbbell', 'Incline Chest Flys': 'Dumbbell', 'Cable Chest Flys': 'Cable', 'Low to High Cable Flys': 'Cable',
-  'Chest Press Machine': 'Machine', 'Shoulder Press Machine': 'Machine', 'Decline Press Machine': 'Machine', 'Incline Press Machine': 'Machine',
-  'Neutral Grip Pullups': 'Bodyweight', 'Weighted Neutral Grip Pullups': 'Dumbbell', 'Pullups': 'Bodyweight', 'Weighted Pull Ups': 'Dumbbell',
-  'Chin Ups': 'Bodyweight', 'Weighted Chin Ups': 'Dumbbell', 'Lat Pulldowns': 'Cable', 'Close Grip Lat Pulldowns': 'Cable',
-  'Wide Grip Lat Pulldowns': 'Cable', 'Single Arm Pulldowns': 'Cable',
-  'Barbell Row': 'Barbell', 'Underhand Barbell Row': 'Barbell', 'Cable Row': 'Cable', 'T Bar Rows': 'Barbell',
-  'Single Arm Cable Rows': 'Cable', 'Single Arm Dumbbell Rows': 'Dumbbell', 'Chest Supported Row': 'Machine',
-  'Seal Row': 'Barbell', 'Pendlay Row': 'Barbell',
-  'Scarecrows': 'Dumbbell', 'Rear Delt Flys': 'Dumbbell', 'Machine Rear Delt Flys': 'Machine', 'Pullovers': 'Dumbbell',
-  'Cable Pullovers': 'Cable', 'Shrugs': 'Barbell', 'DB Shrugs': 'Dumbbell', 'Trap Bar Shrugs': 'Barbell', 'YTWLs': 'Dumbbell',
-  'DB Curls': 'Dumbbell', 'Barbell Curls': 'Barbell', 'Ez Bar Curls': 'Barbell', 'Hammer Curls': 'Dumbbell',
-  'Preacher Curls': 'Barbell', 'Cable Curls': 'Cable', 'Rope Curls': 'Cable', 'Incline DB Curls': 'Dumbbell',
-  'Concentration Curls': 'Dumbbell', 'Cross Body Hammer Curls': 'Dumbbell',
-  'Hip Thrusts': 'Barbell', 'Bodyweight Hip Thrusts': 'Bodyweight', 'RDLs': 'Barbell', 'Trap Bar Deadlifts': 'Barbell',
-  'Barbell Glute Bridges': 'Barbell', 'Bodyweight Glute Bridges': 'Bodyweight', 'Single Leg RDLs': 'Dumbbell',
-  'Sumo Deadlift': 'Barbell', 'Good Mornings': 'Barbell',
-  'Front Squat': 'Barbell', 'SSB Squats': 'Barbell', 'Squats': 'Barbell', 'Back Squat': 'Barbell', 'Box Squats': 'Barbell',
-  'Bodyweight Squat': 'Bodyweight', 'Pendulum Squat': 'Machine', 'Leg Press': 'Machine', 'Goblet Squat': 'Dumbbell', 'Zercher Squat': 'Barbell',
-  'Back Extensions': 'Machine', 'Bodyweight Back Extensions': 'Bodyweight', 'Nordics': 'Bodyweight', 'Reverse Hypers': 'Machine',
-  'GHD Raises': 'Bodyweight', 'Single Leg Hip Thrusts': 'Barbell',
-  'Bulgarians': 'Dumbbell', 'Bodyweight Bulgarians': 'Bodyweight', 'Walking Lunges': 'Dumbbell', 'Bodyweight Lunges': 'Bodyweight',
-  'ATG Lunges': 'Dumbbell', 'Bodyweight ATG Lunges': 'Bodyweight', 'Reverse Lunges': 'Dumbbell', 'Step Ups': 'Dumbbell',
-  'Leg Extensions': 'Machine', 'Single Leg Extensions': 'Machine', 'Seated Leg Curls': 'Machine', 'Lying Leg Curls': 'Machine',
-  'Abductor Machine': 'Machine', 'Adductor Machine': 'Machine',
-  'Single Leg Calf Raises': 'Dumbbell', 'Calf Raise Machine': 'Machine', 'Seated Calf Raises': 'Machine', 'Bodyweight Calf Raises': 'Bodyweight',
-  'Weighted Calf Raises': 'Dumbbell', 'Donkey Calf Raises': 'Machine', 'Tibia Raises': 'Bodyweight', 'Tibia Curls': 'Machine', 'Banded Tibia Curls': 'Bodyweight',
-  'Hack Squat': 'Machine', 'Hack Squat Machine': 'Machine', 'Reverse Hack Squat': 'Machine',
-  'Plank': 'Bodyweight', 'Ab Wheel Rollouts': 'Bodyweight', 'Hanging Leg Raises': 'Bodyweight', 'Cable Crunches': 'Cable',
-  'Decline Crunches': 'Bodyweight', 'Pallof Press': 'Cable', 'Dead Bugs': 'Bodyweight', 'Suitcase Carries': 'Dumbbell', 'Farmer Carries': 'Dumbbell',
-  'Treadmill': 'Cardio Machine', 'Curved Treadmill': 'Cardio Machine', 'Assault Bike': 'Cardio Machine', 'Bike': 'Cardio Machine',
-  'Recumbent Bike': 'Cardio Machine', 'Elliptical': 'Cardio Machine', 'Stairmaster': 'Cardio Machine', 'Rowing Machine': 'Cardio Machine', 'Ski Erg': 'Cardio Machine',
-  'Squat': 'Barbell', 'Deadlift': 'Barbell',
-  'Incline Pushups': 'Bodyweight', 'Diamond Pushups': 'Bodyweight', 'Wide Pushups': 'Bodyweight',
-  'Inverted Bodyweight Row': 'Bodyweight', 'Burpees': 'Bodyweight', 'Banded Tibia Raises': 'Bodyweight',
-};
 
 // localStorage-backed per-week+day exercise overrides. Persistence model for
 // "Swap for today": a swap on Week 1 Day 1 affects only Week 1 Day 1, not the
