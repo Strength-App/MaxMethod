@@ -498,8 +498,9 @@ describe('day — custom workout', () => {
   it('renders custom exercise cards from day.exercises', async () => {
     seedServer({ workout: makeCustomWorkout() });
     await renderDay();
-    // Custom cards open by default; the name and per-set target are shown.
-    expect(screen.getByText('My Lift')).toBeInTheDocument();
+    // Custom exercises are seeded by a second effect after the workout loads,
+    // so the card name arrives a render after the day title — query it async.
+    expect(await screen.findByText('My Lift')).toBeInTheDocument();
     expect(screen.getAllByText('100').length).toBeGreaterThan(0);
   });
 });
