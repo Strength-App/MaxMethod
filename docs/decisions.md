@@ -808,3 +808,53 @@ un-normalized spelling appears in the program data (add it to both mirrored
 `ALIASES` copies in one change). The structural single-source dedup of the two FE
 alias maps is tracked at
 [`docs/follow-ups.md#exercise-name-alias-map-single-source`](follow-ups.md#exercise-name-alias-map-single-source).
+
+### day-movement-patterns-consumption
+
+**Decision.** In Batch 15a, `pages/day.jsx` stops carrying its own inline
+`movementPatterns` and `EXERCISE_EQUIPMENT` maps and consumes
+`config/exercises.js` instead — the last of the three swap-UI consumers to
+migrate (after `reviewProgram` in Batch 11 and `exerciseLibrary` in Batch 12).
+`EXERCISE_EQUIPMENT` is a **verbatim swap** (day's inline copy was byte-identical
+to the canonical 154-key map). `movementPatterns` becomes the canonical
+`MOVEMENT_PATTERNS` spread plus a **one-key overlay** restoring
+`'Vertical Pull Cable Only'`, which the canonical catalog omits on purpose
+(`exerciseLibrary` iterates the map to build one card per name, and that
+cable-only subset would duplicate the Vertical Pull cards). Same per-page overlay
+shape as [#reviewprogram-squat-alias-overlay](#reviewprogram-squat-alias-overlay).
+
+**Intended behavior change (user-confirmed).** Unlike reviewProgram — which
+overlaid the alias spellings back precisely to preserve its locked swap list —
+day.jsx **adopts** the canonical lists where they differ, because the user
+explicitly asked for it:
+- `Hinge` now offers **`Deadlift`** in the swap/edit alternatives.
+- `Squat Pattern` now offers the canonical **`Squat`** spelling and no longer
+  lists the legacy alias **`Squats`** (nor `Back Squat`). Legacy program data
+  using those spellings still resolves to `Squat` on the PB / big-three path via
+  the mirrored normalizer (see
+  [#squat-alias-normalization-coverage](#squat-alias-normalization-coverage)), so
+  nothing is lost — only the *user-facing pick-list* is de-aliased.
+
+The unchanged-list behaviors (e.g. the Cable Row → Horizontal Pull swap list, and
+every equipment pill) are byte-for-byte preserved and pinned in `day.test.jsx`.
+
+**Alternatives considered.**
+- *Full behavior-preserving overlay (reviewProgram's approach applied to day):*
+  re-add `Squats`/`Back Squat` and a Deadlift-free Hinge to match day's old
+  lists. Rejected: it preserves exactly the behavior the user asked to change.
+- *Add `Vertical Pull Cable Only` to the canonical `config` map* so no overlay is
+  needed. Rejected: it would make `exerciseLibrary.buildExerciseList` emit
+  duplicate Lat-Pulldown library cards. The overlay keeps the catalog's
+  one-card-per-name invariant intact.
+
+**Rationale.** Consuming the shared map removes day's ~115-line inline data
+duplication and lands the user's requested swap-list changes for free, while the
+single genuinely day-specific need (the cable-only pattern) stays a tiny,
+documented local overlay. Characterization tests written first pin both the
+preserved lists and the three intended new lists.
+
+**Revisit conditions.** A fourth swap-UI consumer appears and the per-page
+overlay pattern becomes a maintenance smell (consider a shared
+`swapOptions(pattern)` projection). Or `Vertical Pull Cable Only` gains a real
+need to exist as its own library card, at which point it could move into the
+canonical map and the overlay drops.
