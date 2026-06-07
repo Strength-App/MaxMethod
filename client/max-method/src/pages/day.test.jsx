@@ -111,7 +111,72 @@ function seedServer({ workout = makeWorkout(), personalBests = { 'Bench Press': 
     http.get(`${API_URL}/api/users/workout/:userId/personal-bests`, () =>
       HttpResponse.json({ personal_bests: personalBests }),
     ),
+    // Write paths the set-logging interactions touch. Shapes don't matter to
+    // these tests — they exist so onUnhandledRequest:'error' stays quiet.
+    http.patch(`${API_URL}/api/users/workout/log`, () => HttpResponse.json({})),
+    http.post(`${API_URL}/api/users/workout/pb-check`, () => HttpResponse.json({})),
+    http.patch(`${API_URL}/api/users/workout/complete-day`, () =>
+      HttpResponse.json({ e1rmUpdates: [] }),
+    ),
+    // Custom-workout days debounce-save themselves on mount.
+    http.patch(`${API_URL}/api/users/workout/custom-day`, () => HttpResponse.json({})),
   );
+}
+
+// Builders for the non-strength slot shapes. All keep the day title "Push Day"
+// so renderDay's load-wait works unchanged.
+function makeCardioWorkout() {
+  return makeWorkout({
+    weeks: [{ days: [{ title: 'Push Day', completed: false, slots: [{
+      slotIdx: 0, exercise: 'Treadmill', label: 'Cardio',
+      cardioType: 'Intervals', cardioNote: '8 rounds',
+      cardioSets: [
+        { distance: '400m', recovery: '90s', intensity: 'Hard' },
+        { distance: '400m', recovery: '90s', intensity: 'Hard' },
+      ],
+    }] }] }],
+  });
+}
+
+function makeSupersetWorkout() {
+  return makeWorkout({
+    weeks: [{ days: [{ title: 'Push Day', completed: false, slots: [
+      { slotIdx: 0, exercise: 'DB Curls', label: 'Bicep Accessory', superset: true, supersetGroup: 'A', sets: 3, reps: '10', weightNote: '30' },
+      { slotIdx: 1, exercise: 'Tricep Pushdowns', label: 'Tricep Accessory', superset: true, supersetGroup: 'A', sets: 3, reps: '10', weightNote: '50' },
+    ] }] }],
+  });
+}
+
+function makeAmrapWorkout() {
+  return makeWorkout({
+    weeks: [{ days: [{ title: 'Push Day', completed: false, slots: [{
+      slotIdx: 0, label: 'Finisher', circuitType: 'AMRAP', totalTime: '10 min',
+      circuitNote: 'As many rounds as possible',
+      exercises: [{ exercise: 'Burpees', reps: '10' }, { exercise: 'Pushups', reps: '15' }],
+    }] }] }],
+  });
+}
+
+function makeEmomWorkout() {
+  return makeWorkout({
+    weeks: [{ days: [{ title: 'Push Day', completed: false, slots: [{
+      slotIdx: 0, label: 'Conditioning', circuitType: 'EMOM', circuitNote: 'Every minute on the minute',
+      exercises: [{ exercise: 'Kettlebell Swings', sets: 3, reps: '10', weightNote: '53' }],
+    }] }] }],
+  });
+}
+
+function makeCustomWorkout() {
+  return {
+    _id: 'wl-c',
+    type: 'custom',
+    weeks: [{ days: [{ title: 'Push Day', completed: false, exercises: [
+      { name: 'My Lift', sets: [
+        { reps: '8', target: '100', actual: '', actualReps: '', done: false },
+        { reps: '8', target: '100', actual: '', actualReps: '', done: false },
+      ] },
+    ] }] }],
+  };
 }
 
 // Render Day at week 1 / day 1 inside the real provider tree, then wait for the
@@ -215,6 +280,21 @@ describe('day — swap-for-today alternatives (config-migration invariant)', () 
     expect(within(listbox).getByRole('option', { name: 'Cable Row' })).toBeInTheDocument();
     expect(within(listbox).getAllByText('Cable').length).toBeGreaterThan(0);
   });
+
+  it('applies a chosen swap to the card and persists it to localStorage', async () => {
+    await renderDay();
+    const listbox = openSwapListbox('Cable Row');
+    // Options activate on mousedown (focus stays on the trigger for keyboard return).
+    fireEvent.mouseDown(within(listbox).getByRole('option', { name: 'T Bar Rows' }));
+
+    // The accessory card now shows the replacement exercise.
+    expect(
+      await screen.findByRole('button', { name: /change exercise \(currently T Bar Rows\)/i }),
+    ).toBeInTheDocument();
+    // The per-day override is persisted under the swap-for-today key.
+    const stored = JSON.stringify(localStorage).includes('T Bar Rows');
+    expect(stored).toBe(true);
+  });
 });
 
 describe('day — percentage target resolution', () => {
@@ -225,5 +305,148 @@ describe('day — percentage target resolution', () => {
     // 75% of 315 (squat 1RM) = 236.25 → rounded to nearest 5 = 235, for both
     // of the Squat slot's two sets.
     await waitFor(() => expect(screen.getAllByText('235')).toHaveLength(2));
+  });
+});
+
+describe('day — set logging and PR detection', () => {
+  it('flips the PB chip to "New PR!" when an actual weight beats the stored PB', async () => {
+    await renderDay();
+    // Bench Press card is open by default (openCards starts { 0: true }).
+    // Stored Bench PB is 245; entering 250 in set 1 beats it.
+    expect(screen.getByText('Current PR')).toBeInTheDocument();
+    fireEvent.change(
+      screen.getByRole('spinbutton', { name: 'Actual weight in pounds for Bench Press, set 1' }),
+      { target: { value: '250' } },
+    );
+    expect(await screen.findByText('New PR!')).toBeInTheDocument();
+    expect(screen.getByText('250')).toBeInTheDocument();
+  });
+
+  it('marks a set done, updates the done count, and starts a rest timer on a non-final set', async () => {
+    await renderDay();
+    const check = screen.getByRole('button', { name: 'Mark Bench Press, set 1 complete' });
+    expect(check).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(check);
+
+    // The same button now reports the set as complete.
+    expect(
+      screen.getByRole('button', { name: 'Mark Bench Press, set 1 incomplete' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    // Day summary reflects one completed set.
+    expect(screen.getByText('1 sets done')).toBeInTheDocument();
+    // Completing a non-final set (1 of 3) starts the rest countdown.
+    expect(screen.getByRole('timer')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Skip rest' })).toBeInTheDocument();
+  });
+
+  it('does NOT start a rest timer when restTimerEnabled is "false"', async () => {
+    localStorage.setItem('restTimerEnabled', 'false');
+    await renderDay();
+    fireEvent.click(screen.getByRole('button', { name: 'Mark Bench Press, set 1 complete' }));
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+  });
+});
+
+describe('day — keyboard card toggle', () => {
+  it('expands a collapsed card with Enter on its header', async () => {
+    await renderDay();
+    // Cable Row (gi=1) starts collapsed; its set rows aren't shown yet.
+    const header = screen.getByRole('button', { name: /Expand Cable Row card/i });
+    expect(
+      screen.queryByRole('spinbutton', { name: 'Actual weight in pounds for Cable Row, set 1' }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.keyDown(header, { key: 'Enter' });
+
+    // The header flips to "Collapse" and the first set's weight input appears.
+    expect(screen.getByRole('button', { name: /Collapse Cable Row card/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('spinbutton', { name: 'Actual weight in pounds for Cable Row, set 1' }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('day — read-only external view', () => {
+  it('disables inputs, hides "Mark Day Complete", and shows a plain Back button', async () => {
+    // A viewWorkout in navigation state with no editMode is read-only.
+    await renderDay({ state: { viewWorkout: makeWorkout() } });
+
+    // Inputs are disabled (Bench card is open by default).
+    expect(
+      screen.getByRole('spinbutton', { name: 'Actual weight in pounds for Bench Press, set 1' }),
+    ).toBeDisabled();
+    // No completion control on an externally-viewed workout.
+    expect(
+      screen.queryByRole('button', { name: /mark day complete/i }),
+    ).not.toBeInTheDocument();
+    // Footer reads "Back" (external) rather than "Back to Home".
+    expect(screen.getByRole('button', { name: /^Back$/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /back to home/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('day — cardio slot', () => {
+  it('renders a Cardio section with the exercise and its prescription', async () => {
+    seedServer({ workout: makeCardioWorkout() });
+    await renderDay();
+    // Cardio slots render inside a dedicated "Cardio" section.
+    expect(screen.getByText('Cardio')).toBeInTheDocument();
+    // The first (and only) card is open by default, so the cardio meta and
+    // prescribed cells are already visible.
+    expect(screen.getByText('Intervals')).toBeInTheDocument();
+    expect(screen.getByText('8 rounds')).toBeInTheDocument();
+    expect(screen.getAllByText('400m').length).toBeGreaterThan(0);
+  });
+});
+
+describe('day — superset grouping', () => {
+  it('wraps two same-group slots in a labeled superset block', async () => {
+    seedServer({ workout: makeSupersetWorkout() });
+    await renderDay();
+    expect(screen.getByText('Superset A')).toBeInTheDocument();
+    // Match by card name regardless of Expand/Collapse verb — the first card in
+    // a group is open by default, the rest closed.
+    expect(
+      screen.getByRole('button', { name: /DB Curls card/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Tricep Pushdowns card/i }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('day — circuits', () => {
+  it('renders an AMRAP circuit with a rounds tracker and per-exercise cards', async () => {
+    seedServer({ workout: makeAmrapWorkout() });
+    await renderDay();
+    // Badge joins label · type · totalTime.
+    expect(screen.getByText('Finisher · AMRAP · 10 min')).toBeInTheDocument();
+    expect(screen.getByText('As many rounds as possible')).toBeInTheDocument();
+    // AMRAP tracks rounds at the circuit level (the rounds input).
+    expect(screen.getByRole('spinbutton', { name: 'Rounds completed' })).toBeInTheDocument();
+    // Each circuit move gets its own card.
+    expect(screen.getByText('Burpees')).toBeInTheDocument();
+    expect(screen.getByText('Pushups')).toBeInTheDocument();
+  });
+
+  it('renders a non-AMRAP (EMOM) circuit with per-exercise set cards', async () => {
+    seedServer({ workout: makeEmomWorkout() });
+    await renderDay();
+    expect(screen.getByText('Conditioning · EMOM')).toBeInTheDocument();
+    expect(screen.getByText('Every minute on the minute')).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /Expand Kettlebell Swings card/i }),
+    ).toBeInTheDocument();
+  });
+});
+
+describe('day — custom workout', () => {
+  it('renders custom exercise cards from day.exercises', async () => {
+    seedServer({ workout: makeCustomWorkout() });
+    await renderDay();
+    // Custom cards open by default; the name and per-set target are shown.
+    expect(screen.getByText('My Lift')).toBeInTheDocument();
+    expect(screen.getAllByText('100').length).toBeGreaterThan(0);
   });
 });
