@@ -166,6 +166,15 @@ function makeEmomWorkout() {
   });
 }
 
+function makeSwapWorkout() {
+  return makeWorkout({
+    weeks: [{ days: [{ title: 'Push Day', completed: false, slots: [
+      { slotIdx: 0, exercise: 'RDLs', label: 'Hinge', sets: 3, reps: '8', weightNote: '135' },
+      { slotIdx: 1, exercise: 'Lat Pulldowns', label: 'Vertical Pull Cable Only', sets: 3, reps: '10', weightNote: '100' },
+    ] }] }],
+  });
+}
+
 function makeCustomWorkout() {
   return {
     _id: 'wl-c',
@@ -202,8 +211,10 @@ async function renderDay({ state } = {}) {
 // Open a card's right-click menu and click "Swap for today", returning the
 // swap dropdown's combobox listbox for option assertions.
 function openSwapListbox(exerciseName) {
-  // The card header is the accessible "Expand … card" button.
-  const header = screen.getByRole('button', { name: new RegExp(`Expand ${exerciseName} card`, 'i') });
+  // The card header is the accessible "Expand/Collapse … card" button — match
+  // by card name regardless of its open/closed verb (the first card in the day
+  // is open by default).
+  const header = screen.getByRole('button', { name: new RegExp(`${exerciseName} card`, 'i') });
   fireEvent.contextMenu(header);
   fireEvent.click(screen.getByRole('menuitem', { name: 'Swap for today' }));
   fireEvent.click(screen.getByRole('combobox', { name: `Replacement for ${exerciseName} (today only)` }));
@@ -266,6 +277,48 @@ describe('day — swap-for-today alternatives (config-migration invariant)', () 
       'Barbell Row', 'Underhand Barbell Row', 'Cable Row', 'T Bar Rows',
       'Single Arm Cable Rows', 'Single Arm Dumbbell Rows', 'Chest Supported Row',
       'Seal Row', 'Pendlay Row',
+    ];
+    expect(within(listbox).getAllByRole('option')).toHaveLength(expected.length);
+    for (const name of expected) {
+      expect(within(listbox).getByRole('option', { name })).toBeInTheDocument();
+    }
+  });
+
+  // After Batch 15a's config consumption, the Squat-pattern swap list is the
+  // canonical config list: it offers the canonical "Squat" spelling and NOT the
+  // legacy aliases "Squats"/"Back Squat" (those normalize to Squat on the PB
+  // path). This is the intended behavior change — see
+  // docs/decisions.md#day-movement-patterns-consumption.
+  it('offers the canonical Squat-pattern list (Squat, not the alias Squats)', async () => {
+    await renderDay();
+    const listbox = openSwapListbox('Squat');
+    const expected = [
+      'Squat', 'Front Squat', 'SSB Squats', 'Box Squats', 'Bodyweight Squat',
+      'Pendulum Squat', 'Leg Press', 'Goblet Squat', 'Zercher Squat',
+    ];
+    expect(within(listbox).getAllByRole('option')).toHaveLength(expected.length);
+    for (const name of expected) {
+      expect(within(listbox).getByRole('option', { name })).toBeInTheDocument();
+    }
+    // The legacy alias spellings are gone from the pick-list.
+    expect(within(listbox).queryByRole('option', { name: 'Squats' })).not.toBeInTheDocument();
+    expect(within(listbox).queryByRole('option', { name: 'Back Squat' })).not.toBeInTheDocument();
+  });
+
+  it('offers Deadlift in the Hinge swap list (intended addition)', async () => {
+    seedServer({ workout: makeSwapWorkout() });
+    await renderDay();
+    const listbox = openSwapListbox('RDLs');
+    expect(within(listbox).getByRole('option', { name: 'Deadlift' })).toBeInTheDocument();
+    expect(within(listbox).getByRole('option', { name: 'Hip Thrusts' })).toBeInTheDocument();
+  });
+
+  it('keeps the cable-only Vertical Pull list via the day-local overlay', async () => {
+    seedServer({ workout: makeSwapWorkout() });
+    await renderDay();
+    const listbox = openSwapListbox('Lat Pulldowns');
+    const expected = [
+      'Lat Pulldowns', 'Close Grip Lat Pulldowns', 'Wide Grip Lat Pulldowns', 'Single Arm Pulldowns',
     ];
     expect(within(listbox).getAllByRole('option')).toHaveLength(expected.length);
     for (const name of expected) {
