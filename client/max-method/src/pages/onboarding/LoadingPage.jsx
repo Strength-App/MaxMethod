@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
-import { useUser } from '../context/UserContext';
-import { API_URL } from '../config/api';
-import { mirrorClassificationResponse } from '../utils/classification';
+import { useWorkout } from '../../context/WorkoutContext';
+import { useUser } from '../../context/UserContext';
+import { API_URL } from '../../config/api';
+import { mirrorClassificationResponse } from '../../utils/classification';
 
 const MESSAGES = [
   'Analyzing your strength profile…',

@@ -18,7 +18,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Goals from './goals.jsx';
+import Goals from './Goals.jsx';
 
 // useNavigate mock — assert the destination + state, not a real route table.
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
