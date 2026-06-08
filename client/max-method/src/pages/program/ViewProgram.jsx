@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
-import { API_URL } from '../config/api';
-import { useModalA11y } from '../hooks/useModalA11y';
+import { useWorkout } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 function ViewProgram() {
   const { programLogId } = useParams();

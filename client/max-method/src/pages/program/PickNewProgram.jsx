@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from '../context/UserContext';
-import { useWorkout } from '../context/WorkoutContext';
-import { API_URL } from '../config/api';
-import UserLevelBadge from '../components/ui/UserLevelBadge';
-import { bigThreeTotalForUser, isNullState, mirrorClassificationResponse } from '../utils/classification';
+import { useUser } from '../../context/UserContext';
+import { useWorkout } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api';
+import UserLevelBadge from '../../components/ui/UserLevelBadge';
+import { bigThreeTotalForUser, isNullState, mirrorClassificationResponse } from '../../utils/classification';
 
 const FEATURED = [
   { tag: 'Strength · 12 weeks', name: 'Power Builder',   meta: '4 days/week · Intermediate' },

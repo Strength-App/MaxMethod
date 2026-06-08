@@ -85,7 +85,7 @@
       "count": 3
     }
   },
-  "src/pages/reviewProgram.jsx": {
+  "src/pages/program/ReviewProgram.jsx": {
     "no-unused-vars": {
       "count": 1
     }
@@ -98,7 +98,7 @@
       "count": 1
     }
   },
-  "src/pages/viewProgram.jsx": {
+  "src/pages/program/ViewProgram.jsx": {
     "jsx-a11y/click-events-have-key-events": {
       "count": 2
     },

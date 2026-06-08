@@ -27,10 +27,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
-import { server } from '../test/msw/server.js';
-import { WorkoutProvider } from '../context/WorkoutContext';
-import { API_URL } from '../config/api.js';
-import ReviewProgram from './reviewProgram.jsx';
+import { server } from '../../test/msw/server.js';
+import { WorkoutProvider } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api.js';
+import ReviewProgram from './ReviewProgram.jsx';
 
 // useNavigate mock — assert the destination + state, not a real route table.
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
