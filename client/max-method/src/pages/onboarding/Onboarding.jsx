@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "../context/UserContext";
-import { API_URL } from "../config/api";
-import { estimateOneRepMax, floorTo5 } from "../utils/epley";
+import { useUser } from "../../context/UserContext";
+import { API_URL } from "../../config/api";
+import { estimateOneRepMax, floorTo5 } from "../../utils/epley";
 
 /**
  * Turn a recent best set (a weight lifted for some reps) into an estimated

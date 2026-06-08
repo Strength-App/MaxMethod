@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useUser } from '../context/UserContext'
-import { useWorkout } from '../context/WorkoutContext'
-import { API_URL } from '../config/api';
-import MaxMethodLogo from '../components/ui/MaxMethodLogo'
+import { useUser } from '../../context/UserContext'
+import { useWorkout } from '../../context/WorkoutContext'
+import { API_URL } from '../../config/api';
+import MaxMethodLogo from '../../components/ui/MaxMethodLogo'
 
 function Welcomepage() {
   const [email, setEmail] = useState('')

@@ -24,11 +24,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
-import { server } from '../test/msw/server.js';
-import { UserProvider } from '../context/UserContext';
-import { WorkoutProvider } from '../context/WorkoutContext';
-import { API_URL } from '../config/api.js';
-import LoadingPage from './loadingPage.jsx';
+import { server } from '../../test/msw/server.js';
+import { UserProvider } from '../../context/UserContext';
+import { WorkoutProvider } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api.js';
+import LoadingPage from './LoadingPage.jsx';
 
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
 vi.mock('react-router-dom', async () => {
