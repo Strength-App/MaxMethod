@@ -59,14 +59,12 @@ database.
 
 | Folder / file        | What it holds                                                      |
 | -------------------- | ----------------------------------------------------------------- |
-| `src/pages/`         | One file per full screen the user sees (home, logger, goals, …).  |
-| `src/components/`    | Reusable UI pieces shared across pages (buttons, modals, timers). |
+| `src/pages/`         | Full screens, grouped by area: `auth/`, `onboarding/`, `program/`, `workout/`, `account/`. One PascalCase file per screen (`Home.jsx`, `Day.jsx`, …). |
+| `src/components/`    | Reusable UI, grouped by kind: `ui/` (shared widgets), `postworkout/` (the end-of-workout flow), `tools/` (timer & calculators), `workout/` (pieces shared by the workout screens). |
 | `src/context/`       | App-wide shared state (the logged-in user, the active workout).   |
 | `src/hooks/`         | Reusable bits of behavior shared between components.              |
 | `src/utils/`         | Plain calculation helpers (e.g. one-rep-max math).               |
-| `src/data/`          | Static data baked into the app (e.g. exercise lists).            |
-| `src/config/`        | Frontend settings, including the backend's web address.          |
-| `src/assets/`        | Images and other static files.                                    |
+| `src/config/`        | Frontend settings: the backend's web address (`api.js`) and the exercise catalog (`exercises.js`). |
 | `src/test/`          | Test setup and shared test helpers.                              |
 | `src/App.jsx`        | The top-level component; wires the pages together.               |
 | `src/main.jsx`       | The entry point that starts the whole app.                       |

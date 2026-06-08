@@ -57,12 +57,13 @@ See [`docs/decisions.md#coverage-philosophy`](docs/decisions.md#coverage-philoso
 ```
 client/max-method/
 ├── src/
-│   ├── pages/           # All screen/page components
-│   ├── context/         # React Context providers
-│   │   ├── UserContext.jsx     # Auth state + user profile (localStorage cached)
-│   │   └── WorkoutContext.jsx  # Active workout, exercise assignments, session logs
-│   ├── assets/          # Images and static files
-│   └── data/            # Static data files
+│   ├── pages/           # Full screens, grouped by area: auth/, onboarding/, program/, workout/, account/
+│   ├── components/      # Reusable UI: ui/, postworkout/, tools/, workout/
+│   ├── context/         # React Context providers (UserContext, WorkoutContext, ToolsContext)
+│   ├── hooks/           # Reusable behavior (useModalA11y, useCombobox, ...)
+│   ├── utils/           # Helpers (epley, classification, ... — some mirrored with the backend)
+│   ├── config/          # api.js (backend URL) + exercises.js (exercise catalog)
+│   └── test/            # Vitest setup + MSW handlers
 ├── index.html
 ├── vite.config.js
 └── package.json
@@ -76,32 +77,32 @@ client/max-method/
 
 | Page | Description |
 |---|---|
-| `welcomepage.jsx` | Entry screen — login or sign up |
-| `createAcc.jsx` | Account registration |
-| `onboarding.jsx` | Initial user setup (goals, experience level, and bench / squat / deadlift strength classification) |
+| `auth/WelcomePage.jsx` | Entry screen — login or sign up |
+| `auth/CreateAcc.jsx` | Account registration |
+| `onboarding/Onboarding.jsx` | Initial user setup (goals, experience level, and bench / squat / deadlift strength classification) |
 
 ### Program & Workout
 
 | Page | Description |
 |---|---|
-| `pickNewProgram.jsx` | Browse and select a training program |
-| `reviewProgram.jsx` | Preview program details before committing |
-| `viewProgram.jsx` | View the active program schedule |
-| `day.jsx` | Today's workout view |
-| `customDay.jsx` | Edit or customize a workout day |
-| `logger.jsx` | Log sets, reps, and weights during a session |
+| `program/PickNewProgram.jsx` | Browse and select a training program |
+| `program/ReviewProgram.jsx` | Preview program details before committing |
+| `program/ViewProgram.jsx` | View the active program schedule |
+| `workout/Day.jsx` | Today's workout view |
+| `workout/CustomDay.jsx` | Edit or customize a workout day |
+| `workout/Logger.jsx` | Log sets, reps, and weights during a session |
 
 ### Analytics & Utilities
 
 | Page | Description |
 |---|---|
-| `home.jsx` | Main dashboard |
-| `history.jsx` | Workout history and progress tracking |
-| `goals.jsx` | Set and manage fitness goals |
-| `exerciseLibrary.jsx` | Browse all available exercises with video |
-| `customWorkout.jsx` | Build a custom workout |
-| `settings.jsx` | Account and app settings |
-| `loadingPage.jsx` | Shared loading state screen |
+| `account/Home.jsx` | Main dashboard |
+| `workout/History.jsx` | Workout history and progress tracking |
+| `onboarding/Goals.jsx` | Set and manage fitness goals |
+| `account/ExerciseLibrary.jsx` | Browse all available exercises with video |
+| `workout/CustomWorkout.jsx` | Build a custom workout |
+| `account/Settings.jsx` | Account and app settings |
+| `onboarding/LoadingPage.jsx` | Shared loading state screen |
 
 ---
 

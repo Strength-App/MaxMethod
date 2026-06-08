@@ -8,7 +8,7 @@ the rewritten /CLAUDE.md at the repo root.
 
 # Working in this codebase (archived refactor-initiative conventions)
 
-> Last reviewed: 2026-06-07 (Batch 16 — codebase-conventions section synthesized)
+> Last reviewed: 2026-06-07 (Batch 16 — codebase-conventions synthesized; frontend folder restructure — pages domain-grouped + PascalCased, components split into ui/postworkout)
 
 MaxMethodApp is a React 19 + Vite SPA for strength-training program management. The frontend lives at `client/max-method/`; the backend is `Backend_structure/` (Express + Mongo). This file orients contributors and AI agents working on **the frontend**.
 
@@ -91,10 +91,12 @@ explore - plan - code - document - test - commit
 
 All paths under `client/max-method/src/` unless noted.
 
-- **`pages/`** — one route-level screen per file. A page owns its own data fetching (`fetch` inside a `useEffect`) and composes primitives + hooks. Business *data* no longer lives here: the exercise catalog and movement-pattern maps were lifted into `config/` (see *Domain boundaries*).
-- **`components/`** — reusable primitives shared across pages (`Toast`, `UserLevelBadge`, `EquipmentSelect`, `ContextMenu`, `MaxMethodLogo`, `PostWorkoutModal` + `PostWorkoutScreen1/2`).
+- **`pages/`** — full screens, grouped by area into `auth/`, `onboarding/`, `program/`, `workout/`, `account/`; one **PascalCase** file per screen (`Home.jsx`, `Day.jsx`, …), each with a colocated `*.test.jsx`. A page owns its own data fetching (`fetch` inside a `useEffect`) and composes primitives + hooks. Pages don't import each other. Business *data* doesn't live here: the exercise catalog and movement-pattern maps were lifted into `config/` (see *Domain boundaries*).
+- **`components/`** — reusable UI, grouped by kind (the root holds only subfolders):
+  - **`components/ui/`** — shared presentational widgets used across pages (`Toast`, `ContextMenu`, `EquipmentSelect`, `MaxMethodLogo`, `UserLevelBadge`).
+  - **`components/postworkout/`** — the end-of-workout flow (`PostWorkoutModal`, `PostWorkoutScreen1`, `PostWorkoutScreen2`).
   - **`components/tools/`** — the calculator / timer FAB family (`PlateCalc`, `OneRMCalc`, `RPECalc`, `Timer`, `Stopwatch`, `ToolsFAB`, `ToolsPanel`, `Tools`).
-  - **`components/workout/`** — components lifted out of the two big workout pages (`day.jsx`, `logger.jsx`) so the shared UI isn't copy-pasted. `RestTimer` is the first; import via the barrel `components/workout/index.js`. Directory-local conventions (color tokens, verbatim-lift styling, plain-language JSDoc) live in its [`README.md`](../client/max-method/src/components/workout/README.md).
+  - **`components/workout/`** — components lifted out of the two big workout pages (`Day.jsx`, `Logger.jsx`) so the shared UI isn't copy-pasted. `RestTimer` is the first; import via the barrel `components/workout/index.js`. Directory-local conventions (color tokens, verbatim-lift styling, plain-language JSDoc) live in its [`README.md`](../client/max-method/src/components/workout/README.md).
 - **`context/`** — the three providers (`UserContext`, `WorkoutContext`, `ToolsContext`). Each file exports **both** the `<Provider>` and its `useXxx()` hook — that co-export is the reason each carries a `react-refresh/only-export-components` suppression: a tracked trade-off ([`docs/follow-ups.md#react-refresh-context-split`](follow-ups.md#react-refresh-context-split)), *not* a defect to "fix" casually.
 - **`hooks/`** — cross-component behavior: `useModalA11y` (focus-trap + return-focus), `useWorkoutStats`, `usePostWorkoutModal`, `useCombobox` (the headless typeahead state-machine shared by `customDay` + `logger`; [`#combobox-primitive`](decisions.md#combobox-primitive)).
 - **`utils/`** — shared helpers. **Not pure-only** ([`#utils-purity`](decisions.md#utils-purity)): a `utils/` module may touch I/O if it documents the side effects at the boundary and keeps them fail-safe (`customExercises.js` is the reference). `epley.js` / `classification.js` / `exerciseNameNormalize.js` are **mirrored with the backend** (see *Domain boundaries*). Others: `dateUtils`, `restDuration`, `setDisplay`.
