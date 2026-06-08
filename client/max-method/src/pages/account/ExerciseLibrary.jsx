@@ -805,6 +805,33 @@ function CustomExercisesSection({ onSelect }) {
  * @param {(exercise: Object) => void} props.onSelect - Open a catalog exercise.
  * @param {(name: string) => void} props.onCustomSelect - Open a custom exercise.
  */
+// One body-region's worth of pattern subgroups, each a grid of ExerciseCards.
+// Defined at module scope (not nested inside LibraryView) so its component
+// identity is stable across renders. When it was nested, React saw a brand-new
+// component type on every LibraryView render and unmounted + remounted every
+// card on each search keystroke / tab change — re-parsing all ~168 inline SVGs.
+function PatternSection({ patterns, visible, onSelect }) {
+  if (!visible) return null
+  const hasExercises = Object.values(patterns).some(arr => arr.length > 0)
+  if (!hasExercises) return null
+  return (
+    <>
+      {Object.entries(patterns).map(([pattern, exs]) =>
+        exs.length === 0 ? null : (
+          <div className="el-pattern-group" key={pattern}>
+            <div className="el-pattern-label">{pattern}</div>
+            <div className="el-grid">
+              {exs.map(ex => (
+                <ExerciseCard key={ex.id} exercise={ex} onSelect={onSelect} />
+              ))}
+            </div>
+          </div>
+        )
+      )}
+    </>
+  )
+}
+
 function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange, onSelect, onCustomSelect }) {
   const grouped = useMemo(() => {
     const upper  = {}
@@ -832,28 +859,6 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
     { key: 'cardio', label: 'Cardio' },
     { key: 'custom', label: 'Custom' },
   ]
-
-  function PatternSection({ patterns, visible }) {
-    if (!visible) return null
-    const hasExercises = Object.values(patterns).some(arr => arr.length > 0)
-    if (!hasExercises) return null
-    return (
-      <>
-        {Object.entries(patterns).map(([pattern, exs]) =>
-          exs.length === 0 ? null : (
-            <div className="el-pattern-group" key={pattern}>
-              <div className="el-pattern-label">{pattern}</div>
-              <div className="el-grid">
-                {exs.map(ex => (
-                  <ExerciseCard key={ex.id} exercise={ex} onSelect={onSelect} />
-                ))}
-              </div>
-            </div>
-          )
-        )}
-      </>
-    )
-  }
 
   return (
     <div className="el-page">
@@ -919,25 +924,25 @@ function LibraryView({ exercises, activeTab, search, onTabChange, onSearchChange
               {showUpper && Object.keys(grouped.upper).length > 0 && (
                 <div className="el-section">
                   <div className="el-section-label">Upper Body</div>
-                  <PatternSection patterns={grouped.upper} visible />
+                  <PatternSection patterns={grouped.upper} visible onSelect={onSelect} />
                 </div>
               )}
               {showLower && Object.keys(grouped.lower).length > 0 && (
                 <div className="el-section">
                   <div className="el-section-label">Lower Body</div>
-                  <PatternSection patterns={grouped.lower} visible />
+                  <PatternSection patterns={grouped.lower} visible onSelect={onSelect} />
                 </div>
               )}
               {showCore && Object.keys(grouped.core).length > 0 && (
                 <div className="el-section">
                   <div className="el-section-label">Core</div>
-                  <PatternSection patterns={grouped.core} visible />
+                  <PatternSection patterns={grouped.core} visible onSelect={onSelect} />
                 </div>
               )}
               {showCardio && Object.keys(grouped.cardio).length > 0 && (
                 <div className="el-section">
                   <div className="el-section-label">Cardio</div>
-                  <PatternSection patterns={grouped.cardio} visible />
+                  <PatternSection patterns={grouped.cardio} visible onSelect={onSelect} />
                 </div>
               )}
             </>
