@@ -25,6 +25,35 @@
       "count": 1
     }
   },
+  "src/pages/account/ExerciseLibrary.jsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 3
+    }
+  },
+  "src/pages/account/Settings.jsx": {
+    "no-unused-vars": {
+      "count": 1
+    },
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "src/pages/program/ReviewProgram.jsx": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/pages/program/ViewProgram.jsx": {
+    "jsx-a11y/click-events-have-key-events": {
+      "count": 2
+    },
+    "jsx-a11y/no-noninteractive-element-interactions": {
+      "count": 1
+    },
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
   "src/pages/workout/CustomDay.jsx": {
     "jsx-a11y/click-events-have-key-events": {
       "count": 3
@@ -61,14 +90,6 @@
       "count": 1
     }
   },
-  "src/pages/account/ExerciseLibrary.jsx": {
-    "react-hooks/set-state-in-effect": {
-      "count": 3
-    },
-    "react-hooks/static-components": {
-      "count": 4
-    }
-  },
   "src/pages/workout/History.jsx": {
     "jsx-a11y/click-events-have-key-events": {
       "count": 1
@@ -83,30 +104,6 @@
     },
     "jsx-a11y/interactive-supports-focus": {
       "count": 3
-    }
-  },
-  "src/pages/program/ReviewProgram.jsx": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/pages/account/Settings.jsx": {
-    "no-unused-vars": {
-      "count": 1
-    },
-    "react-hooks/set-state-in-effect": {
-      "count": 1
-    }
-  },
-  "src/pages/program/ViewProgram.jsx": {
-    "jsx-a11y/click-events-have-key-events": {
-      "count": 2
-    },
-    "jsx-a11y/no-noninteractive-element-interactions": {
-      "count": 1
-    },
-    "jsx-a11y/no-static-element-interactions": {
-      "count": 1
     }
   }
 }
