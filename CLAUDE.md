@@ -1,6 +1,6 @@
 # Working in this codebase
 
-> Last rewritten: 2026-06-05
+> Last rewritten: 2026-06-05 · codebase-conventions summary added 2026-06-07 (Batch 16)
 
 Read this file before making any change.
 
@@ -209,10 +209,44 @@ language, same audience as the comments.
 
 ---
 
+## Codebase conventions (the short version)
+
+These are the load-bearing patterns the codebase already follows. The full,
+linked synthesis — *where things live*, *naming patterns*, *domain boundaries* —
+lives in [`docs/refactor-conventions.md`](docs/refactor-conventions.md) (the
+"Codebase conventions" section). Read that before any non-trivial structural
+change; read [`docs/decisions.md`](docs/decisions.md) for the *why* behind a
+specific rule.
+
+- **The frontend only talks to the backend's `/api/...` endpoints.** It never
+  reaches the database directly, and there's no caching layer — React Context
+  holds the data, `fetch` moves it.
+- **Three "mirrored" helper files must change in lockstep with the backend**:
+  `src/utils/epley.js`, `classification.js`, `exerciseNameNormalize.js`. They are
+  copies of backend files and the backend has tests that fail if they drift.
+- **All exercise data lives in one place**: `src/config/exercises.js`. Pages read
+  from it; it never reads from a page. If one screen needs a slightly different
+  list, it makes a small, clearly-labelled local tweak (an "overlay") and records
+  why — it does not quietly keep its own copy.
+- **Two genuinely different things stay two components**, each with a descriptive
+  name (e.g. `ProgramExerciseCard` vs `AdHocExerciseCard`) — never one component
+  with an "is it this mode or that mode?" switch. When unsure whether to share
+  code, the default is *don't*.
+- **Colors mean things, not just look nice**: red (`--accent`) marks *identity*
+  (labels, thresholds); green (`--accent-green`) marks *completion* (a finished
+  set or day). Don't swap them.
+- **Tests sit next to the file they test** (`thing.test.jsx` beside `thing.jsx`)
+  and use real accessibility queries, not test-only hooks.
+- **A few behaviors look like bugs but aren't** — the title-only day filter, the
+  no-auto-save-during-creation gate on custom workouts, the deliberately-stale
+  personal-bests between two screens. Before "fixing" something surprising, check
+  the *Surprising things* section of
+  [`docs/refactor-conventions.md`](docs/refactor-conventions.md).
+
 ## Pointers
 
 - **New features log**: [`features.md`](features.md)
-- **Archived refactor conventions** (the previous CLAUDE.md): [`docs/refactor-conventions.md`](docs/refactor-conventions.md)
+- **Codebase & session conventions** (agent-facing; the discipline rules, codebase conventions, and "surprising things"): [`docs/refactor-conventions.md`](docs/refactor-conventions.md)
 - **ADRs / decisions**: [`docs/decisions.md`](docs/decisions.md)
 - **Follow-ups**: [`docs/follow-ups.md`](docs/follow-ups.md)
 - **Manual testing guide**: [`TESTING_GUIDE.md`](TESTING_GUIDE.md)

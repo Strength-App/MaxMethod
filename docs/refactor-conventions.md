@@ -8,7 +8,7 @@ the rewritten /CLAUDE.md at the repo root.
 
 # Working in this codebase (archived refactor-initiative conventions)
 
-> Last reviewed: 2026-05-23 (Batch 6)
+> Last reviewed: 2026-06-07 (Batch 16 — codebase-conventions section synthesized)
 
 MaxMethodApp is a React 19 + Vite SPA for strength-training program management. The frontend lives at `client/max-method/`; the backend is `Backend_structure/` (Express + Mongo). This file orients contributors and AI agents working on **the frontend**.
 
@@ -85,19 +85,42 @@ explore - plan - code - document - test - commit
 
 ## Codebase conventions
 
-> **This section is a marked placeholder.** It will be filled in by **Batch 16** of the 2026 refactor initiative, synthesizing observed reality from per-batch summaries, `docs/decisions.md`, and `client/max-method/src/components/workout/README.md`. The session-conventions section above is complete and authoritative now; the codebase-conventions section below is intentionally empty until the refactor lands enough patterns to synthesize from.
+> Synthesized in **Batch 16** (2026-06-07) from `docs/decisions.md`, the per-batch PR summaries, and `client/max-method/src/components/workout/README.md`. This is the *observed* shape of the frontend after the refactor — the rules and the non-obvious placements, not an exhaustive file listing (the plain-language directory map is in the root [`CLAUDE.md`](../CLAUDE.md)). Follow the ADR links for the why.
 
 ### Where things live
 
-*To be completed at end of refactor.*
+All paths under `client/max-method/src/` unless noted.
+
+- **`pages/`** — one route-level screen per file. A page owns its own data fetching (`fetch` inside a `useEffect`) and composes primitives + hooks. Business *data* no longer lives here: the exercise catalog and movement-pattern maps were lifted into `config/` (see *Domain boundaries*).
+- **`components/`** — reusable primitives shared across pages (`Toast`, `UserLevelBadge`, `EquipmentSelect`, `ContextMenu`, `MaxMethodLogo`, `PostWorkoutModal` + `PostWorkoutScreen1/2`).
+  - **`components/tools/`** — the calculator / timer FAB family (`PlateCalc`, `OneRMCalc`, `RPECalc`, `Timer`, `Stopwatch`, `ToolsFAB`, `ToolsPanel`, `Tools`).
+  - **`components/workout/`** — components lifted out of the two big workout pages (`day.jsx`, `logger.jsx`) so the shared UI isn't copy-pasted. `RestTimer` is the first; import via the barrel `components/workout/index.js`. Directory-local conventions (color tokens, verbatim-lift styling, plain-language JSDoc) live in its [`README.md`](../client/max-method/src/components/workout/README.md).
+- **`context/`** — the three providers (`UserContext`, `WorkoutContext`, `ToolsContext`). Each file exports **both** the `<Provider>` and its `useXxx()` hook — that co-export is the reason each carries a `react-refresh/only-export-components` suppression: a tracked trade-off ([`docs/follow-ups.md#react-refresh-context-split`](follow-ups.md#react-refresh-context-split)), *not* a defect to "fix" casually.
+- **`hooks/`** — cross-component behavior: `useModalA11y` (focus-trap + return-focus), `useWorkoutStats`, `usePostWorkoutModal`, `useCombobox` (the headless typeahead state-machine shared by `customDay` + `logger`; [`#combobox-primitive`](decisions.md#combobox-primitive)).
+- **`utils/`** — shared helpers. **Not pure-only** ([`#utils-purity`](decisions.md#utils-purity)): a `utils/` module may touch I/O if it documents the side effects at the boundary and keeps them fail-safe (`customExercises.js` is the reference). `epley.js` / `classification.js` / `exerciseNameNormalize.js` are **mirrored with the backend** (see *Domain boundaries*). Others: `dateUtils`, `restDuration`, `setDisplay`.
+- **`config/`** — `api.js` (`API_URL` from `VITE_API_URL`) and `exercises.js`, the canonical exercise data layer: `MOVEMENT_PATTERNS`, `EXERCISE_EQUIPMENT`, `PATTERN_MUSCLES`, `VIDEO_NAME_ALIASES`, `EXERCISE_NAME_ALIASES`, and the `ALL_EXERCISES` catalog (with `ALL_EXERCISE_NAMES`). Dependency arrows point *into* config — pages and utils import from it, never the reverse ([`#exercise-data-layer-relocation-and-alias-home`](decisions.md#exercise-data-layer-relocation-and-alias-home)).
+- **`test/`** — `setup.js` (jsdom global mocks, each justified by a comment naming its consumer; [`#jsdom-environment-mocks`](decisions.md#jsdom-environment-mocks)) and `msw/handlers.js` (the single network-mock file; [`#fetch-mocking`](decisions.md#fetch-mocking)).
+- **Tests are colocated** as `name.test.js` / `name.test.jsx` siblings of their source.
+- **`docs/`** (repo root) — `decisions.md` (ADRs), `follow-ups.md` (deferred work), `comparisons/` (the shape-comparison artifacts behind each share / don't-share decision). The lint baseline `eslint-suppressions.json` lives in `client/max-method/`.
 
 ### Naming patterns
 
-*To be completed at end of refactor.*
+- **Components** PascalCase (`RestTimer`); **hooks** `useXxx`; **util / config modules** camelCase; **exported data maps** SCREAMING_SNAKE (`MOVEMENT_PATTERNS`).
+- **Test-file extension mirrors the source**: `.test.jsx` when the test renders React / contains JSX, `.test.js` when it's JSX-free ([`#test-file-extension-convention`](decisions.md#test-file-extension-convention)).
+- **Domain-named components, never a mode prop.** Two genuinely different things stay two components with descriptive names (`ProgramExerciseCard` vs `AdHocExerciseCard`), not one component with an `isProgramMode` flag. Burden of proof is on *sharing* (session rule #4); >6–7 props or >3 booleans means it's really two components (rule #7). `day.jsx`'s card was left un-extracted for exactly this reason ([`docs/follow-ups.md#day-card-internal-extraction`](follow-ups.md#day-card-internal-extraction)).
+- **Color tokens carry meaning, not just hue**: `var(--accent)` (red) marks *identity* (badge labels, threshold values); `var(--accent-green)` is reserved for *completion state* (finished sets / days — fills, borders, text). Strict split ([`#color-token-convention`](decisions.md#color-token-convention)).
+- **Per-page overlays** of a canonical map are named for what they restore and recorded in an ADR (`reviewProgram`'s squat-alias overlay, `day`'s cable-only overlay) — never silent local copies.
+- **Commits** are Conventional Commits with scope (`refactor(day): …`), body answers *why*, **no `Co-Authored-By` trailers** (rule #13). **Branches** are `refactor/batch-NN-description` (lex-sortable).
 
 ### Domain boundaries
 
-*To be completed at end of refactor.*
+- **The frontend never touches Mongo.** Every read/write goes through the backend's `/api/...` endpoints via `fetch`; `config/api.js` holds the base URL. There is no client cache layer and no React Query — Context holds state, `fetch` moves it ([`#react-query-data-layer`](follow-ups.md#react-query-data-layer) is deferred).
+- **Three mirrored utils** (`epley`, `classification`, `exerciseNameNormalize`) are behavior-for-behavior siblings of `Backend_structure/src/utils/*` and have backend parity fixtures. Change both sides in one step or the apps disagree ([`#mirrored-utils`](decisions.md#mirrored-utils)). The alias map inside `exerciseNameNormalize.ALIASES` is part of that mirror.
+- **`config/exercises.js` is the single source for exercise data.** Pages consume it; it imports from no page (the old upside-down `utils/ → pages/` import was removed in Batch 12). Where one consumer genuinely needs different membership, it overlays the canonical map locally and documents why ([`#day-movement-patterns-consumption`](decisions.md#day-movement-patterns-consumption), [`#reviewprogram-squat-alias-overlay`](decisions.md#reviewprogram-squat-alias-overlay)). Two FE alias maps coexist — `exerciseNameNormalize.ALIASES` (mirrored, on the PB path) and `config.EXERCISE_NAME_ALIASES` (FE-only, for library lookup) — kept in agreement by hand; dedup tracked at [`docs/follow-ups.md#exercise-name-alias-map-single-source`](follow-ups.md#exercise-name-alias-map-single-source).
+- **Big-three progression is server-owned.** The Bench / Squat / Deadlift personal-best seeded floor lives in the backend; the client must round-trip the response shape correctly (Risk #1). `updatePersonalBest` raises only; `rebuildPersonalBest` is bidirectional but floors at the seeded 1RM for the big three.
+- **Two-tier persistence for authored workouts, gated.** `customDay.jsx` / `customWorkout.jsx` keep a draft in `localStorage` and debounce a PATCH to the DB — but auto-save is **gated during new-workout creation** (`location.state.isDbWorkout === false`): nothing auto-saves, only the explicit "Save Workout" button persists. Editing an existing DB workout enables the 500 ms debounced save. Don't remove the gate (see *Surprising things → Code hazards*).
+- **In-flight fetches clean up on supersede / unmount.** `WorkoutContext.updateLog` and `viewProgram`'s title save use an `AbortController` (cancel a superseded or in-flight request); the sibling bootstrap GETs were audited and deferred as low-impact ([`#debounce-cleanup-shape`](decisions.md#debounce-cleanup-shape)). `WorkoutProvider` wraps the router, so **in-app navigation does not cancel a pending edit** — only page reload / tab close does.
+- **One known cross-page staleness:** `personalBests` can read stale between `day.jsx` and `logger.jsx` mid-session; every other context field was audited safe ([`#cross-page-staleness-other-context-fields`](follow-ups.md#cross-page-staleness-other-context-fields)).
 
 ---
 
@@ -142,7 +165,7 @@ Non-obvious behaviors and findings worth knowing before you touch — or write t
 - **Plan file** (current refactor initiative): `~/.claude/plans/i-want-to-plan-purrfect-meteor.md`
 - **ADRs**: [`docs/decisions.md`](docs/decisions.md)
 - **Follow-ups**: [`docs/follow-ups.md`](docs/follow-ups.md)
-- **Shape comparisons**: [`docs/comparisons/`](docs/comparisons/) (combobox; future: rest-timer in Batch 10, day-filter-truth-table in Batch 9a if standalone)
+- **Shape comparisons**: [`docs/comparisons/`](docs/comparisons/) (combobox, rest-timer, day-filter-truth-table, exercise-map-truth-table)
 - **Manual testing guide**: [`TESTING_GUIDE.md`](TESTING_GUIDE.md)
 - **End-user guide**: [`USER_GUIDE.md`](USER_GUIDE.md)
 - **Frontend README**: [`client/max-method/README.md`](client/max-method/README.md)
