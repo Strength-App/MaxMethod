@@ -41,7 +41,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 import PostWorkoutModal from './PostWorkoutModal.jsx';
-import { fineLevel, levelProgress } from '../utils/classification.js';
+import { fineLevel, levelProgress } from '../../utils/classification.js';
 
 const MALE = { sex: 'male', bodyweight: 200 };
 const NOVICE2_LEVEL = levelProgress({ ...MALE, total: 870 }).fineLevel;

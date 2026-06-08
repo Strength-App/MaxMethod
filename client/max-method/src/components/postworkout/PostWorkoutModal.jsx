@@ -1,7 +1,7 @@
 import PostWorkoutScreen1 from './PostWorkoutScreen1';
 import PostWorkoutScreen2 from './PostWorkoutScreen2';
-import { useModalA11y } from '../hooks/useModalA11y';
-import { isNullState } from '../utils/classification';
+import { useModalA11y } from '../../hooks/useModalA11y';
+import { isNullState } from '../../utils/classification';
 
 /**
  * The pop-up ("modal") that appears after a workout. It's the frame around the
