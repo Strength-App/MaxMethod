@@ -6,7 +6,7 @@ import { API_URL } from '../config/api';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import ContextMenu from '../components/ui/ContextMenu';
 import EquipmentSelect from '../components/ui/EquipmentSelect';
-import PostWorkoutModal from '../components/PostWorkoutModal';
+import PostWorkoutModal from '../components/postworkout/PostWorkoutModal';
 import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
 import { getPersonalBest } from '../utils/exerciseNameNormalize';
 import { RestTimer } from '../components/workout';

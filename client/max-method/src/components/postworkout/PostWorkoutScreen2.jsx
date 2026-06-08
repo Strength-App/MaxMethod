@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import UserLevelBadge from './ui/UserLevelBadge';
-import { levelProgress } from '../utils/classification';
+import UserLevelBadge from '../ui/UserLevelBadge';
+import { levelProgress } from '../../utils/classification';
 
 // Map the canonical service keys (bench/squat/deadlift) to the user-facing
 // display names rendered in the e1RM-delta block. e1rmUpdates uses the

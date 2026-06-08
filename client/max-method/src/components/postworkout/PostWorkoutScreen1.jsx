@@ -1,4 +1,4 @@
-import { collapseSetDetails, formatSetLine } from '../utils/setDisplay';
+import { collapseSetDetails, formatSetLine } from '../../utils/setDisplay';
 
 /**
  * The first screen a user sees after finishing a workout: a celebratory

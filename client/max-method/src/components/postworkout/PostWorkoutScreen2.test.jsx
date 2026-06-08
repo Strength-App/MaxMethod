@@ -38,7 +38,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'vitest-axe';
 import PostWorkoutScreen2 from './PostWorkoutScreen2.jsx';
-import { fineLevel, levelProgress } from '../utils/classification.js';
+import { fineLevel, levelProgress } from '../../utils/classification.js';
 
 const MALE = { sex: 'male', bodyweight: 200 };
 
