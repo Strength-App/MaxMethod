@@ -2,8 +2,8 @@
 
 Components that belong specifically to the **workout screens** — the pages where
 a lifter works through a training day and records the sets they do. These are the
-pieces being lifted out of the two large workout pages (`pages/day.jsx`, the
-program-driven workout, and `pages/logger.jsx`, free-form logging) as the refactor
+pieces being lifted out of the two large workout pages (`pages/workout/Day.jsx`, the
+program-driven workout, and `pages/workout/Logger.jsx`, free-form logging) as the refactor
 progresses, so the same UI isn't copy-pasted between them.
 
 Import from the barrel:
@@ -21,7 +21,7 @@ long the rest should be (`initialSeconds`) and a callback (`onSkip`) that fires
 once when the rest ends — either the clock hit zero or the lifter tapped Skip.
 The lifter can pause/resume, add or remove 30 seconds, or skip.
 
-- **Used by:** `pages/day.jsx` (two call sites), `pages/logger.jsx` (one).
+- **Used by:** `pages/workout/Day.jsx` (two call sites), `pages/workout/Logger.jsx` (one).
 - **Contract:** `{ initialSeconds, onSkip }`. Callers remount it with a changing
   `key` to begin a new rest period.
 - **Extraction record:** [`docs/comparisons/rest-timer.md`](../../../../../docs/comparisons/rest-timer.md)

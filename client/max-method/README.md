@@ -38,10 +38,11 @@ npm run lint:suppressions-prune    # remove unused entries from the file
 
 ## Where things live
 
-- `src/pages/` — route-level components
-- `src/components/` — reusable UI (Toast, Modal, EquipmentSelect, ContextMenu, UserLevelBadge, PostWorkoutModal, ...)
+- `src/pages/` — full screens (PascalCase), grouped by area: `auth/`, `onboarding/`, `program/`, `workout/`, `account/`
+- `src/components/ui/` — shared widgets (Toast, ContextMenu, EquipmentSelect, MaxMethodLogo, UserLevelBadge)
+- `src/components/postworkout/` — end-of-workout flow (PostWorkoutModal, PostWorkoutScreen1/2)
 - `src/components/tools/` — Plate Calc, 1RM Calc, RPE Calc, Timer, Stopwatch
-- `src/components/workout/` — workout-domain components (RestTimer, ProgramExerciseCard, ...) — **created in Batch 10 onward**
+- `src/components/workout/` — workout-domain components shared by day/logger (RestTimer, ...), via the `index.js` barrel
 - `src/context/` — `UserContext`, `WorkoutContext`, `ToolsContext`
 - `src/hooks/` — `useModalA11y`, `useWorkoutStats`, `usePostWorkoutModal`, `useCombobox` (Batch 13)
 - `src/utils/` — pure helpers; `epley.js` / `classification.js` / `exerciseNameNormalize.js` are **mirrored with the backend**
