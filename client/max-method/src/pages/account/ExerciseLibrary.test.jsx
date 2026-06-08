@@ -33,10 +33,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
-import { server } from '../test/msw/server.js';
-import { WorkoutProvider } from '../context/WorkoutContext';
-import { API_URL } from '../config/api.js';
-import ExerciseLibrary from './exerciseLibrary.jsx';
+import { server } from '../../test/msw/server.js';
+import { WorkoutProvider } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api.js';
+import ExerciseLibrary from './ExerciseLibrary.jsx';
 
 // useNavigate mock — the page calls navigate(pathname, { replace, state:null })
 // to clear consumed location.state after a focusExercise / resetToList signal.

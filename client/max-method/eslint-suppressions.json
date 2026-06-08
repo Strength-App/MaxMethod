@@ -61,7 +61,7 @@
       "count": 1
     }
   },
-  "src/pages/exerciseLibrary.jsx": {
+  "src/pages/account/ExerciseLibrary.jsx": {
     "react-hooks/set-state-in-effect": {
       "count": 3
     },
@@ -90,7 +90,7 @@
       "count": 1
     }
   },
-  "src/pages/settings.jsx": {
+  "src/pages/account/Settings.jsx": {
     "no-unused-vars": {
       "count": 1
     },

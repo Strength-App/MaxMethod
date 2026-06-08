@@ -22,7 +22,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import Home from './home.jsx';
+import Home from './Home.jsx';
 
 const { mockNavigate, ctx } = vi.hoisted(() => ({
   mockNavigate: vi.fn(),
@@ -34,8 +34,8 @@ vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return { ...actual, useNavigate: () => mockNavigate };
 });
-vi.mock('../context/WorkoutContext', () => ({ useWorkout: () => ctx.workout }));
-vi.mock('../context/UserContext', () => ({ useUser: () => ({ user: ctx.user }) }));
+vi.mock('../../context/WorkoutContext', () => ({ useWorkout: () => ctx.workout }));
+vi.mock('../../context/UserContext', () => ({ useUser: () => ({ user: ctx.user }) }));
 
 const fetchWorkout = vi.fn();
 
