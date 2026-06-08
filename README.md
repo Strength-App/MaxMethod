@@ -14,7 +14,8 @@ An all-in-one strength training web app. MaxMethod assesses your current fitness
 | Charts | Recharts 3 |
 | Video | React Player 3 |
 | Calendar | React Calendar 6 |
-| HTTP Client | Axios |
+| HTTP Client | Fetch API (native) |
+| Testing | Vitest + React Testing Library + MSW |
 
 ---
 
@@ -35,6 +36,19 @@ npm run build    # Production bundle → dist/
 npm run preview  # Preview production build locally
 npm run lint     # ESLint checks
 ```
+
+### Tests
+
+Run from `client/max-method`:
+
+```bash
+npm test                  # Vitest watch mode
+npm run test:run          # single run (used by CI)
+npm run test:coverage     # coverage report (diagnostic — not gated)
+```
+
+Coverage targets are informational, recorded as comments in `vitest.config.js`.
+See [`docs/decisions.md#coverage-philosophy`](docs/decisions.md#coverage-philosophy).
 
 ---
 
@@ -64,8 +78,7 @@ client/max-method/
 |---|---|
 | `welcomepage.jsx` | Entry screen — login or sign up |
 | `createAcc.jsx` | Account registration |
-| `onboarding.jsx` | Initial user setup (goals, experience level) |
-| `classification.jsx` | Strength classification via bench / squat / deadlift 1RMs |
+| `onboarding.jsx` | Initial user setup (goals, experience level, and bench / squat / deadlift strength classification) |
 
 ### Program & Workout
 
