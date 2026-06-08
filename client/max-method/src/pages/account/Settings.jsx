@@ -1,7 +1,7 @@
 import { useState, useEffect, useId } from 'react'
-import { useUser } from '../context/UserContext'
-import UserLevelBadge from '../components/ui/UserLevelBadge'
-import { bigThreeTotal, isNullState } from '../utils/classification'
+import { useUser } from '../../context/UserContext'
+import UserLevelBadge from '../../components/ui/UserLevelBadge'
+import { bigThreeTotal, isNullState } from '../../utils/classification'
 import {
     ResponsiveContainer,
     LineChart,
@@ -11,7 +11,7 @@ import {
     Tooltip,
     CartesianGrid,
 } from 'recharts'
-import { API_URL } from '../config/api';
+import { API_URL } from '../../config/api';
 
 function Settings() {
     const { user } = useUser()

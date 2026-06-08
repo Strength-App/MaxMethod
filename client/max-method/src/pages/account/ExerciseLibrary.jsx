@@ -16,12 +16,12 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import MuxPlayer from '@mux/mux-player-react'
-import { useWorkout } from '../context/WorkoutContext'
-import './exerciseLibrary.css'
-import { API_URL } from '../config/api';
-import { getPersonalBest } from '../utils/exerciseNameNormalize';
-import { getCustomExerciseNames } from '../utils/customExercises';
-import { ALL_EXERCISES, VIDEO_NAME_ALIASES, EXERCISE_NAME_ALIASES } from '../config/exercises';
+import { useWorkout } from '../../context/WorkoutContext'
+import './ExerciseLibrary.css'
+import { API_URL } from '../../config/api';
+import { getPersonalBest } from '../../utils/exerciseNameNormalize';
+import { getCustomExerciseNames } from '../../utils/customExercises';
+import { ALL_EXERCISES, VIDEO_NAME_ALIASES, EXERCISE_NAME_ALIASES } from '../../config/exercises';
 
 // ─── Library Video Lookup ─────────────────────────────────────────────────────
 

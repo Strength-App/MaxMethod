@@ -2,12 +2,12 @@ import './App.css'
 import { useUser } from './context/UserContext';
 
 // import pages for navigation
-import Home from './pages/home'
+import Home from './pages/account/Home'
 import Day from './pages/workout/Day'
 import Goals from './pages/onboarding/Goals'
-import ExerciseLibrary from './pages/exerciseLibrary'
+import ExerciseLibrary from './pages/account/ExerciseLibrary'
 import History from './pages/workout/History'
-import Settings from './pages/settings'
+import Settings from './pages/account/Settings'
 import CreateAcc from './pages/auth/CreateAcc'
 import Welcomepage from './pages/auth/WelcomePage'
 import PickNewProgram from './pages/program/PickNewProgram'

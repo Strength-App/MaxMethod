@@ -18,10 +18,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { useEffect } from 'react';
 import { render, screen, act } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { server } from '../test/msw/server.js';
-import { UserProvider, useUser } from '../context/UserContext';
-import { API_URL } from '../config/api.js';
-import Settings from './settings.jsx';
+import { server } from '../../test/msw/server.js';
+import { UserProvider, useUser } from '../../context/UserContext';
+import { API_URL } from '../../config/api.js';
+import Settings from './Settings.jsx';
 
 // Stub recharts so chart rendering doesn't reach ResizeObserver.
 vi.mock('recharts', () => {
