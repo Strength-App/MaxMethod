@@ -38,6 +38,13 @@ import { WorkoutProvider } from '../../context/WorkoutContext';
 import { API_URL } from '../../config/api.js';
 import ExerciseLibrary from './ExerciseLibrary.jsx';
 
+// Every test renders the full ~168-card catalog (each card mounts an inline SVG
+// body diagram), so a single render is heavy. The assertions are fast; only the
+// render is slow, and on a loaded/contended machine one render can blow past the
+// 5s default and flake. Give this file generous headroom — on CI (fast Linux)
+// these tests finish in well under a second, so the larger budget is never hit.
+vi.setConfig({ testTimeout: 20000 });
+
 // useNavigate mock — the page calls navigate(pathname, { replace, state:null })
 // to clear consumed location.state after a focusExercise / resetToList signal.
 // A spy lets the deep-link tests observe the consumed detail view without the
