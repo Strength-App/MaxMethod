@@ -1,6 +1,6 @@
 import { useState, useEffect, useId } from 'react'
 import { useUser } from '../context/UserContext'
-import UserLevelBadge from '../components/UserLevelBadge'
+import UserLevelBadge from '../components/ui/UserLevelBadge'
 import { bigThreeTotal, isNullState } from '../utils/classification'
 import {
     ResponsiveContainer,

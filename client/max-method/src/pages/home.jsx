@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { useUser } from '../context/UserContext';
-import UserLevelBadge from '../components/UserLevelBadge';
+import UserLevelBadge from '../components/ui/UserLevelBadge';
 import { bigThreeTotalForUser, isNullState } from '../utils/classification';
 import { useEffect } from 'react';
 

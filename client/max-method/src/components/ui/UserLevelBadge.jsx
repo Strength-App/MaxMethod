@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { levelProgress } from '../utils/classification';
+import { levelProgress } from '../../utils/classification';
 
 const PHASE_TRANSITION = 'width 600ms cubic-bezier(0.22, 1, 0.36, 1)';
 const HOLD_MS = 80;
