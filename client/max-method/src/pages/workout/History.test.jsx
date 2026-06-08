@@ -20,10 +20,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { http, HttpResponse } from 'msw';
-import { server } from '../test/msw/server.js';
-import { UserProvider } from '../context/UserContext';
-import { API_URL } from '../config/api.js';
-import History from './history.jsx';
+import { server } from '../../test/msw/server.js';
+import { UserProvider } from '../../context/UserContext';
+import { API_URL } from '../../config/api.js';
+import History from './History.jsx';
 
 // Stub the all-history endpoint with a given sessions array.
 function stubHistory(sessions) {

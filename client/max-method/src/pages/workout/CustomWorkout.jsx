@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
-import { API_URL } from '../config/api';
-import { useModalA11y } from '../hooks/useModalA11y';
+import { useWorkout } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api';
+import { useModalA11y } from '../../hooks/useModalA11y';
 
 /**
  * The "build your own workout" screen.

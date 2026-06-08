@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
-import { ALL_EXERCISES } from '../config/exercises';
-import { API_URL } from '../config/api';
-import { useModalA11y } from '../hooks/useModalA11y';
-import { useCombobox } from '../hooks/useCombobox';
+import { useWorkout } from '../../context/WorkoutContext';
+import { ALL_EXERCISES } from '../../config/exercises';
+import { API_URL } from '../../config/api';
+import { useModalA11y } from '../../hooks/useModalA11y';
+import { useCombobox } from '../../hooks/useCombobox';
 
 const ALL_EXERCISE_NAMES = [...new Set(ALL_EXERCISES.map(e => e.name))];
 const getCustomExerciseNames = () => { try { return JSON.parse(localStorage.getItem('customExercises') || '[]'); } catch { return []; } };

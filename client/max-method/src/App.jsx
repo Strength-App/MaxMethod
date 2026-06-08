@@ -3,21 +3,21 @@ import { useUser } from './context/UserContext';
 
 // import pages for navigation
 import Home from './pages/home'
-import Day from './pages/day'
+import Day from './pages/workout/Day'
 import Goals from './pages/onboarding/Goals'
 import ExerciseLibrary from './pages/exerciseLibrary'
-import History from './pages/history'
+import History from './pages/workout/History'
 import Settings from './pages/settings'
 import CreateAcc from './pages/auth/CreateAcc'
 import Welcomepage from './pages/auth/WelcomePage'
 import PickNewProgram from './pages/program/PickNewProgram'
 import Onboarding from './pages/onboarding/Onboarding'
-import CustomWorkout from './pages/customWorkout'
-import CustomDay from './pages/customDay'
+import CustomWorkout from './pages/workout/CustomWorkout'
+import CustomDay from './pages/workout/CustomDay'
 import ViewProgram from './pages/program/ViewProgram'
 import LoadingPage from './pages/onboarding/LoadingPage'
 import ReviewProgram from './pages/program/ReviewProgram'
-import Logger from './pages/logger'
+import Logger from './pages/workout/Logger'
 
 // Workout context — wraps the whole app so state persists when navigating
 import { WorkoutProvider } from './context/WorkoutContext'

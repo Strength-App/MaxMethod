@@ -1,17 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useWorkout } from '../context/WorkoutContext';
-import { useUser } from '../context/UserContext';
-import { API_URL } from '../config/api';
-import { useWorkoutStats } from '../hooks/useWorkoutStats';
-import ContextMenu from '../components/ui/ContextMenu';
-import EquipmentSelect from '../components/ui/EquipmentSelect';
-import PostWorkoutModal from '../components/postworkout/PostWorkoutModal';
-import { usePostWorkoutModal } from '../hooks/usePostWorkoutModal';
-import { getPersonalBest } from '../utils/exerciseNameNormalize';
-import { RestTimer } from '../components/workout';
-import { getRestSeconds } from '../utils/restDuration';
-import { EXERCISE_EQUIPMENT, MOVEMENT_PATTERNS as CANONICAL_MOVEMENT_PATTERNS } from '../config/exercises';
+import { useWorkout } from '../../context/WorkoutContext';
+import { useUser } from '../../context/UserContext';
+import { API_URL } from '../../config/api';
+import { useWorkoutStats } from '../../hooks/useWorkoutStats';
+import ContextMenu from '../../components/ui/ContextMenu';
+import EquipmentSelect from '../../components/ui/EquipmentSelect';
+import PostWorkoutModal from '../../components/postworkout/PostWorkoutModal';
+import { usePostWorkoutModal } from '../../hooks/usePostWorkoutModal';
+import { getPersonalBest } from '../../utils/exerciseNameNormalize';
+import { RestTimer } from '../../components/workout';
+import { getRestSeconds } from '../../utils/restDuration';
+import { EXERCISE_EQUIPMENT, MOVEMENT_PATTERNS as CANONICAL_MOVEMENT_PATTERNS } from '../../config/exercises';
 
 // day.jsx resolves swap/edit alternatives by a slot's pattern label. It consumes
 // the canonical MOVEMENT_PATTERNS from config/exercises.js — which intentionally

@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { API_URL } from '../config/api';
-import { useModalA11y } from '../hooks/useModalA11y';
-import { useWorkoutStats } from '../hooks/useWorkoutStats';
-import { useUser } from '../context/UserContext';
-import Toast from '../components/ui/Toast';
-import { ALL_EXERCISES } from '../config/exercises';
-import { dateKey } from '../utils/dateUtils';
+import { API_URL } from '../../config/api';
+import { useModalA11y } from '../../hooks/useModalA11y';
+import { useWorkoutStats } from '../../hooks/useWorkoutStats';
+import { useUser } from '../../context/UserContext';
+import Toast from '../../components/ui/Toast';
+import { ALL_EXERCISES } from '../../config/exercises';
+import { dateKey } from '../../utils/dateUtils';
 
 function resolveWeekValue(value, wi) {
   if (Array.isArray(value)) return value[wi] ?? null;

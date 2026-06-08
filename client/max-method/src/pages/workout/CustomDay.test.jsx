@@ -33,9 +33,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { WorkoutProvider } from '../context/WorkoutContext';
-import { API_URL } from '../config/api.js';
-import CustomDay from './customDay.jsx';
+import { WorkoutProvider } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api.js';
+import CustomDay from './CustomDay.jsx';
 
 // useNavigate mock — the page navigates on Back; we never assert it here, but
 // the mock keeps the real router out of the picture.
