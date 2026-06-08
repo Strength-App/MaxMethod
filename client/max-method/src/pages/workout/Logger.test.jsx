@@ -37,9 +37,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, act, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { UserProvider } from '../context/UserContext';
-import { WorkoutProvider } from '../context/WorkoutContext';
-import Logger from './logger.jsx';
+import { UserProvider } from '../../context/UserContext';
+import { WorkoutProvider } from '../../context/WorkoutContext';
+import Logger from './Logger.jsx';
 
 beforeEach(() => {
   vi.useFakeTimers();

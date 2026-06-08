@@ -30,11 +30,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
-import { server } from '../test/msw/server.js';
-import { UserProvider } from '../context/UserContext';
-import { WorkoutProvider } from '../context/WorkoutContext';
-import { API_URL } from '../config/api.js';
-import Day from './day.jsx';
+import { server } from '../../test/msw/server.js';
+import { UserProvider } from '../../context/UserContext';
+import { WorkoutProvider } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api.js';
+import Day from './Day.jsx';
 
 const { mockNavigate } = vi.hoisted(() => ({ mockNavigate: vi.fn() }));
 vi.mock('react-router-dom', async () => {

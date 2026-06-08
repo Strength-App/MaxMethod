@@ -24,10 +24,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
-import { server } from '../test/msw/server.js';
-import { WorkoutProvider } from '../context/WorkoutContext';
-import { API_URL } from '../config/api.js';
-import CustomWorkout from './customWorkout.jsx';
+import { server } from '../../test/msw/server.js';
+import { WorkoutProvider } from '../../context/WorkoutContext';
+import { API_URL } from '../../config/api.js';
+import CustomWorkout from './CustomWorkout.jsx';
 
 // useNavigate + useParams mocks. mockNavigate lets tests assert the
 // destination; mockParams is a mutable object each test sets to choose the
