@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
-import EquipmentSelect from '../components/EquipmentSelect';
+import EquipmentSelect from '../components/ui/EquipmentSelect';
 import {
   EXERCISE_EQUIPMENT,
   MOVEMENT_PATTERNS as CANONICAL_MOVEMENT_PATTERNS,

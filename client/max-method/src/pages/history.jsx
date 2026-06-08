@@ -3,7 +3,7 @@ import { API_URL } from '../config/api';
 import { useModalA11y } from '../hooks/useModalA11y';
 import { useWorkoutStats } from '../hooks/useWorkoutStats';
 import { useUser } from '../context/UserContext';
-import Toast from '../components/Toast';
+import Toast from '../components/ui/Toast';
 import { ALL_EXERCISES } from '../config/exercises';
 import { dateKey } from '../utils/dateUtils';
 

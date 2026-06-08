@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import UserLevelBadge from './UserLevelBadge';
+import UserLevelBadge from './ui/UserLevelBadge';
 import { levelProgress } from '../utils/classification';
 
 // Map the canonical service keys (bench/squat/deadlift) to the user-facing

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from '../context/UserContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { API_URL } from '../config/api';
-import UserLevelBadge from '../components/UserLevelBadge';
+import UserLevelBadge from '../components/ui/UserLevelBadge';
 import { bigThreeTotalForUser, isNullState, mirrorClassificationResponse } from '../utils/classification';
 
 const FEATURED = [
