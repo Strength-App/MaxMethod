@@ -23,3 +23,7 @@ coverage
 *.njsproj
 *.sln
 *.sw?
+
+# Python bytecode (from tooling under .claude/, never application code)
+__pycache__/
+*.pyc
