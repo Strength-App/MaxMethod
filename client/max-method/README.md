@@ -15,14 +15,13 @@ npm run lint     # eslint
 
 ## Tests
 
-> Vitest + React Testing Library + MSW land in **Batch 1** of the 2026 refactor initiative. Until then, no automated tests exist (manual testing per [`../../TESTING_GUIDE.md`](../../TESTING_GUIDE.md)).
-
-Once Batch 1 merges, the test commands will be:
+Vitest + React Testing Library + MSW. Tests are colocated as `name.test.{js,jsx}`
+siblings of their source. Manual end-to-end testing follows [`../../TESTING_GUIDE.md`](../../TESTING_GUIDE.md).
 
 ```sh
-npx vitest                # watch mode
-npx vitest run            # single run (used by CI)
-npx vitest run --coverage # coverage report (diagnostic — not gated)
+npm test                  # watch mode
+npm run test:run          # single run (used by CI)
+npm run test:coverage     # coverage report (diagnostic — not gated)
 ```
 
 Coverage targets are informational, recorded as comments in `vitest.config.js`. See [`../../docs/decisions.md#coverage-philosophy`](../../docs/decisions.md#coverage-philosophy).
